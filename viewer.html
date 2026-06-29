@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MLP Image Library</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f3; color: #111; font-size: 14px; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #e5e5e5; display: flex; flex-direction: column; overflow-y: auto; }
+  #sidebar-top { padding: 16px; border-bottom: 1px solid #e5e5e5; flex-shrink: 0; }
+  #sidebar-top h1 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  #brand-toggle { display: flex; border: 1px solid #d5d5d5; border-radius: 20px; overflow: hidden; width: 100%; }
+  #brand-toggle button { flex: 1; font-size: 12px; padding: 5px 0; border: none; background: #fff; color: #555; cursor: pointer; transition: all .12s; }
+  #brand-toggle button.active { background: #111; color: #fff; }
+  .filter-section { padding: 12px 16px; border-bottom: 1px solid #f0f0ee; }
+  .filter-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; display: block; }
+  .filter-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pill { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 1px solid #d5d5d5; background: #fff; color: #555; cursor: pointer; transition: all .12s; }
+  .pill:hover { border-color: #999; color: #111; }
+  .pill.active { background: #111; color: #fff; border-color: #111; }
+  #stats { font-size: 11px; color: #aaa; padding: 12px 16px; margin-top: auto; flex-shrink: 0; }
+
+  /* Main */
+  #main { flex: 1; overflow-y: auto; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px 20px; }
+  .card { background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e5e5e5; cursor: pointer; transition: box-shadow .15s; }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+  .card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #eee; }
+  .card-meta { padding: 8px 10px 10px; }
+  .card-model-badge { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; background: #111; color: #fff; padding: 3px 8px; border-radius: 4px; margin-bottom: 5px; }
+  .card-filename { font-size: 9px; color: #aaa; word-break: break-all; }
+  .tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+  .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #f0f0ee; color: #666; border: 1px solid #e5e5e5; }
+  .tag.auto { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .tag.manual { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+  .tag.shared { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .tag.trim { background: #e0e7ff; color: #3730a3; border-color: #c7d2fe; font-weight: 600; }
+  .tag.cat { background: #f5f0ff; color: #7c3aed; border-color: #ddd6fe; font-weight: 600; }
+  .empty { grid-column: 1/-1; padding: 60px; text-align: center; color: #aaa; }
+  #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  #lightbox.open { display: flex; }
+  #lightbox img { max-width: 90vw; max-height: 80vh; object-fit: contain; border-radius: 6px; }
+  #lightbox-meta { color: #ccc; font-size: 12px; text-align: center; }
+  #lightbox-close { position: absolute; top: 16px; right: 20px; color: #fff; font-size: 24px; cursor: pointer; background: none; border: none; }
+  #loading { padding: 60px; text-align: center; color: #888; grid-column: 1/-1; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-top">
+    <h1 id="header-title">Toyota Library</h1>
+    <div id="brand-toggle">
+      <button id="btn-toyota" class="active" onclick="setBrand('toyota')">Toyota</button>
+      <button id="btn-lexus" onclick="setBrand('lexus')">Lexus</button>
+    </div>
+  </div>
+
+  <!-- Model — both brands -->
+  <div class="filter-section">
+    <span class="filter-label">Model</span>
+    <div id="f-model" class="filter-pills"></div>
+  </div>
+
+  <!-- Toyota: Year + Filters + Category -->
+  <div id="toyota-filters">
+    <div class="filter-section">
+      <span class="filter-label">Year</span>
+      <div id="f-year" class="filter-pills"></div>
+    </div>
+    <div class="filter-section">
+      <span class="filter-label">Type</span>
+      <div id="f-tag" class="filter-pills"></div>
+    </div>
+    <div class="filter-section" id="category-section" style="display:none">
+      <span class="filter-label">Lifestyle</span>
+      <div id="f-category" class="filter-pills"></div>
+    </div>
+  </div>
+
+  <!-- Lexus: Type + Trim + Category -->
+  <div id="lexus-filters" style="display:none">
+    <div class="filter-section">
+      <span class="filter-label">Type</span>
+      <div id="f-type" class="filter-pills"></div>
+    </div>
+    <div class="filter-section" id="trim-section" style="display:none">
+      <span class="filter-label">Trim</span>
+      <div id="f-trim" class="filter-pills"></div>
+    </div>
+    <div class="filter-section" id="gallery-cat-section" style="display:none">
+      <span class="filter-label">Category</span>
+      <div id="f-gallery-cat" class="filter-pills"></div>
+    </div>
+    <div class="filter-section" id="lexus-people-section" style="display:none">
+      <span class="filter-label">People</span>
+      <div id="f-lexus-people" class="filter-pills"></div>
+    </div>
+  </div>
+
+  <span id="stats"></span>
+</div>
+
+<div id="main">
+  <div id="grid"><div id="loading">Loading manifest…</div></div>
+</div>
+
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lb-img" src="" alt="">
+  <div id="lightbox-meta"></div>
+</div>
+
+<script>
+let items = [];
+let currentBrand = 'toyota';
+
+// Toyota state
+let activeModels = new Set(), activeYears = new Set(), activeTags = new Set(), activeCategories = new Set();
+
+// Lexus state
+let lexusModels      = new Set();  // selected models
+let lexusType        = null;       // 'hero' | 'gallery' | 'design' | null
+let lexusTrim        = null;       // e.g. 'f-sport' | 'premium' | null
+let lexusCat         = null;       // 'exterior' | 'interior' | 'wheels' | null
+let lexusPeopleTags  = new Set();  // 'people' | 'face'
+
+function setBrand(brand) {
+  currentBrand = brand;
+  document.getElementById('btn-lexus').classList.toggle('active', brand === 'lexus');
+  document.getElementById('btn-toyota').classList.toggle('active', brand === 'toyota');
+  document.getElementById('header-title').textContent = brand === 'lexus' ? 'Lexus Library' : 'Toyota Library';
+  document.getElementById('toyota-filters').style.display = brand === 'toyota' ? '' : 'none';
+  document.getElementById('lexus-filters').style.display  = brand === 'lexus'  ? '' : 'none';
+  // reset
+  activeModels.clear(); activeYears.clear(); activeTags.clear(); activeCategories.clear();
+  lexusModels.clear(); lexusType = null; lexusTrim = null; lexusCat = null; lexusPeopleTags.clear();
+  document.getElementById('grid').innerHTML = '<div id="loading">Loading manifest…</div>';
+  loadManifest(brand);
+}
+
+function loadManifest(brand) {
+  const path = brand === 'lexus' ? 'Lexus/manifest.json' : 'Toyota/manifest.json';
+  fetch(path)
+    .then(r => r.json())
+    .then(data => {
+      items = Object.values(data).map(item => ({
+        ...item,
+        models: item.models || (item.model ? [item.model] : ['unknown']),
+        autoTags: autoTags(item),
+      }));
+      if (brand === 'lexus') rebuildLexusFilters();
+      else                   rebuildToyotaFilters();
+      render();
+    })
+    .catch(() => {
+      document.getElementById('grid').innerHTML = '<div class="empty">Could not load manifest.json — open via a local server.</div>';
+    });
+}
+
+// ─── Toyota ───────────────────────────────────────────────────────────────
+
+function rebuildToyotaFilters() {
+  const allModels  = [...new Set(items.flatMap(i => i.models))].sort();
+  const allTagsRaw = [...new Set(items.flatMap(i => i.autoTags||[]))];
+  const allYears   = allTagsRaw.filter(t => /^MY\d{2}$/.test(t)).sort();
+  const allFilters = allTagsRaw.filter(t => !/^MY\d{2}$/.test(t)).sort();
+  const allCats    = [...new Set(items.flatMap(i => i.tags||[]))].sort();
+
+  const fm = document.getElementById('f-model');
+  const fy = document.getElementById('f-year');
+  const ft = document.getElementById('f-tag');
+  const fc = document.getElementById('f-category');
+  fm.innerHTML=''; fy.innerHTML=''; ft.innerHTML=''; fc.innerHTML='';
+
+  makeAllPill(fm, activeModels, 'pill-all-model');
+  allModels.forEach(m => makePill(m, activeModels, m, fm, 'pill-all-model'));
+  makeAllPill(fy, activeYears, 'pill-all-year');
+  allYears.forEach(y => makePill(y, activeYears, y, fy, 'pill-all-year'));
+  if (allFilters.length) {
+    makeAllPill(ft, activeTags, 'pill-all-tag');
+    allFilters.forEach(t => makePill(t, activeTags, t, ft, 'pill-all-tag'));
+  }
+  document.getElementById('category-section').style.display = allCats.length ? 'block' : 'none';
+  if (allCats.length) {
+    makeAllPill(fc, activeCategories, 'pill-all-cat');
+    allCats.forEach(c => makePill(c, activeCategories, c, fc, 'pill-all-cat'));
+  }
+}
+
+// ─── Lexus ────────────────────────────────────────────────────────────────
+
+function rebuildLexusFilters() {
+  // Model pills — scoped to all items
+  const allModels = [...new Set(items.flatMap(i => i.models))].sort();
+  const fm = document.getElementById('f-model');
+  fm.innerHTML = '';
+  makeAllPill(fm, lexusModels, 'pill-all-lmodel', () => {
+    lexusType = null; lexusTrim = null; lexusCat = null;
+    rebuildLexusDynamic();
+    render();
+  });
+  allModels.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (lexusModels.has(m) ? ' active' : '');
+    btn.textContent = m.toUpperCase().replace('-', ' ');
+    btn.onclick = () => {
+      if (lexusModels.has(m)) lexusModels.delete(m); else lexusModels.add(m);
+      btn.classList.toggle('active', lexusModels.has(m));
+      syncAllPill('pill-all-lmodel', lexusModels);
+      lexusTrim = null; lexusCat = null;
+      rebuildLexusDynamic();
+      render();
+    };
+    fm.appendChild(btn);
+  });
+
+  rebuildLexusDynamic();
+}
+
+function rebuildLexusDynamic() {
+  // Items visible under current model selection
+  const modelItems = lexusModels.size
+    ? items.filter(i => i.models.some(m => lexusModels.has(m)))
+    : items;
+
+  // Type pills: hero / gallery / design
+  const ft = document.getElementById('f-type');
+  ft.innerHTML = '';
+  const types = ['hero', 'gallery', 'design'];
+  const allTypeBtn = document.createElement('button');
+  allTypeBtn.className = 'pill' + (!lexusType ? ' active' : '');
+  allTypeBtn.textContent = 'All';
+  allTypeBtn.onclick = () => { lexusType = null; lexusTrim = null; lexusCat = null; rebuildLexusDynamic(); render(); };
+  ft.appendChild(allTypeBtn);
+  types.forEach(type => {
+    const hasItems = modelItems.some(i => {
+      if (type === 'design') return (i.subfolder||'').startsWith('design');
+      return i.subfolder === type;
+    });
+    if (!hasItems) return;
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (lexusType === type ? ' active' : '');
+    btn.textContent = cap(type);
+    btn.onclick = () => {
+      lexusType = lexusType === type ? null : type;
+      lexusTrim = null; lexusCat = null;
+      rebuildLexusDynamic(); render();
+    };
+    ft.appendChild(btn);
+  });
+
+  // Trim pills — only when Design type is active (or no type selected but design items exist)
+  const showTrim = (lexusType === 'design' || lexusType === null);
+  const trimItems = modelItems.filter(i => (i.subfolder||'').startsWith('design/'));
+  const allTrims = [...new Set(trimItems.map(i => i.subfolder.replace('design/', '')))].filter(t => t !== 'design').sort();
+  const trimSection = document.getElementById('trim-section');
+  if (showTrim && allTrims.length > 0) {
+    trimSection.style.display = 'block';
+    const ftr = document.getElementById('f-trim');
+    ftr.innerHTML = '';
+    const allTrimBtn = document.createElement('button');
+    allTrimBtn.className = 'pill' + (!lexusTrim ? ' active' : '');
+    allTrimBtn.textContent = 'All';
+    allTrimBtn.onclick = () => { lexusTrim = null; rebuildLexusDynamic(); render(); };
+    ftr.appendChild(allTrimBtn);
+    allTrims.forEach(trim => {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (lexusTrim === trim ? ' active' : '');
+      btn.textContent = cap(trim);
+      btn.onclick = () => {
+        lexusTrim = lexusTrim === trim ? null : trim;
+        // selecting a trim implicitly means design type
+        if (lexusTrim) lexusType = 'design';
+        rebuildLexusDynamic(); render();
+      };
+      ftr.appendChild(btn);
+    });
+  } else {
+    trimSection.style.display = 'none';
+    lexusTrim = null;
+  }
+
+  // Category pills — only for gallery
+  const showCat = (lexusType === 'gallery' || lexusType === null);
+  const galleryItems = modelItems.filter(i => i.subfolder === 'gallery');
+  const allCats = [...new Set(galleryItems.map(i => effectiveCategory(i)).filter(Boolean))].sort();
+  const catSection = document.getElementById('gallery-cat-section');
+  if (showCat && allCats.length > 0) {
+    catSection.style.display = 'block';
+    const fgc = document.getElementById('f-gallery-cat');
+    fgc.innerHTML = '';
+    const allCatBtn = document.createElement('button');
+    allCatBtn.className = 'pill' + (!lexusCat ? ' active' : '');
+    allCatBtn.textContent = 'All';
+    allCatBtn.onclick = () => { lexusCat = null; rebuildLexusDynamic(); render(); };
+    fgc.appendChild(allCatBtn);
+    allCats.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (lexusCat === cat ? ' active' : '');
+      btn.textContent = cap(cat);
+      btn.onclick = () => {
+        lexusCat = lexusCat === cat ? null : cat;
+        if (lexusCat) lexusType = 'gallery';
+        rebuildLexusDynamic(); render();
+      };
+      fgc.appendChild(btn);
+    });
+  } else {
+    catSection.style.display = 'none';
+    lexusCat = null;
+  }
+
+  // People pills — from item.tags (Vision-detected)
+  const allPeopleTags = [...new Set(modelItems.flatMap(i => i.tags || []))].sort();
+  const peopleSection = document.getElementById('lexus-people-section');
+  if (allPeopleTags.length) {
+    peopleSection.style.display = 'block';
+    const fp = document.getElementById('f-lexus-people');
+    fp.innerHTML = '';
+    makeAllPill(fp, lexusPeopleTags, 'pill-all-lpeople', () => { lexusPeopleTags.clear(); render(); });
+    allPeopleTags.forEach(tag => {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (lexusPeopleTags.has(tag) ? ' active' : '');
+      btn.textContent = cap(tag);
+      btn.onclick = () => {
+        if (lexusPeopleTags.has(tag)) lexusPeopleTags.delete(tag); else lexusPeopleTags.add(tag);
+        btn.classList.toggle('active', lexusPeopleTags.has(tag));
+        syncAllPill('pill-all-lpeople', lexusPeopleTags);
+        render();
+      };
+      fp.appendChild(btn);
+    });
+  } else {
+    peopleSection.style.display = 'none';
+    lexusPeopleTags.clear();
+  }
+}
+
+// ─── Shared ────────────────────────────────────────────────────────────────
+
+function makeAllPill(container, set, id, onClear) {
+  const btn = document.createElement('button');
+  btn.className = 'pill active';
+  btn.id = id;
+  btn.textContent = 'All';
+  btn.onclick = () => {
+    set.clear();
+    container.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    if (onClear) onClear(); else render();
+  };
+  container.appendChild(btn);
+}
+
+function syncAllPill(id, set) {
+  const btn = document.getElementById(id);
+  if (btn) btn.classList.toggle('active', set.size === 0);
+}
+
+function makePill(label, set, key, container, allId) {
+  const btn = document.createElement('button');
+  btn.className = 'pill';
+  btn.textContent = label;
+  btn.onclick = () => {
+    if (set.has(key)) set.delete(key); else set.add(key);
+    btn.classList.toggle('active', set.has(key));
+    if (allId) syncAllPill(allId, set);
+    render();
+  };
+  container.appendChild(btn);
+}
+
+function autoTags(item) {
+  const fn  = item.filename.toLowerCase();
+  const url = (item.url || '').toLowerCase();
+  const sub = item.subfolder || '';
+  const cat = (item.category || '').toLowerCase();
+  const tags = [];
+  if (/interior/i.test(fn) || url.includes('/interior/') || cat === 'interior') tags.push('interior');
+  if (/exterior/i.test(fn) || url.includes('/exterior/') || cat === 'exterior') tags.push('exterior');
+  if (sub === 'hero' || /hero/i.test(fn)) tags.push('hero');
+  if (sub.startsWith('design')) {
+    tags.push('design');
+    const trim = sub.replace('design/', '');
+    if (trim && trim !== 'design') tags.push(trim);
+  }
+  if (/wheels/i.test(fn) || url.includes('/wheels/')) tags.push('wheels');
+  const myMatch = fn.match(/my(\d{2})/i);
+  if (myMatch) tags.push('MY' + myMatch[1]);
+  return [...new Set(tags)];
+}
+
+function effectiveCategory(item) {
+  if (item.category) return item.category;
+  const auto = item.autoTags || [];
+  if (auto.includes('interior')) return 'interior';
+  if (auto.includes('exterior')) return 'exterior';
+  return null;
+}
+
+function localUrl(item) {
+  const dir = (item.brand || currentBrand) === 'lexus' ? 'Lexus' : 'Toyota';
+  const model = (item.models || [item.model])[0];
+  return `${dir}/library/${model}/${item.subfolder}/${item.filename}`;
+}
+
+function thumbUrl(item) {
+  const dir = (item.brand || currentBrand) === 'lexus' ? 'Lexus' : 'Toyota';
+  const model = (item.models || [item.model])[0];
+  return `${dir}/library/${model}/${item.subfolder}/thumbs/${item.filename}`;
+}
+
+function matchesToyota(item) {
+  if (activeModels.size && !item.models.some(m => activeModels.has(m))) return false;
+  const autoT = item.autoTags || [];
+  const manT  = item.tags || [];
+  if (activeYears.size && ![...activeYears].some(y => autoT.includes(y))) return false;
+  if (activeTags.size  && ![...activeTags].every(t => autoT.includes(t))) return false;
+  if (activeCategories.size && ![...activeCategories].some(c => manT.includes(c))) return false;
+  return true;
+}
+
+function matchesLexus(item) {
+  if (lexusModels.size && !item.models.some(m => lexusModels.has(m))) return false;
+  const sub = item.subfolder || '';
+  if (lexusType) {
+    if (lexusType === 'design') { if (!sub.startsWith('design')) return false; }
+    else                        { if (sub !== lexusType)          return false; }
+  }
+  if (lexusTrim && sub !== 'design/' + lexusTrim) return false;
+  if (lexusCat  && effectiveCategory(item) !== lexusCat) return false;
+  if (lexusPeopleTags.size && ![...lexusPeopleTags].every(t => (item.tags||[]).includes(t))) return false;
+  return true;
+}
+
+function matches(item) {
+  return currentBrand === 'lexus' ? matchesLexus(item) : matchesToyota(item);
+}
+
+function cap(str) {
+  return str.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function render() {
+  const visible = items.filter(matches);
+  document.getElementById('stats').textContent = `${visible.length} / ${items.length} images`;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  if (!visible.length) { grid.innerHTML = '<div class="empty">No images match.</div>'; return; }
+  visible.forEach(item => {
+    const rawT = item.autoTags || [];
+    const sub  = item.subfolder || '';
+
+    // Trim tag — only when there's a real trim (not design/design)
+    const _trim = sub.startsWith('design/') ? sub.replace('design/', '') : null;
+    const trimTag = (_trim && _trim !== 'design') ? _trim : null;
+
+    // Category tag — design items always show "design"; others use interior/exterior/wheels/hero
+    const catTag = sub.startsWith('design') ? 'design'
+                 : sub === 'hero'           ? 'hero'
+                 : effectiveCategory(item)  || (rawT.includes('wheels') ? 'wheels' : null);
+
+    // Year tags only (MY##)
+    const yearTags = rawT.filter(t => /^MY\d{2}$/.test(t));
+
+    const manT = item.tags || [];
+    const card = document.createElement('div');
+    card.className = 'card';
+    const isShared = item.models.length > 1;
+    card.innerHTML = `
+      <img src="${thumbUrl(item)}" alt="${item.filename}" loading="lazy">
+      <div class="card-meta">
+        <div class="card-model-badge">${item.models.join(' · ')}</div>
+        <div class="card-filename">${item.filename.replace(/\.[^.]+$/, '')}</div>
+        <div class="tags">
+          ${isShared ? `<span class="tag shared">shared</span>` : ''}
+          ${yearTags.map(t => `<span class="tag auto">${t}</span>`).join('')}
+          ${catTag  ? `<span class="tag cat">${catTag}</span>`       : ''}
+          ${trimTag ? `<span class="tag trim">${cap(trimTag)}</span>` : ''}
+          ${manT.map(t  => `<span class="tag manual">${t}</span>`).join('')}
+        </div>
+      </div>`;
+    card.onclick = () => window.open(localUrl(item), '_blank');
+    grid.appendChild(card);
+  });
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lb-img').src = '';
+}
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeLightbox();
+});
+
+loadManifest('toyota');
+</script>
+</body>
+</html>
