@@ -2,34 +2,56 @@
 
 ## Start the viewer
 
-Copy and paste this into Terminal, then press Enter:
+Copy and paste into Terminal, press Enter:
 
 ```
-cd /Users/gy/Documents/ClaudeCowork/Rapp && python3 -m http.server 8765
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 -m http.server 8765
 ```
 
-Then open this in your browser: **http://localhost:8765/viewer.html**
+Then open: **http://localhost:8765/viewer.html**
 
-The Terminal window needs to stay open while you're using the viewer.
+Keep that Terminal window open while using the viewer.
 
 ---
 
 ## Stop the viewer
 
-Open a **new** Terminal window, paste this, and press Enter:
-
 ```
 lsof -ti :8765 | xargs kill -9
 ```
 
-Or just close the Terminal window where the server is running.
+Or just close the Terminal window running the server.
 
 ---
 
-## Run the Lexus scraper
+## Generate AI descriptions for images
 
-Open Terminal, paste this, and press Enter:
+Run this once to describe all images that don't have a description yet:
 
 ```
-cd /Users/gy/Documents/ClaudeCowork/Rapp && python3 lexus_scraper.py
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 describe_images.py
+```
+
+Safe to re-run — skips images that already have descriptions. Toyota still has ~586 undescribed.
+
+To run one brand at a time:
+
+```
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 describe_images.py --brand toyota
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 describe_images.py --brand lexus
+```
+
+After it finishes, commit and push the updated manifests:
+
+```
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && git add Toyota/manifest.json Lexus/manifest.json && git commit -m "Add AI descriptions to manifests" && git push
+```
+
+---
+
+## Run the scrapers
+
+```
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 toyota_scraper.py
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 lexus_scraper.py
 ```
