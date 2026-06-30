@@ -1,6 +1,6 @@
 # Lexus & Toyota Image Scraper — Process Notes
 
-Last verified: 2026-06-26
+Last verified: 2026-06-29
 
 ---
 
@@ -32,18 +32,44 @@ Rapp/
 
 ---
 
-## How to Run
+## Full Process — Run in This Order
+
+Every script is safe to re-run. All steps skip already-processed images automatically.
 
 ```bash
-# Lexus — all models
-cd /Users/gy/Documents/ClaudeCowork/Rapp
-python3 lexus_scraper.py
+cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp
 
-# Toyota — all models (TBD)
-python3 toyota_scraper.py
+# ── Step 1: Scrape images ────────────────────────────────────────────
+python3 lexus_scraper.py                         # all Lexus models
+python3 toyota_scraper.py                        # all Toyota models
+python3 toyota_scraper.py --models 4runner camry # or target specific models
+
+# ── Step 2: Face / people tagging (Apple Vision, free, on-device) ───
+python3 lexus_tagger.py
+python3 toyota_tagger.py
+# Adds "people" / "face" tags to manifest entries. Sets tagged: true so re-runs skip.
+
+# ── Step 3: AI keyword tagging (Claude Sonnet vision, ~$0.02/image) ─
+export ANTHROPIC_API_KEY=$(grep 'Anthropic image vision key' \
+  /Users/gy/Documents/ClaudeCowork/keys-and-deploy.md | awk '{print $NF}')
+python3 describe_images.py --brand lexus
+python3 describe_images.py --brand toyota
+# Adds keywords: [...] array (10 art-director keywords per image).
+# Skips images that already have a keywords field. Use --redescribe to overwrite.
+
+# ── Step 4: Deploy ───────────────────────────────────────────────────
+# Push Lexus/manifest.json, Toyota/manifest.json, viewer.html
+# to me-com-la.github.io/library (GitHub Pages, free account)
+# See keys-and-deploy.md for the push token.
 ```
 
-Re-running is safe: each URL is hashed and checked against `manifest.json` before downloading. Already-downloaded images are skipped.
+### Current library status (2026-06-29)
+| Brand  | Models | Images | People Tagged | AI Keywords |
+|--------|--------|--------|--------------|-------------|
+| Lexus  | 20     | 327    | ✓ all        | ✓ all       |
+| Toyota | 23     | 887    | ✓ all        | ✓ all       |
+
+Missing from toyota.com as of 2026-06-29: none (4Runner added 2026-06-29).
 
 ---
 

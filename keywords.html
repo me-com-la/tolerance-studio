@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Keyword Cloud — MLP Image Library</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f3; color: #111; font-size: 14px; min-height: 100vh; }
+
+  header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 15px; font-weight: 700; }
+  header a { font-size: 12px; color: #2563eb; text-decoration: none; margin-left: auto; }
+  header a:hover { text-decoration: underline; }
+
+  #brand-toggle { display: flex; border: 1px solid #d5d5d5; border-radius: 20px; overflow: hidden; }
+  #brand-toggle button { font-size: 12px; padding: 5px 14px; border: none; background: #fff; color: #555; cursor: pointer; transition: all .12s; }
+  #brand-toggle button.active { background: #111; color: #fff; }
+
+  #status { font-size: 12px; color: #aaa; padding: 12px 24px; }
+
+  #cloud { padding: 24px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+
+  .kw-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px; cursor: default;
+    font-size: 13px; font-weight: 500; border: 1px solid transparent;
+    transition: transform .1s;
+  }
+  .kw-chip:hover { transform: scale(1.04); }
+  .kw-chip .count {
+    font-size: 10px; font-weight: 700; opacity: .75;
+    background: rgba(0,0,0,.12); border-radius: 10px; padding: 1px 5px;
+  }
+
+  /* Color bands by frequency — assigned at render time */
+  .band-1 { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .band-2 { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+  .band-3 { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .band-4 { background: #fdf4ff; color: #7e22ce; border-color: #e9d5ff; }
+  .band-5 { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+  .band-6 { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+  .band-7 { background: #fafaf9; color: #57534e; border-color: #d6d3d1; }
+
+  .empty { padding: 60px 24px; color: #aaa; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Keyword Cloud</h1>
+  <div id="brand-toggle">
+    <button id="btn-both"   class="active" onclick="setBrand('both')">Both</button>
+    <button id="btn-toyota" onclick="setBrand('toyota')">Toyota</button>
+    <button id="btn-lexus"  onclick="setBrand('lexus')">Lexus</button>
+  </div>
+  <a href="viewer.html">← back to library</a>
+</header>
+
+<div id="status">Loading…</div>
+<div id="cloud"></div>
+
+<script>
+let toyotaItems = [];
+let lexusItems  = [];
+let currentBrand = 'both';
+
+function setBrand(brand) {
+  currentBrand = brand;
+  ['both','toyota','lexus'].forEach(b => {
+    document.getElementById('btn-' + b).classList.toggle('active', b === brand);
+  });
+  render();
+}
+
+function getItems() {
+  if (currentBrand === 'toyota') return toyotaItems;
+  if (currentBrand === 'lexus')  return lexusItems;
+  return [...toyotaItems, ...lexusItems];
+}
+
+function countKeywords(items) {
+  const counts = {};
+  for (const item of items) {
+    for (const kw of (item.keywords || [])) {
+      const k = kw.trim().toLowerCase();
+      if (k) counts[k] = (counts[k] || 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function bandFor(count, max) {
+  const ratio = count / max;
+  if (ratio >= 0.6) return 'band-1';
+  if (ratio >= 0.4) return 'band-2';
+  if (ratio >= 0.25) return 'band-3';
+  if (ratio >= 0.15) return 'band-4';
+  if (ratio >= 0.08) return 'band-5';
+  if (ratio >= 0.04) return 'band-6';
+  return 'band-7';
+}
+
+function sizeFor(count, max) {
+  const ratio = count / max;
+  const min = 11, range = 12;
+  return (min + ratio * range).toFixed(1) + 'px';
+}
+
+function render() {
+  const items = getItems();
+  const counts = countKeywords(items);
+  const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  const cloud = document.getElementById('cloud');
+
+  if (!entries.length) {
+    cloud.innerHTML = '<div class="empty">No keywords yet — run describe_images.py first.</div>';
+    document.getElementById('status').textContent = '';
+    return;
+  }
+
+  const max = entries[0][1];
+  const total = items.length;
+  const withKw = items.filter(i => i.keywords && i.keywords.length).length;
+  document.getElementById('status').textContent =
+    `${entries.length} unique keywords across ${withKw} / ${total} images`;
+
+  cloud.innerHTML = '';
+  for (const [kw, count] of entries) {
+    const chip = document.createElement('span');
+    chip.className = 'kw-chip ' + bandFor(count, max);
+    chip.style.fontSize = sizeFor(count, max);
+    chip.title = `${count} image${count !== 1 ? 's' : ''}`;
+    chip.innerHTML = `${kw} <span class="count">${count}</span>`;
+    cloud.appendChild(chip);
+  }
+}
+
+function loadBoth() {
+  let done = 0;
+  const check = () => { if (++done === 2) render(); };
+
+  fetch('Toyota/manifest.json')
+    .then(r => r.json())
+    .then(data => { toyotaItems = Object.values(data); check(); })
+    .catch(() => check());
+
+  fetch('Lexus/manifest.json')
+    .then(r => r.json())
+    .then(data => { lexusItems = Object.values(data); check(); })
+    .catch(() => check());
+}
+
+loadBoth();
+</script>
+</body>
+</html>
