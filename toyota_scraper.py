@@ -84,20 +84,38 @@ async def discover_models(page) -> list[dict]:
     await page.goto(DISCOVERY_URL, wait_until="domcontentloaded")
     await page.wait_for_timeout(4000)
 
+    # NOTE: toyota.com started serving relative hrefs (e.g. "/rav4/") on this
+    # page instead of absolute URLs. `a.href` (the DOM property, not the raw
+    # attribute) always resolves to an absolute URL regardless, so select on
+    # plain `a[href]` and filter using the resolved `.href` value.
     links = await page.eval_on_selector_all(
-        'a[href*="toyota.com/"]',
+        'a[href]',
         """els => els.map(a => {
             const url = a.href.split('?')[0].split('#')[0];
-            const m = url.match(/toyota\\.com\\/([a-z0-9]+)\\/?$/i);
+            const m = url.match(/toyota\\.com\\/([a-z0-9-]+)\\/?$/i);
             return m ? { slug: m[1].toLowerCase(), url } : null;
         }).filter(Boolean)"""
     )
 
+    # Non-model site sections that match the /toyota.com/<slug>/ pattern —
+    # excluded so discovery only returns actual vehicle model pages.
+    NON_MODEL_SLUGS = {
+        "all-vehicles", "configurator", "search", "dealers", "offers",
+        "brand", "cars", "compare", "connect", "crossovers", "fleet",
+        "h2solutions", "hybrid", "kbb", "nightshade", "owners",
+        "preferences", "racing", "recall", "rental", "saves", "suvs",
+        "support", "trdpro", "trucks", "usa",
+        "connected-services", "deals-incentives", "electrified-vehicles",
+        "hybrid-cars", "hybrid-suvs", "local-specials", "maintenance-plans",
+        "my-dashboard", "payment-estimator", "request-a-quote",
+        "safety-sense", "search-inventory", "upcoming-vehicles-hub",
+        "what-fits-my-budget",
+    }
+
     seen = {}
     for m in links:
         slug = m["slug"]
-        if slug and slug not in ("all-vehicles", "configurator", "search", "dealers", "offers") \
-                and slug not in seen:
+        if slug and slug not in NON_MODEL_SLUGS and slug not in seen:
             seen[slug] = m["url"]
 
     return [{"slug": k, "url": v} for k, v in sorted(seen.items())]

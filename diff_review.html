@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weekly Diff Review</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    background: #f0f0ee;
+    color: #111;
+    margin: 0;
+    padding: 24px;
+    font-size: 14px;
+  }
+  h1 { font-size: 20px; margin-bottom: 2px; }
+  #generated { color: #888; margin-bottom: 24px; }
+  .brand-section { margin-bottom: 40px; }
+  .brand-title {
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .empty-note { color: #999; font-style: italic; padding: 8px 0; }
+  .suspect-banner {
+    background: #fdecea;
+    border: 2px solid #c0392b;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    color: #7a1f13;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .suspect-banner .slug-list { font-weight: 600; }
+  .unverified-tag {
+    display: inline-block;
+    background: #c0392b;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 6px 8px 0;
+  }
+  .col-title {
+    font-weight: 600;
+    margin: 18px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .col-title.added { color: #1a7f37; }
+  .col-title.removed { color: #c0392b; }
+  .count-badge {
+    background: #eee;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e0e0de;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .card img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: block;
+    background: #eee;
+  }
+  .card .meta {
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #555;
+    word-break: break-all;
+  }
+  .card.removed img { opacity: .4; filter: grayscale(1); }
+  .card a { color: inherit; text-decoration: none; }
+  .card a:hover .meta { color: #111; }
+</style>
+</head>
+<body>
+
+<h1>Weekly Diff Review</h1>
+<div id="generated">loading...</div>
+<div id="content"></div>
+
+<script>
+const MANIFEST_PATHS = { lexus: 'Lexus/manifest.json', toyota: 'Toyota/manifest.json' };
+
+// Best-effort: maps a URL to the model slugs that reference it in that
+// brand's manifest, so we can badge "removed" cards belonging to a suspect
+// model. If the manifest can't be loaded, mapping is just skipped.
+async function buildUrlToModels(brand) {
+  const map = new Map();
+  try {
+    const res = await fetch(MANIFEST_PATHS[brand]);
+    if (!res.ok) return map;
+    const manifest = await res.json();
+    Object.values(manifest).forEach(entry => {
+      if (!entry.url) return;
+      const models = entry.models || [entry.model].filter(Boolean);
+      map.set(entry.url, models);
+    });
+  } catch (e) {
+    // manifest not reachable from this context — badges just won't show
+  }
+  return map;
+}
+
+async function load() {
+  const res = await fetch('diff_report.json');
+  const report = await res.json();
+  document.getElementById('generated').textContent = 'Generated: ' + report.generated;
+
+  const content = document.getElementById('content');
+  for (const brand of ['lexus', 'toyota']) {
+    if (!report[brand]) continue;
+    const { added, removed, suspect_models } = report[brand];
+    const suspects = suspect_models || [];
+    const suspectSlugs = new Set(suspects.map(s => s.slug));
+
+    const section = document.createElement('div');
+    section.className = 'brand-section';
+
+    const title = document.createElement('div');
+    title.className = 'brand-title';
+    title.textContent = brand;
+    section.appendChild(title);
+
+    if (suspects.length) {
+      section.appendChild(makeSuspectBanner(suspects));
+    }
+
+    if (added.length === 0 && removed.length === 0) {
+      const note = document.createElement('div');
+      note.className = 'empty-note';
+      note.textContent = 'No changes detected.';
+      section.appendChild(note);
+    }
+
+    if (added.length) {
+      section.appendChild(makeColTitle('added', '+ New images', added.length));
+      section.appendChild(makeGrid(added, false, null));
+    }
+    if (removed.length) {
+      section.appendChild(makeColTitle('removed', '− No longer on site', removed.length));
+      const urlToModels = suspectSlugs.size ? await buildUrlToModels(brand) : new Map();
+      section.appendChild(makeGrid(removed, true, { urlToModels, suspectSlugs }));
+    }
+
+    content.appendChild(section);
+  }
+}
+
+function makeSuspectBanner(suspects) {
+  const el = document.createElement('div');
+  el.className = 'suspect-banner';
+  const items = suspects.map(s => `${s.slug} (${s.reason})`).join(', ');
+  el.innerHTML = '⚠️ Could not properly check: ' +
+    `<span class="slug-list">${items}</span>. ` +
+    "Every image of these models may falsely appear under ‘removed’ below. " +
+    'Do NOT delete them without checking the live site.';
+  return el;
+}
+
+function makeColTitle(cls, label, count) {
+  const el = document.createElement('div');
+  el.className = 'col-title ' + cls;
+  el.innerHTML = label + ' <span class="count-badge">' + count + '</span>';
+  return el;
+}
+
+function makeGrid(urls, isRemoved, suspectInfo) {
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  urls.forEach(url => {
+    const card = document.createElement('div');
+    card.className = 'card' + (isRemoved ? ' removed' : '');
+    const filename = url.split('/').pop();
+    card.innerHTML = `
+      <a href="${url}" target="_blank" rel="noopener">
+        <img src="${url}" loading="lazy" onerror="this.style.opacity=0.15">
+        <div class="meta">${filename}</div>
+      </a>`;
+    if (suspectInfo && suspectInfo.urlToModels.size) {
+      const models = suspectInfo.urlToModels.get(url) || [];
+      if (models.some(m => suspectInfo.suspectSlugs.has(m))) {
+        const tag = document.createElement('div');
+        tag.className = 'unverified-tag';
+        tag.textContent = 'unverified';
+        card.appendChild(tag);
+      }
+    }
+    grid.appendChild(card);
+  });
+  return grid;
+}
+
+load();
+</script>
+</body>
+</html>

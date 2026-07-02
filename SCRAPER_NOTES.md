@@ -1,6 +1,12 @@
-# Lexus & Toyota Image Scraper — Process Notes
+# Scraper Notes — Technical Reference
 
-Last verified: 2026-06-29
+Last verified: 2026-07-01
+
+**This file is the "how it works inside" reference.** For step-by-step
+routines, use:
+- `WEEKLY-UPDATE.md` — the weekly scan/review/apply loop
+- `QUARTERLY-FULL-SCRAPE.md` — the every-3-months full re-scrape
+- `README.md` — map of every file in this folder
 
 ---
 
@@ -32,36 +38,11 @@ Rapp/
 
 ---
 
-## Full Process — Run in This Order
+## Process docs moved
 
-Every script is safe to re-run. All steps skip already-processed images automatically.
-
-```bash
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp
-
-# ── Step 1: Scrape images ────────────────────────────────────────────
-python3 lexus_scraper.py                         # all Lexus models
-python3 toyota_scraper.py                        # all Toyota models
-python3 toyota_scraper.py --models 4runner camry # or target specific models
-
-# ── Step 2: Face / people tagging (Apple Vision, free, on-device) ───
-python3 lexus_tagger.py
-python3 toyota_tagger.py
-# Adds "people" / "face" tags to manifest entries. Sets tagged: true so re-runs skip.
-
-# ── Step 3: AI keyword tagging (Claude Sonnet vision, ~$0.02/image) ─
-export ANTHROPIC_API_KEY=$(grep 'Anthropic image vision key' \
-  /Users/gy/Documents/ClaudeCowork/keys-and-deploy.md | awk '{print $NF}')
-python3 describe_images.py --brand lexus
-python3 describe_images.py --brand toyota
-# Adds keywords: [...] array (10 art-director keywords per image).
-# Skips images that already have a keywords field. Use --redescribe to overwrite.
-
-# ── Step 4: Deploy ───────────────────────────────────────────────────
-# Push Lexus/manifest.json, Toyota/manifest.json, viewer.html
-# to me-com-la.github.io/library (GitHub Pages, free account)
-# See keys-and-deploy.md for the push token.
-```
+The full re-scrape steps now live in `QUARTERLY-FULL-SCRAPE.md` and the
+weekly scan/review/apply loop in `WEEKLY-UPDATE.md`. This file keeps only
+the technical detail of how the pieces work.
 
 ### Current library status (2026-06-29)
 | Brand  | Models | Images | People Tagged | AI Keywords |
@@ -186,3 +167,41 @@ playwright install chromium
 ```
 
 Python 3.9+. No Node/npm required.
+
+---
+
+## Site / Viewer System
+
+`index.html` is the viewer, served at the site root by GitHub Pages (the old duplicate `viewer.html` copy has been removed — one codebase now). `keywords.html` is a separate standalone keyword-browser page. Copy both when replicating this system for a new scrape.
+
+### Password gate — `auth.js`
+Loaded via `<script src="auth.js"></script>` at the bottom of the HTML, before any content is usable.
+- On load: hides the page (`visibility:hidden`), checks `sessionStorage['rapp_auth_ok']`. If already `'1'`, unlocks immediately (session-only, resets on browser close).
+- Otherwise shows a full-screen password overlay (`#auth-form`), POSTs the entered password as JSON to a **Supabase Edge Function**: `https://chdfupqkxlcarygopmof.supabase.co/functions/v1/rapp-auth`.
+- Function returns `{ ok: true/false }`. On `ok`, sets the sessionStorage flag and removes the overlay. No client-side password is ever stored in the JS — it's validated server-side by the edge function, so the real password lives only in the Supabase function's env/config, not in this repo.
+- To reuse for a new site: deploy the same edge function pattern (or point at the same one), copy `auth.js` as-is, just include it in the new HTML.
+
+### Layout
+Single-page app, no framework — vanilla JS in one `<script>` block (~450 lines) at the bottom of the HTML.
+- **Sidebar** (`#sidebar`, 220px fixed): brand toggle (Lexus/Toyota), accordion filter groups, card-size toggle, reset button.
+- **Main grid** (`#grid`): image cards, CSS grid with a `--card-size` custom property driven by the size toggle (180/240/340px presets).
+- **Lightbox** (`#lightbox`): full-screen image viewer — prev/next nav, side panel showing vehicle/model/brand/subfolder, clickable keyword chips (click a keyword to filter the whole grid to it), filename, and a direct download link.
+
+### Filters (brand-specific, rebuilt on brand switch)
+- **Toyota:** Model · Year (`MY\d{2}` regex parsed from tags) · Tag (face/people/keywords) · Category (interior/exterior/hero/wheels)
+- **Lexus:** Model · Type (hero/gallery/design) · Trim · Gallery category (interior/exterior) · People tags
+- All filters are accordions (`.facc-*` classes) that collapse/expand; `resetAll()` clears every active filter set back to empty.
+- Keyword filtering has an OR/AND toggle (`kwMode`) plus a live search box that builds a "keyword cloud" (`buildKwCloud()`) from all AI-tagged keywords across the current brand's items.
+- Each model gets a deterministic color from `MODEL_PALETTE` (hash of model name mod 20) — used for model-tag chips throughout the UI, so colors stay stable across reloads/re-scrapes as long as model names don't change.
+
+### Data loading
+Both `manifest.json` files (Lexus + Toyota) are fetched client-side and merged into `items` array on load; brand toggle just filters which subset renders, no separate fetch per brand.
+
+### Deploy target
+Pushed to `me-com-la.github.io/library` (GitHub Pages, free account) — see `keys-and-deploy.md` for the push token. `index.html` is the file GitHub Pages serves.
+
+### Replicating for a new library
+1. Copy `index.html`, `keywords.html`, `auth.js` verbatim.
+2. Point the manifest fetch at the new brand's `manifest.json` path(s).
+3. Update `MODEL_PALETTE` usage is automatic (hash-based) — no changes needed for new model names.
+4. Reuse the same `rapp-auth` Supabase function unless a different password is wanted, in which case deploy a new edge function and swap `AUTH_ENDPOINT` in `auth.js`.

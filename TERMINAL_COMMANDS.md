@@ -1,5 +1,8 @@
 # Terminal Commands — Rapp Viewer
 
+Quick reference for the local viewer. For the routines, see
+`WEEKLY-UPDATE.md` (weekly) and `QUARTERLY-FULL-SCRAPE.md` (every 3 months).
+
 ## Start the viewer
 
 Copy and paste into Terminal, press Enter:
@@ -8,11 +11,10 @@ Copy and paste into Terminal, press Enter:
 cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 -m http.server 8765
 ```
 
-Then open: **http://localhost:8765/viewer.html**
+Then open:
+http://localhost:8765/index.html
 
 Keep that Terminal window open while using the viewer.
-
----
 
 ## Stop the viewer
 
@@ -22,36 +24,10 @@ lsof -ti :8765 | xargs kill -9
 
 Or just close the Terminal window running the server.
 
----
+## Everything else
 
-## Generate AI descriptions for images
+Scraping, tagging, AI descriptions, diff review, and deploy are all covered
+step-by-step in `WEEKLY-UPDATE.md` and `QUARTERLY-FULL-SCRAPE.md`.
 
-Run this once to describe all images that don't have a description yet:
-
-```
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 describe_images.py
-```
-
-Safe to re-run — skips images that already have descriptions. Toyota still has ~586 undescribed.
-
-To run one brand at a time:
-
-```
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 describe_images.py --brand toyota
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 describe_images.py --brand lexus
-```
-
-After it finishes, commit and push the updated manifests:
-
-```
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && git add Toyota/manifest.json Lexus/manifest.json && git commit -m "Add AI descriptions to manifests" && git push
-```
-
----
-
-## Run the scrapers
-
-```
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 toyota_scraper.py
-cd /Users/gy/Documents/ClaudeCowork/GitHub/Rapp && python3 lexus_scraper.py
-```
+Reminder: never `git push` or deploy without explicit go-ahead — the site
+is live and in use.

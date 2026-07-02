@@ -4,6 +4,10 @@ Generate art-director keywords for Lexus and Toyota images using Claude Sonnet v
 Writes a 'keywords' field (array of 10 strings) into each manifest entry.
 Safe to re-run: skips images that already have keywords.
 
+After writing keywords it automatically runs condense_keywords.py, which merges
+near-duplicate keywords into canonical names ("tires" -> "wheels") — no separate
+step needed.
+
 Usage:
   python3 describe_images.py                  # both brands
   python3 describe_images.py --brand lexus
@@ -176,6 +180,11 @@ def main():
     for brand in brands_to_run:
         print(f"\n--- {brand.upper()} ---")
         process_brand(brand, BRANDS[brand], client, args)
+
+    if not args.dry_run:
+        print("\n--- Condensing keywords (automatic) ---")
+        import condense_keywords
+        condense_keywords.run()
 
     print("\nAll done.")
 

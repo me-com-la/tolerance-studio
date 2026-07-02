@@ -155,6 +155,55 @@ body {
 
 .filter-group { display: flex; flex-wrap: wrap; gap: 4px; }
 
+/* Tag mode */
+.tag-badge {
+  position: absolute;
+  top: 6px; left: 6px; z-index: 2;
+  font-size: 10px; font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.92);
+  color: #666;
+  cursor: pointer;
+  transition: all .1s;
+}
+.tag-badge:hover { border-color: #16a34a; color: #16a34a; }
+.tag-badge.on { background: #16a34a; border-color: #16a34a; color: #fff; }
+
+#tagmode-body { padding: 8px 12px 12px; gap: 8px; }
+#tagmode-body label {
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+#tag-input {
+  width: 100%; font-size: 12px; padding: 7px 10px;
+  border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg); color: var(--text); outline: none;
+}
+#tag-input:focus { border-color: #aaa; }
+.tag-btn {
+  font-size: 11px; padding: 7px 10px; border-radius: 5px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text); cursor: pointer; width: 100%;
+  transition: all .1s;
+}
+.tag-btn:hover { background: var(--bg); }
+.tag-btn.primary { background: #111; color: #fff; border-color: #111; }
+.tag-btn.primary:hover { background: #333; }
+#tag-pending { font-size: 11px; color: var(--muted); }
+#lb-tag-toggle {
+  font-size: 11px; padding: 7px 10px; border-radius: 5px;
+  border: 1px solid #2a2a2a; background: #222; color: #aaa;
+  cursor: pointer; width: 100%; text-align: center;
+  margin-top: 8px; transition: all .1s;
+}
+#lb-tag-toggle:hover { background: #fff; color: #111; }
+.lb-custom-chip {
+  font-size: 11px; padding: 4px 9px; border-radius: 4px;
+  background: #14532d; color: #86efac; border: 1px solid #166534;
+}
+
 /* AI search body */
 #ai-body { padding: 8px 12px 12px; flex-direction: column; gap: 8px; }
 #ai-body.open { display: flex; }
@@ -299,6 +348,13 @@ body {
   transition: all .1s;
 }
 #size-toggle button.active { background: #111; color: #fff; border-color: #111; }
+#log-link {
+  font-size: 10px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+#log-link:hover { color: var(--text); text-decoration: underline; }
 
 /* ── Main area ───────────────────────────────────────────────────── */
 #main { flex: 1; overflow-y: auto; background: var(--bg); }
@@ -517,6 +573,16 @@ body {
     </div>
   </div>
 
+  <!-- Parts & Accessories (both brands, hand-tagged) -->
+  <div class="facc" id="facc-parts" style="display:none">
+    <div class="facc-head" onclick="toggleFacc('facc-parts')">
+      <span class="facc-label">Accessories</span>
+      <span class="facc-summary none" id="sum-parts">All</span>
+      <span class="facc-arrow">›</span>
+    </div>
+    <div class="facc-body"><div id="f-parts" class="filter-group"></div></div>
+  </div>
+
   <!-- AI Search -->
   <div class="facc open" id="facc-ai">
     <div class="facc-head" onclick="toggleFacc('facc-ai')">
@@ -538,8 +604,29 @@ body {
     </div>
   </div>
 
+  <!-- Tag mode -->
+  <div class="facc" id="facc-tagmode">
+    <div class="facc-head" onclick="toggleFacc('facc-tagmode')">
+      <span class="facc-label">Tagging</span>
+      <span class="facc-summary none" id="sum-tagmode">Off</span>
+      <span class="facc-arrow">›</span>
+    </div>
+    <div class="facc-body col" id="tagmode-body">
+      <button class="tag-btn" id="tagmode-toggle" onclick="toggleTagMode()">Turn tag mode on</button>
+      <div id="tagmode-controls" style="display:none;flex-direction:column;gap:8px;">
+        <label for="tag-input">Tag to apply</label>
+        <input id="tag-input" value="accessories" oninput="onTagInput()">
+        <div id="tag-quick" class="filter-group"></div>
+        <div id="tag-pending">No unsaved changes</div>
+        <button class="tag-btn primary" onclick="saveTagPatch()">Download patch file</button>
+        <button class="tag-btn" onclick="clearPending()">Clear pending (after applying)</button>
+      </div>
+    </div>
+  </div>
+
   <div id="sidebar-footer">
     <span id="stats"></span>
+    <a id="log-link" href="update_log.html">Update log</a>
     <div id="size-toggle">
       <button onclick="setSize(180)" id="sz-s">S</button>
       <button onclick="setSize(240)" id="sz-m" class="active">M</button>
@@ -570,6 +657,11 @@ body {
       <div class="lb-sec-label">Keywords — click to filter</div>
       <div id="lb-kws"></div>
     </div>
+    <div id="lb-custom-sec" style="display:none">
+      <div class="lb-sec-label">Custom tags</div>
+      <div id="lb-custom" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      <button id="lb-tag-toggle" style="display:none" onclick="lbToggleTag()"></button>
+    </div>
     <div>
       <div class="lb-sec-label">File</div>
       <div id="lb-filename"></div>
@@ -583,6 +675,20 @@ let items = [], currentBrand = 'toyota', visibleItems = [], lbIndex = 0;
 let activeModels = new Set(), activeYears = new Set(), activeTags = new Set(), activeCategories = new Set();
 let lexusModels = new Set(), lexusType = null, lexusTrim = null, lexusCat = null, lexusPeopleTags = new Set();
 let activeKeywords = new Set(), kwMode = 'or', kwEntries = [];
+let activeCustom = new Set(), tagMode = false;
+
+// Hand-tagging: unsaved changes survive reloads via localStorage.
+function loadPending() {
+  try {
+    const p = JSON.parse(localStorage.getItem('rapp_pending_tags'));
+    if (p && p.toyota && p.lexus) return p;
+  } catch (e) {}
+  return { toyota: {}, lexus: {} };
+}
+function persistPending() {
+  try { localStorage.setItem('rapp_pending_tags', JSON.stringify(pendingTags)); } catch (e) {}
+}
+let pendingTags = loadPending();
 
 const MODEL_PALETTE = [
   '#e74c3c','#e67e22','#f39c12','#27ae60','#16a085',
@@ -625,12 +731,14 @@ function resetAll() {
   activeModels.clear(); activeYears.clear(); activeTags.clear(); activeCategories.clear();
   lexusModels.clear(); lexusType = null; lexusTrim = null; lexusCat = null; lexusPeopleTags.clear();
   activeKeywords.clear(); kwMode = 'or';
+  activeCustom.clear();
   document.getElementById('kw-or').classList.add('active');
   document.getElementById('kw-and').classList.remove('active');
   document.getElementById('kw-search').value = '';
   hideDropdown();
   if (currentBrand === 'lexus') rebuildLexusFilters();
   else rebuildToyotaFilters();
+  rebuildPartsFilter();
   buildKwCloud();
   render();
 }
@@ -645,6 +753,7 @@ function setBrand(brand) {
   activeModels.clear(); activeYears.clear(); activeTags.clear(); activeCategories.clear();
   lexusModels.clear(); lexusType = null; lexusTrim = null; lexusCat = null; lexusPeopleTags.clear();
   activeKeywords.clear(); kwMode = 'or';
+  activeCustom.clear();
   document.getElementById('kw-or').classList.add('active');
   document.getElementById('kw-and').classList.remove('active');
   document.getElementById('kw-search').value = '';
@@ -658,13 +767,18 @@ function loadManifest(brand) {
   fetch(path)
     .then(r => r.json())
     .then(data => {
-      items = Object.values(data).map(item => ({
+      items = Object.entries(data).map(([key, item]) => ({
+        key,
         ...item,
         models: item.models || (item.model ? [item.model] : ['unknown']),
         autoTags: autoTags(item),
+        // unsaved hand-tags take precedence over what the manifest has
+        custom: pendingTags[brand][key] ? [...pendingTags[brand][key]] : (item.custom || []),
       }));
       if (brand === 'lexus') rebuildLexusFilters();
       else rebuildToyotaFilters();
+      rebuildPartsFilter();
+      updatePendingCount();
       buildKwCloud();
       render();
     })
@@ -825,6 +939,127 @@ function makePill(label, set, key, container, allId, onUpdate) {
   container.appendChild(btn);
 }
 
+// ── Parts & Accessories filter (hand-applied custom tags) ─────────
+function rebuildPartsFilter() {
+  const all = [...new Set(items.flatMap(i => i.custom || []))].sort();
+  for (const t of [...activeCustom]) if (!all.includes(t)) activeCustom.delete(t);
+  const facc = document.getElementById('facc-parts'), fp = document.getElementById('f-parts');
+  fp.innerHTML = '';
+  syncTagQuick(all);
+  if (!all.length) { facc.style.display = 'none'; setSum('sum-parts', null); return; }
+  facc.style.display = '';
+  makeAllPill(fp, activeCustom, 'pill-all-parts', () => { setSum('sum-parts', null); render(); });
+  all.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (activeCustom.has(t) ? ' active' : '');
+    btn.textContent = cap(t);
+    btn.onclick = () => {
+      if (activeCustom.has(t)) activeCustom.delete(t); else activeCustom.add(t);
+      btn.classList.toggle('active', activeCustom.has(t));
+      syncAllPill('pill-all-parts', activeCustom);
+      setSum('sum-parts', sumFromSet(activeCustom));
+      render();
+    };
+    fp.appendChild(btn);
+  });
+  syncAllPill('pill-all-parts', activeCustom);
+  setSum('sum-parts', sumFromSet(activeCustom));
+}
+
+// ── Tag mode ──────────────────────────────────────────────────────
+function currentTagValue() { return (document.getElementById('tag-input').value || '').trim().toLowerCase(); }
+
+function toggleTagMode() {
+  tagMode = !tagMode;
+  document.getElementById('tagmode-toggle').textContent = tagMode ? 'Turn tag mode off' : 'Turn tag mode on';
+  document.getElementById('tagmode-controls').style.display = tagMode ? 'flex' : 'none';
+  updateTagModeSum();
+  render();
+  if (document.getElementById('lightbox').classList.contains('open')) showLbItem();
+}
+
+function updateTagModeSum() {
+  const el = document.getElementById('sum-tagmode');
+  el.textContent = tagMode ? 'On · ' + (currentTagValue() || '—') : 'Off';
+  el.className = 'facc-summary' + (tagMode ? '' : ' none');
+}
+
+function onTagInput() {
+  updateTagModeSum();
+  syncTagQuick([...new Set(items.flatMap(i => i.custom || []))].sort());
+  if (tagMode) render();
+}
+
+// quick-pick pills of tags already in use → fills the input
+function syncTagQuick(all) {
+  const q = document.getElementById('tag-quick');
+  q.innerHTML = '';
+  all.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (t === currentTagValue() ? ' active' : '');
+    btn.textContent = t;
+    btn.onclick = () => { document.getElementById('tag-input').value = t; onTagInput(); };
+    q.appendChild(btn);
+  });
+}
+
+function toggleItemTag(item) {
+  const tag = currentTagValue();
+  if (!tag) return;
+  item.custom = item.custom || [];
+  const i = item.custom.indexOf(tag);
+  if (i >= 0) item.custom.splice(i, 1); else item.custom.push(tag);
+  pendingTags[currentBrand][item.key] = [...item.custom];
+  persistPending();
+  updatePendingCount();
+  rebuildPartsFilter();
+  const badge = document.querySelector(`.tag-badge[data-key="${item.key}"]`);
+  if (badge) {
+    const on = item.custom.includes(tag);
+    badge.classList.toggle('on', on);
+    badge.textContent = (on ? '✓ ' : '+ ') + tag;
+  }
+}
+
+function updatePendingCount() {
+  const n = Object.keys(pendingTags.toyota).length + Object.keys(pendingTags.lexus).length;
+  document.getElementById('tag-pending').textContent =
+    n ? `${n} image${n === 1 ? '' : 's'} with unsaved tag changes` : 'No unsaved changes';
+}
+
+function saveTagPatch() {
+  const n = Object.keys(pendingTags.toyota).length + Object.keys(pendingTags.lexus).length;
+  if (!n) { alert('Nothing to save — no tag changes yet.'); return; }
+  const patch = {
+    generated: new Date().toISOString(),
+    apply_with: 'python3 apply_tags.py ~/Downloads/tag_patch.json',
+    toyota: pendingTags.toyota,
+    lexus: pendingTags.lexus,
+  };
+  const blob = new Blob([JSON.stringify(patch, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tag_patch.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function clearPending() {
+  const n = Object.keys(pendingTags.toyota).length + Object.keys(pendingTags.lexus).length;
+  if (!n) return;
+  if (!confirm('Clear the pending-changes list?\n\nOnly do this AFTER running apply_tags.py — otherwise these tags are lost on reload.')) return;
+  pendingTags = { toyota: {}, lexus: {} };
+  persistPending();
+  updatePendingCount();
+}
+
+function lbToggleTag() {
+  const item = visibleItems[lbIndex];
+  if (!item) return;
+  toggleItemTag(item);
+  showLbItem();
+}
+
 function autoTags(item) {
   const fn=(item.filename||'').toLowerCase(),url=(item.url||'').toLowerCase(),sub=item.subfolder||'',cat=(item.category||'').toLowerCase();
   const tags=[];
@@ -962,7 +1197,12 @@ function matchesKw(item){
   const kws=(item.keywords||[]).map(k=>k.toLowerCase());
   return kwMode==='or'?[...activeKeywords].some(k=>kws.includes(k)):[...activeKeywords].every(k=>kws.includes(k));
 }
-function matchesWithoutKw(item){return currentBrand==='lexus'?matchesLexus(item):matchesToyota(item);}
+function matchesCustom(item){
+  if(!activeCustom.size)return true;
+  const c=item.custom||[];
+  return [...activeCustom].some(t=>c.includes(t));
+}
+function matchesWithoutKw(item){return matchesCustom(item)&&(currentBrand==='lexus'?matchesLexus(item):matchesToyota(item));}
 function matches(item){return matchesKw(item)&&matchesWithoutKw(item);}
 
 // ── Render ────────────────────────────────────────────────────────
@@ -972,21 +1212,27 @@ function render(){
   const grid=document.getElementById('grid');
   grid.innerHTML='';
   if(!visibleItems.length){grid.innerHTML='<div class="empty">No images match.</div>';return;}
+  const tag=tagMode?currentTagValue():'';
   visibleItems.forEach((item,idx)=>{
     const kws=(item.keywords||[]);
     const color=modelColor(item.models[0]||'unknown');
     const year=(item.autoTags||[]).find(t=>/^MY\d{2}$/.test(t))||'';
     const modelLabel=item.models.join(' · ').toUpperCase().replace(/-/g,' ')+(year?' — '+year:'');
     const card=document.createElement('div'); card.className='card';
+    const hasTag=tag&&(item.custom||[]).includes(tag);
+    const badge=tag?`<button class="tag-badge${hasTag?' on':''}" data-key="${item.key}">${hasTag?'✓ ':'+ '}${tag}</button>`:'';
     card.innerHTML=`
       <div class="card-img-wrap">
         <img src="${thumbUrl(item)}" alt="${item.filename}" loading="lazy">
         <div class="card-overlay">${kws.map(k=>`<span class="card-kw">${k}</span>`).join('')}</div>
+        ${badge}
       </div>
       <div class="card-footer">
         <span class="model-name" style="background:${color}">${modelLabel}</span>
       </div>`;
     card.onclick=()=>openLightbox(idx);
+    const b=card.querySelector('.tag-badge');
+    if(b)b.onclick=e=>{e.stopPropagation();toggleItemTag(item);};
     grid.appendChild(card);
   });
 }
@@ -1008,6 +1254,13 @@ function showLbItem(){
     const safe=k.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `<span class="lb-kw" onclick="addKwFromLb('${safe}')">${k}</span>`;
   }).join('');
+  const cust=item.custom||[],tag=tagMode?currentTagValue():'';
+  document.getElementById('lb-custom-sec').style.display=(cust.length||tagMode)?'':'none';
+  document.getElementById('lb-custom').innerHTML=
+    cust.map(t=>`<span class="lb-custom-chip">${t}</span>`).join('')||'<span style="font-size:11px;color:#555;">none</span>';
+  const tbtn=document.getElementById('lb-tag-toggle');
+  if(tag){tbtn.style.display='block';tbtn.textContent=(cust.includes(tag)?'Remove "':'Add "')+tag+'"  (T)';}
+  else tbtn.style.display='none';
 }
 function addKwFromLb(kw){
   activeKeywords.add(kw);
@@ -1023,10 +1276,11 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight')lbNav(1);
   if(e.key==='ArrowLeft')lbNav(-1);
   if(e.key==='Escape')closeLightbox();
+  if((e.key==='t'||e.key==='T')&&tagMode)lbToggleTag();
 });
 
 loadManifest('toyota');
 </script>
-<script src="auth.js"></script>
+<!-- auth temporarily disabled, see auth.js <script src="auth.js"></script> -->
 </body>
 </html>
