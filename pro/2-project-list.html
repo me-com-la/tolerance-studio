@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Projects — Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="lib/db.js"></script>
+<script src="lib/functions.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --st-brief:#8a6d3b; --st-brief-wash:#f6efdf;
+  --st-generating:#1a4fa0; --st-generating-wash:#e8f0fe;
+  --st-checking:#7a4fa0; --st-checking-wash:#f1e8fb;
+  --st-compose:#b45309; --st-compose-wash:#fff3e0;
+  --st-review:#1f6f6b; --st-review-wash:#e2f1ef;
+  --st-delivered:#2e7d32; --st-delivered-wash:#e8f5e9;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.topbar-in{max-width:78rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:-.01em}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
+
+.wrap{max-width:78rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem}
+h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary{background:var(--ink);color:#fff}
+
+.toolbar{display:flex;gap:.6rem;margin-bottom:1.6rem;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:200px;max-width:22rem;padding:.6rem .9rem;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:.88rem;background:#fff}
+.filter-pill{font-size:.8rem;padding:.45rem .9rem;border-radius:100px;background:var(--chip);border:1px solid transparent;cursor:pointer;color:var(--ink);font-family:inherit}
+.filter-pill.active{background:var(--ink);color:#fff}
+
+.client-group{margin-bottom:2.4rem}
+.client-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.client-name{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.client-count{font-size:.78rem;color:var(--muted);background:var(--chip);padding:.15rem .55rem;border-radius:100px}
+
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.proj-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem 1.3rem;cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:.6rem;text-decoration:none;color:inherit}
+.proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(17,16,20,.08)}
+.proj-name{font-weight:600;font-size:1rem}
+.proj-product{font-size:.82rem;color:var(--muted)}
+.proj-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
+.proj-date{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+.status-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.7rem;font-weight:600;padding:.28rem .65rem;border-radius:100px;text-transform:uppercase;letter-spacing:.03em}
+.status-pill .sw{width:6px;height:6px;border-radius:50%}
+.s-brief{color:var(--st-brief);background:var(--st-brief-wash)}.s-brief .sw{background:var(--st-brief)}
+.s-generating{color:var(--st-generating);background:var(--st-generating-wash)}.s-generating .sw{background:var(--st-generating)}
+.s-checking{color:var(--st-checking);background:var(--st-checking-wash)}.s-checking .sw{background:var(--st-checking)}
+.s-compose{color:var(--st-compose);background:var(--st-compose-wash)}.s-compose .sw{background:var(--st-compose)}
+.s-review{color:var(--st-review);background:var(--st-review-wash)}.s-review .sw{background:var(--st-review)}
+.s-delivered{color:var(--st-delivered);background:var(--st-delivered-wash)}.s-delivered .sw{background:var(--st-delivered)}
+
+.new-card{border:1.5px dashed var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;font-weight:500;min-height:120px;background:transparent}
+.new-card:hover{color:var(--ink);border-color:var(--ink)}
+
+/* ---------- new-project modal ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(17,16,20,.45);display:none;align-items:flex-start;justify-content:center;z-index:100;overflow-y:auto;padding:3rem 1.5rem}
+.modal-backdrop.open{display:flex}
+.modal{background:#fff;border-radius:16px;max-width:34rem;width:100%;padding:1.8rem 1.9rem;box-shadow:0 10px 40px rgba(17,16,20,.2)}
+.modal h2{font-family:var(--font-display);font-size:1.3rem;font-weight:700;text-transform:uppercase;margin-bottom:.2rem}
+.modal .modal-sub{font-size:.82rem;color:var(--muted);margin-bottom:1.3rem;line-height:1.5}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.field label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.field input[type=text],.field input[type=date],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:#fff}
+.field textarea{resize:vertical;min-height:4rem}
+.field-hint{font-size:.76rem;color:var(--muted)}
+.file-drop{border:1.5px dashed var(--line-2);border-radius:10px;padding:1rem;text-align:center;font-size:.82rem;color:var(--muted);cursor:pointer}
+.file-drop:hover{border-color:var(--accent);color:var(--ink)}
+.file-list{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.file-chip{font-size:.75rem;background:var(--chip);padding:.3rem .6rem;border-radius:100px}
+.modal-actions{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1.4rem;align-items:center}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+.modal-status{font-size:.8rem;color:var(--muted)}
+.modal-status.busy{font-style:italic}
+.modal-status.err{color:#c62828;font-style:normal}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 3.0</div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Projects</h1>
+      <p class="page-sub" id="page-sub">Loading…</p>
+    </div>
+    <button class="btn btn-primary" onclick="openNewProject()">＋ New project</button>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search" placeholder="Search projects or clients…" oninput="render()">
+    <button class="filter-pill active" data-status="">All</button>
+    <button class="filter-pill" data-status="brief">Brief / Tags</button>
+    <button class="filter-pill" data-status="generating">Generating</button>
+    <button class="filter-pill" data-status="checking">Checking</button>
+    <button class="filter-pill" data-status="compose">Compose</button>
+    <button class="filter-pill" data-status="review">Review</button>
+    <button class="filter-pill" data-status="delivered">Delivered</button>
+  </div>
+
+  <div id="groups"></div>
+</div>
+
+<div class="modal-backdrop" id="new-project-backdrop">
+  <div class="modal">
+    <h2>New project</h2>
+    <p class="modal-sub">Same first step as the old tool's "1-Client-Assets": name the campaign and drop
+      in 1-3 real product photos before anything else — the checker compares every render against
+      whichever photo becomes the reference.</p>
+
+    <div class="field">
+      <label for="np-client">Client</label>
+      <select id="np-client" onchange="onClientSelectChange()"></select>
+    </div>
+    <div class="field" id="np-new-client-field" style="display:none">
+      <label for="np-new-client-name">New client name</label>
+      <input type="text" id="np-new-client-name" placeholder="e.g. Wingstudio">
+    </div>
+
+    <div class="field">
+      <label for="np-name">Campaign name</label>
+      <input type="text" id="np-name" placeholder="e.g. Summer Promotion">
+    </div>
+    <div class="field">
+      <label for="np-product">Product</label>
+      <input type="text" id="np-product" placeholder="e.g. PAWD Crate">
+    </div>
+    <div class="field">
+      <label for="np-description">Description</label>
+      <textarea id="np-description" placeholder="What's this campaign about — product, mood, key facts."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="np-files">Client reference photos</label>
+      <div class="file-drop" onclick="document.getElementById('np-files').click()">Click to choose 1-3 real product photos</div>
+      <input type="file" id="np-files" accept="image/*" multiple style="display:none" onchange="renderFileList()">
+      <div class="file-list" id="np-file-list"></div>
+      <span class="field-hint">The first photo becomes the checker's reference image (projects.reference_image).</span>
+    </div>
+
+    <div class="modal-actions">
+      <span class="modal-status" id="np-status"></span>
+      <button class="btn btn-ghost" onclick="closeNewProject()">Cancel</button>
+      <button class="btn btn-primary" id="np-submit-btn" onclick="submitNewProject()">Create project</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Status pill vocabulary matches projects.status exactly (see 001_init.sql's
+// check constraint): brief | generating | checking | compose | review | delivered.
+const STATUS_LABEL = {
+  brief: 'Brief / Tags', generating: 'Generating', checking: 'Checking',
+  compose: 'Compose', review: 'Review', delivered: 'Delivered',
+};
+let allProjects = [], activeStatus = '';
+
+document.querySelectorAll('.filter-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeStatus = btn.dataset.status;
+    render();
+  });
+});
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+function render(){
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const filtered = allProjects.filter(p => {
+    if (activeStatus && p.status !== activeStatus) return false;
+    if (!q) return true;
+    const clientName = (p.clients && p.clients.name) || '';
+    return p.name.toLowerCase().includes(q) || clientName.toLowerCase().includes(q);
+  });
+  const byClient = {};
+  for (const p of filtered) {
+    const cname = (p.clients && p.clients.name) || '(unknown client)';
+    (byClient[cname] = byClient[cname] || []).push(p);
+  }
+  const groups = document.getElementById('groups');
+  groups.innerHTML = Object.keys(byClient).sort().map(cname => {
+    const projs = byClient[cname];
+    const cards = projs.map(p => {
+      const status = p.status || 'brief';
+      return `<a class="proj-card" href="3-project-view.html?project=${esc(p.id)}">
+        <div class="proj-name">${esc(p.name)}</div>
+        <div class="proj-product">${esc(p.product || '')}</div>
+        <div class="proj-meta">
+          <span class="proj-date">started ${esc(p.started_on)}</span>
+          <span class="status-pill s-${status}"><span class="sw"></span>${esc(STATUS_LABEL[status] || status)}</span>
+        </div>
+      </a>`;
+    }).join('');
+    return `<div class="client-group">
+      <div class="client-head"><span class="client-name">${esc(cname)}</span><span class="client-count">${projs.length} project${projs.length===1?'':'s'}</span></div>
+      <div class="proj-grid">${cards}</div>
+    </div>`;
+  }).join('') || '<p style="color:var(--muted)">No projects match.</p>';
+  document.getElementById('page-sub').textContent =
+    `${filtered.length} project${filtered.length===1?'':'s'} across ${Object.keys(byClient).length} client${Object.keys(byClient).length===1?'':'s'}`;
+}
+
+// ---------- new-project modal ----------
+// Real step 0, missing until now: pick/create a client, name the campaign,
+// upload the real product reference photos (mirrors the old tool's
+// "1-Client-Assets" step). Every project in the database before this was
+// seeded by hand — this is the first real creation path.
+let cachedClients = [];
+let selectedFiles = [];
+
+async function openNewProject(){
+  cachedClients = await db.listClients();
+  const sel = document.getElementById('np-client');
+  sel.innerHTML = cachedClients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')
+    + '<option value="__new__">+ New client…</option>';
+  onClientSelectChange();
+  document.getElementById('np-new-client-field').style.display = 'none';
+  document.getElementById('np-new-client-name').value = '';
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-product').value = '';
+  document.getElementById('np-description').value = '';
+  document.getElementById('np-files').value = '';
+  selectedFiles = [];
+  renderFileList();
+  document.getElementById('np-status').textContent = '';
+  document.getElementById('new-project-backdrop').classList.add('open');
+}
+function closeNewProject(){
+  document.getElementById('new-project-backdrop').classList.remove('open');
+}
+function onClientSelectChange(){
+  const isNew = document.getElementById('np-client').value === '__new__';
+  document.getElementById('np-new-client-field').style.display = isNew ? 'flex' : 'none';
+}
+function renderFileList(){
+  selectedFiles = Array.from(document.getElementById('np-files').files || []);
+  document.getElementById('np-file-list').innerHTML =
+    selectedFiles.map(f => `<span class="file-chip">${esc(f.name)}</span>`).join('')
+    || '<span class="field-hint">no photos chosen yet</span>';
+}
+function slugify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+
+async function submitNewProject(){
+  const btn = document.getElementById('np-submit-btn');
+  const status = document.getElementById('np-status');
+  const name = document.getElementById('np-name').value.trim();
+  const product = document.getElementById('np-product').value.trim();
+  const description = document.getElementById('np-description').value.trim();
+  const clientSel = document.getElementById('np-client').value;
+  const newClientName = document.getElementById('np-new-client-name').value.trim();
+
+  if (!name){ status.textContent = 'campaign name required'; status.classList.add('err'); return; }
+  if (clientSel === '__new__' && !newClientName){ status.textContent = 'new client name required'; status.classList.add('err'); return; }
+  if (!selectedFiles.length){ status.textContent = 'add at least one reference photo first'; status.classList.add('err'); return; }
+
+  try {
+    const project = await withBusy(btn, status, 'creating…', async () => {
+      let clientId, clientSlug;
+      if (clientSel === '__new__') {
+        const c = await db.createClient(newClientName);
+        clientId = c.id; clientSlug = c.slug;
+      } else {
+        const c = cachedClients.find(c => c.id === clientSel);
+        clientId = c.id; clientSlug = c.slug;
+      }
+
+      const proj = await db.createProject({ clientId, name, product, description });
+
+      let referencePath = null;
+      for (const file of selectedFiles) {
+        const path = db.storagePath(clientSlug, proj.id, 'assets', file.name);
+        await db.uploadFile(path, file);
+        if (!referencePath) referencePath = path;
+      }
+      await db.saveReferenceImage(proj.id, referencePath);
+      return proj;
+    });
+    location.href = `4-tags-editor.html?project=${encodeURIComponent(project.id)}`;
+  } catch (e) { /* status element already shows the error via withBusy */ }
+}
+
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = '1-login.html'; return; }
+  try {
+    allProjects = await db.listProjects();
+  } catch (e) {
+    document.getElementById('page-sub').textContent = 'Failed to load: ' + e.message;
+    return;
+  }
+  render();
+})();
+</script>
+</body>
+</html>

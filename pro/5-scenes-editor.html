@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scenes — Blue — Kindtail | Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="lib/db.js"></script>
+<script src="lib/functions.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
+.crumbs a:hover{color:var(--ink)}
+.crumbs .cur{color:var(--ink);font-weight:600}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
+.rail-wrap{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
+.rail{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
+.rail-step{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
+.rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
+.rail-step.done .n{background:#2e7d32;color:#fff}
+.rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.rail-step.active .n{background:var(--accent);color:#fff}
+
+.wrap{max-width:60rem;margin:0 auto;padding:2rem 1.6rem 4rem}
+h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:1.6rem}
+
+.ai-bar{display:flex;align-items:center;gap:.7rem;background:#fff;border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.ai-bar .lbl{font-weight:600;font-size:.9rem}
+.ai-bar .desc{font-size:.8rem;color:var(--muted);flex:1;min-width:200px}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.9}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+.btn-ai{background:var(--accent);color:#fff}
+
+.settings-strip{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem 1.1rem;margin-bottom:1.4rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;font-size:.85rem}
+.settings-strip label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.settings-strip input{width:5rem;padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:var(--font-mono);font-size:.88rem;text-align:center}
+.settings-strip .hint{font-size:.78rem;color:var(--muted)}
+
+.scene-list{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.6rem}
+.scene{display:flex;align-items:flex-start;gap:.8rem;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.8rem 1rem}
+.scene .num{font-family:var(--font-mono);font-weight:600;color:var(--accent);min-width:1.6rem}
+.src-badge{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.18rem .5rem;border-radius:100px;white-space:nowrap;align-self:center}
+.src-badge.owner{color:var(--accent-ink);background:var(--accent-wash)}
+.src-badge.ai{color:var(--muted);background:var(--chip)}
+.scene input{flex:1;border:none;background:transparent;font-family:inherit;font-size:.92rem;padding:.2rem 0}
+.scene input:focus{outline:none;border-bottom:1px solid var(--accent)}
+.scene .rm{color:var(--muted);cursor:pointer;font-size:.85rem;padding:.2rem}
+.scene .rm:hover{color:#a33}
+.add-scene{display:flex;gap:.5rem}
+.add-scene input{flex:1;padding:.6rem .85rem;border:1px dashed var(--line-2);border-radius:10px;font-family:inherit;font-size:.85rem}
+
+.section-h{font-family:var(--font-display);font-size:1.1rem;font-weight:700;text-transform:uppercase;margin:1.8rem 0 .5rem}
+.sec-hint{font-family:var(--font-body);font-size:.76rem;font-weight:400;text-transform:none;color:var(--muted);margin-left:.6rem}
+.claude-panel{border:1.5px dashed var(--line-2);border-radius:var(--radius);padding:1rem 1.1rem;background:rgba(255,255,255,.5)}
+.lock{font-size:.82rem;color:var(--muted);background:#faf9f7;border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin-bottom:.8rem;line-height:1.6}
+.lock b{color:var(--ink)}
+table.shots{width:100%;border-collapse:collapse;font-size:.82rem}
+table.shots th{text-align:left;color:var(--muted);font-weight:500;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+table.shots td{padding:.5rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--muted);white-space:nowrap}
+
+.savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
+.ai-status{font-size:.8rem;color:var(--muted)}
+.ai-status.busy{font-style:italic}
+.ai-status.err{color:#c62828;font-style:normal}
+
+/* ---------- generation takeover: full-screen, blocks everything ---------- */
+#gen-overlay{position:fixed;inset:0;background:rgba(17,16,20,.88);display:none;align-items:center;justify-content:center;z-index:2000}
+#gen-overlay.open{display:flex}
+.gen-box{text-align:center;color:#fff;max-width:26rem;padding:2rem}
+.gen-spinner{width:44px;height:44px;border:3px solid rgba(255,255,255,.25);border-top-color:var(--accent);border-radius:50%;margin:0 auto 1.4rem;animation:gen-spin 1s linear infinite}
+@keyframes gen-spin{to{transform:rotate(360deg)}}
+.gen-title{font-family:var(--font-display);font-size:1.4rem;font-weight:700;text-transform:uppercase;margin-bottom:.5rem}
+.gen-note{font-size:.9rem;color:rgba(255,255,255,.85);line-height:1.6}
+.gen-warn{display:inline-block;margin-top:1rem;font-size:.8rem;font-weight:600;background:rgba(216,80,45,.25);border:1px solid var(--accent);border-radius:8px;padding:.5rem .9rem}
+.gen-err{margin-top:1rem;font-size:.85rem;color:#ffb4a0}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 3.0</div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Scenes</span></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="rail-wrap"><div class="rail">
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step active"><span class="n">2</span>Scenes</div>
+  <div class="rail-step" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">3</span>Check</div>
+  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Compose</div>
+  <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
+</div></div>
+
+<div class="wrap">
+  <h1>Scenes</h1>
+  <p class="sub" id="page-sub">Loading…</p>
+
+  <div class="settings-strip">
+    <label for="batch-size">Batch size</label>
+    <input type="number" id="batch-size" min="1" max="30" onchange="saveBatchSize()">
+    <span class="hint">how many images this campaign generates — one per scene below</span>
+  </div>
+
+  <div class="section-h">AI scenes <span class="sec-hint">re-drafting replaces only this section, topping up to the batch size</span></div>
+  <div class="claude-panel">
+    <div class="ai-bar" style="margin-bottom:1rem">
+      <span class="lbl">✨ AI draft</span>
+      <span class="desc" id="ai-draft-desc">Writes scenes using the brief tags + this client's previous scene lists.</span>
+      <span class="ai-status" id="ai-status"></span>
+      <button class="btn btn-ai" id="ai-draft-btn" onclick="aiDraftScenes()">Draft scenes</button>
+    </div>
+    <div class="scene-list" id="scene-list-ai"></div>
+  </div>
+
+  <div class="section-h" style="margin-top:2rem">Your scenes <span class="sec-hint">safe from re-drafts — the AI never touches these</span></div>
+  <div class="scene-list" id="scene-list-owner"></div>
+  <div class="add-scene">
+    <input id="new-scene-text" placeholder="+ add a scene, e.g. Rooftop terrace at golden hour, crate door open" onkeydown="if(event.key==='Enter')addScene()">
+    <button class="btn btn-ghost" onclick="addScene()">Add</button>
+  </div>
+
+  <div id="gen-overlay">
+    <div class="gen-box">
+      <div class="gen-spinner"></div>
+      <div class="gen-title" id="gen-title">Generating images</div>
+      <div class="gen-note" id="gen-note">Expanding your scenes into full prompts…</div>
+      <span class="gen-warn">Don't refresh or leave this page — you'll land on the Check page when everything's scored.</span>
+      <div class="gen-err" id="gen-err"></div>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <span class="ai-status" id="generate-status"></span>
+    <button class="btn btn-ghost" onclick="location.reload()">Cancel</button>
+    <button class="btn btn-ghost" onclick="saveScenes()">Save draft</button>
+    <button class="btn btn-primary" id="generate-btn" onclick="generateAndCheck()">Generate &amp; composite these scenes now →</button>
+  </div>
+</div>
+<script>
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+const projectId = qs('project');
+let project = null, scenes = [];
+
+// Each scene is {t: text, src: 'owner'|'ai'} (Owner call, 2026-07-06):
+// your lines and Claude's lines live in visually separate sections so an AI
+// re-draft can never overwrite something you wrote. Editing a Claude line
+// makes it yours (it moves up into your section once you leave the field).
+// Numbering runs continuously across both sections — generation uses all of
+// them as one batch, the split is a visual reference only.
+function renderScenes(){
+  // Keep the array physically grouped AI-first so numbering and the saved
+  // text read in the same top-to-bottom order the screen shows (AI section
+  // sits above Yours).
+  scenes = [...scenes.filter(s => s.src !== 'owner'), ...scenes.filter(s => s.src === 'owner')];
+  const aiCount = scenes.filter(s => s.src !== 'owner').length;
+
+  const row = (s, i) => `
+    <div class="scene"><span class="num">${i+1}</span>
+      <input value="${esc(s.t)}" oninput="scenes[${i}].t=this.value; markOwner(${i})" onchange="renderScenes()">
+      <span class="src-badge ${s.src}" id="src-badge-${i}">${s.src === 'owner' ? 'yours' : 'ai'}</span>
+      <span class="rm" onclick="removeScene(${i})">✕</span>
+    </div>`;
+
+  document.getElementById('scene-list-ai').innerHTML =
+    scenes.slice(0, aiCount).map((s,i) => row(s, i)).join('')
+    || '<p style="color:var(--muted);font-size:.85rem">Nothing drafted yet.</p>';
+  document.getElementById('scene-list-owner').innerHTML =
+    scenes.slice(aiCount).map((s,i) => row(s, aiCount + i)).join('')
+    || '<p style="color:var(--muted);font-size:.85rem">Nothing yet — add a scene below, or edit one of the AI\'s to make it yours.</p>';
+
+  // Batch size follows the scene list: one scene = one image, so
+  // adding/removing a description moves the number with it.
+  if (scenes.length) {
+    document.getElementById('batch-size').value = scenes.length;
+    updateDraftDesc(scenes.length);
+  }
+}
+// You touched it, you own it — badge flips immediately, but the row only
+// moves up into your section on blur (onchange -> renderScenes), so the
+// input doesn't jump out from under the cursor mid-word.
+function markOwner(i){
+  if (scenes[i].src === 'owner') return;
+  scenes[i].src = 'owner';
+  const badge = document.getElementById(`src-badge-${i}`);
+  if (badge){ badge.textContent = 'yours'; badge.className = 'src-badge owner'; }
+}
+function removeScene(i){ scenes.splice(i,1); renderScenes(); }
+function addScene(){
+  const inp = document.getElementById('new-scene-text');
+  const txt = (inp.value||'').trim();
+  if (!txt) return;
+  scenes.push({ t: txt, src: 'owner' });
+  inp.value = '';
+  renderScenes();
+}
+// Persisted as numbered lines; owner-written lines carry a leading "*"
+// marker after the number (e.g. "3. * Rooftop terrace…"). expand-shots
+// strips both the numbering and the marker before prompting, so the "*"
+// never leaks into a generation prompt.
+function scenesText(){
+  return scenes.map((s,i)=>`${i+1}. ${s.src === 'owner' ? '* ' : ''}${s.t}`).join('\n');
+}
+function parseScenesText(text){
+  return (text || '').split('\n')
+    .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim())
+    .filter(Boolean)
+    .map(l => l.startsWith('*')
+      ? { t: l.replace(/^\*\s*/, ''), src: 'owner' }
+      : { t: l, src: 'ai' });
+}
+async function saveScenes(){
+  await db.saveScenes(projectId, scenesText());
+  alert('scenes saved');
+}
+function updateDraftDesc(n){
+  document.getElementById('ai-draft-desc').textContent =
+    `Writes ${n} scenes (batch size above) using the brief tags + this client's previous scene lists.`;
+}
+async function saveBatchSize(){
+  const n = Math.max(1, Math.min(30, parseInt(document.getElementById('batch-size').value, 10) || 8));
+  document.getElementById('batch-size').value = n;
+  const settings = Object.assign({}, project.settings || {}, { batch_size: n });
+  await db.saveSettings(projectId, settings);
+  project.settings = settings;
+  updateDraftDesc(n);
+}
+// The one CTA runs the whole invisible middle of the pipeline (Owner call,
+// 2026-07-06: the shot-expansion machinery is internal, users think in
+// scenes): save scenes → expand-shots (turns each scene into a full locked
+// prompt, silently) → generate (Higgsfield, which also auto-runs the
+// checker per shot) → land on the Check page with everything scored.
+// Full-screen takeover while the batch runs (Owner call, 2026-07-06): the
+// whole page locks behind an overlay with a "don't refresh or leave" note,
+// a beforeunload guard backs that up, and you land on Check only once
+// generation AND checking are done (the checker runs inside `generate`).
+let generating = false;
+window.addEventListener('beforeunload', (e) => {
+  if (generating) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// ---------- pixel-lock compositing (local service, NOT a Supabase Edge Function) ----------
+// Why this runs from the browser instead of calling a `generate` Edge
+// Function like the old (broken) version did: the real method's snap-back
+// step needs OpenCV multi-scale masked template matching, which only exists
+// as a local Python process (tools/pixel-lock/service.py) — Supabase Edge
+// Functions run Deno and can't reach localhost, and Deno has no OpenCV
+// equivalent worth trusting for this. See that file's header and
+// Obsidian Vault/2-Projects/Tolerance Studio/Pixel-Lock Pipeline.md for the
+// full method. Start it with `python3 tools/pixel-lock/service.py` before
+// using this button. callLocalService() (lib/functions.js) is the same
+// local-service caller ai-draft/expand-shots use below, for the same reason
+// (this Supabase project's Edge Functions gateway currently rejects the
+// browser's own login session JWT — see lib/functions.js's header).
+
+function blobToBase64(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.slice(reader.result.indexOf(',') + 1));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+function base64ToBlob(b64, mime){
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+// Finds the project's product cutout (transparent-background PNG of the
+// real product) in assets/ by filename — same convention as
+// clients/<Client>/products/<Product>/originals/*-cutout.png. If no such
+// file exists, falls back to auto-removing the background from the
+// project's reference photo (projects.reference_image, uploaded at project
+// creation) via the local pixel-lock service's rembg-backed /remove-background
+// endpoint — same service the compositing step already depends on.
+async function findCutoutBase64(clientSlug, note){
+  const files = await db.listFiles(`${clientSlug}/${projectId}/assets`);
+  const cutoutFile = (files || []).find(f => f.id && /cutout/i.test(f.name));
+  if (cutoutFile) {
+    const url = await db.getSignedUrl(`${clientSlug}/${projectId}/assets/${cutoutFile.name}`);
+    const blob = await (await fetch(url)).blob();
+    return blobToBase64(blob);
+  }
+
+  if (!project.reference_image) {
+    throw new Error('no product cutout found in this project\'s assets/ folder (need a filename containing "cutout"), and no reference photo to auto-cut from either. Upload one of the two first.');
+  }
+  if (note) note.textContent = 'No cutout uploaded — removing the background from the reference photo automatically…';
+  const refUrl = await db.getSignedUrl(project.reference_image);
+  const refBlob = await (await fetch(refUrl)).blob();
+  const refB64 = await blobToBase64(refBlob);
+  const { cutout_b64 } = await callLocalService('remove-background', { image_b64: refB64 });
+  return cutout_b64;
+}
+
+// Builds the proven "keep the product exactly, replace only the
+// background" instruction (verbatim skeleton from Pixel-Lock Pipeline.md),
+// filled in with this project's must-weighted product tags (so the model
+// knows what it's preserving, in addition to seeing it in the reference
+// image) and the shot's scene description.
+function pixelLockPrompt(project, shots, item){
+  const mustTags = (project.tags?.product || []).filter(t => t.w === 'must').map(t => t.t);
+  const productDesc = mustTags.length ? mustTags.join(', ') : (project.product || project.name);
+  const sceneDesc = [shots.style_lock, item.prompt].map(s => (s || '').trim()).filter(Boolean).join(' ');
+  return (
+    `Keep the ${productDesc} EXACTLY as it is in the input image — identical position in the frame, ` +
+    `identical size, identical angle, identical materials and colors, do not redraw or move it. ` +
+    `Replace only the plain grey background: ${sceneDesc} ` +
+    `Add a soft natural contact shadow under the product consistent with the scene's light direction. ` +
+    `The product must remain pixel-identical to the input, and the scene must be visible through any ` +
+    `see-through cutout areas on it.`
+  );
+}
+
+async function compositeOneShot(cutoutB64, prompt){
+  return callLocalService('composite', { cutout_b64: cutoutB64, prompt });
+}
+
+async function generateAndCheck(){
+  if (!scenes.length){ alert('add at least one scene first'); return; }
+  const overlay = document.getElementById('gen-overlay');
+  const note = document.getElementById('gen-note');
+  const errEl = document.getElementById('gen-err');
+  errEl.textContent = '';
+  generating = true;
+  overlay.classList.add('open');
+  try {
+    await db.saveScenes(projectId, scenesText());
+    await saveBatchSize();
+
+    note.textContent = 'Expanding your scenes into full prompts…';
+    await callLocalService('expand-shots', { projectId });
+
+    note.textContent = 'Loading your product cutout…';
+    const clientSlug = project.clients.slug;
+    const cutoutB64 = await findCutoutBase64(clientSlug, note);
+
+    const freshProject = await db.getProject(projectId);
+    const shots = freshProject.shots;
+    const failed = [];
+    for (let i = 0; i < shots.items.length; i++) {
+      const item = shots.items[i];
+      note.textContent = `Compositing image ${i + 1} of ${shots.items.length} — AI background + your real product, no regeneration…`;
+      try {
+        const prompt = pixelLockPrompt(freshProject, shots, item);
+        const result = await compositeOneShot(cutoutB64, prompt);
+        const filename = /\.[a-z0-9]+$/i.test(item.file) ? item.file : `${item.file}.png`;
+        const path = db.storagePath(clientSlug, projectId, 'renders', filename);
+        await db.uploadFile(path, base64ToBlob(result.composite_b64, 'image/png'));
+        await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render' });
+      } catch (e) {
+        failed.push(`${item.file}: ${e.message || String(e)}`);
+      }
+    }
+    await db.saveStatus(projectId, 'checking');
+    await db.createRunLogEntry(projectId, 'generate',
+      `${shots.items.length - failed.length}/${shots.items.length} shots composited via pixel-lock (real product cutout + AI-generated scene, snap-back verified).` +
+      (failed.length ? ` Failed: ${failed.join('; ')}` : ''));
+
+    if (failed.length) throw new Error(`${failed.length} shot(s) failed:\n${failed.join('\n')}`);
+
+    generating = false;
+    location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
+  } catch (e) {
+    generating = false;
+    errEl.innerHTML = `${esc(e.message || String(e))}<br><br><button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="document.getElementById('gen-overlay').classList.remove('open')">Close</button>`;
+  }
+}
+async function aiDraftScenes(){
+  const btn = document.getElementById('ai-draft-btn');
+  const status = document.getElementById('ai-status');
+  // Send the live input value, not the stored setting — a just-typed batch
+  // size is honored even if its onchange save hasn't fired/landed yet. Also
+  // persist it so the two can't drift.
+  await saveBatchSize();
+  const n = parseInt(document.getElementById('batch-size').value, 10) || 8;
+  // Your lines survive a re-draft: only Claude's lines get replaced, and
+  // the draft tops the list up to the batch size around what you wrote.
+  const ownerScenes = scenes.filter(s => s.src === 'owner');
+  const draftCount = n - ownerScenes.length;
+  if (draftCount < 1){
+    status.textContent = `batch size (${n}) is already filled by your own scenes — raise it to draft more`;
+    status.classList.add('err');
+    return;
+  }
+  try {
+    const result = await withBusy(btn, status, 'drafting…', () =>
+      callLocalService('ai-draft', { projectId, kind: 'scenes', batchSize: draftCount }));
+    const drafted = (result.text || '').split('\n')
+      .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean)
+      .slice(0, draftCount)
+      .map(t => ({ t, src: 'ai' }));
+    scenes = [...drafted, ...ownerScenes];
+    renderScenes();
+  } catch (e) { /* status element already shows the error via withBusy */ }
+}
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = '1-login.html'; return; }
+  if (!projectId) { document.getElementById('page-sub').textContent = 'No project specified'; return; }
+  project = await db.getProject(projectId);
+  const clientName = project.clients ? project.clients.name : '';
+  document.title = `Scenes — ${project.name} — ${clientName} | Tolerance Studio`;
+  document.getElementById('crumb-proj').textContent = project.name;
+  document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
+  document.getElementById('page-sub').textContent =
+    `${clientName} — ${project.name}. One scene = one image. Keep each line short — the product and style facts from your brief tags get combined with every scene automatically, so don't repeat them here.`;
+  // Settings strip pared down to just batch_size (Owner call, 2026-07-06):
+  // generation_aspect/master_size/model stay in projects.settings with their
+  // defaults (the generate function still reads generation_aspect), they just
+  // don't earn UI space here.
+  const settings = project.settings || {};
+  const batchSize = settings.batch_size ?? 8;
+  document.getElementById('batch-size').value = batchSize;
+  updateDraftDesc(batchSize);
+  scenes = parseScenesText(project.scenes);
+  renderScenes();
+}
+init();
+</script>
+</body>
+</html>
