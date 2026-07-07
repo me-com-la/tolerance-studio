@@ -58,6 +58,9 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
 .proj-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem 1.3rem;cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:.6rem;text-decoration:none;color:inherit}
 .proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(17,16,20,.08)}
+.proj-thumb{width:100%;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--chip);margin:-.2rem -.1rem .1rem}
+.proj-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.proj-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.4rem;opacity:.5}
 .proj-name{font-weight:600;font-size:1rem}
 .proj-product{font-size:.82rem;color:var(--muted)}
 .proj-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
@@ -178,6 +181,16 @@ const STATUS_LABEL = {
   compose: 'Compose', review: 'Review', delivered: 'Delivered',
 };
 let allProjects = [], activeStatus = '';
+// Signed URLs for each project's reference_image, resolved once when the
+// list loads (not per-render — render() fires on every search keystroke,
+// see the search input's oninput below, so it has to stay synchronous).
+const thumbCache = {};
+async function resolveThumbnails(projs){
+  await Promise.all(projs.filter(p => p.reference_image && !(p.id in thumbCache)).map(async p => {
+    try { thumbCache[p.id] = await db.getSignedUrl(p.reference_image); }
+    catch (e) { thumbCache[p.id] = ''; }
+  }));
+}
 
 document.querySelectorAll('.filter-pill').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -208,7 +221,12 @@ function render(){
     const projs = byClient[cname];
     const cards = projs.map(p => {
       const status = p.status || 'brief';
+      const thumbUrl = thumbCache[p.id];
+      const thumb = thumbUrl
+        ? `<div class="proj-thumb"><img src="${esc(thumbUrl)}" loading="lazy"></div>`
+        : `<div class="proj-thumb empty">◇</div>`;
       return `<a class="proj-card" href="3-project-view.html?project=${esc(p.id)}">
+        ${thumb}
         <div class="proj-name">${esc(p.name)}</div>
         <div class="proj-product">${esc(p.product || '')}</div>
         <div class="proj-meta">
@@ -314,6 +332,7 @@ async function submitNewProject(){
     document.getElementById('page-sub').textContent = 'Failed to load: ' + e.message;
     return;
   }
+  await resolveThumbnails(allProjects);
   render();
 })();
 </script>
