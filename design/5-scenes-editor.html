@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scenes — Blue — Kindtail | Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
+.crumbs a:hover{color:var(--ink)}
+.crumbs .cur{color:var(--ink);font-weight:600}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
+.rail-wrap{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
+.rail{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
+.rail-step{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
+.rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
+.rail-step.done .n{background:#2e7d32;color:#fff}
+.rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.rail-step.active .n{background:var(--accent);color:#fff}
+
+.wrap{max-width:60rem;margin:0 auto;padding:2rem 1.6rem 4rem}
+h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:1.6rem}
+
+.ai-bar{display:flex;align-items:center;gap:.7rem;background:#fff;border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.ai-bar .lbl{font-weight:600;font-size:.9rem}
+.ai-bar .desc{font-size:.8rem;color:var(--muted);flex:1;min-width:200px}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.9}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+.btn-ai{background:var(--accent);color:#fff}
+
+.settings-strip{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem 1.1rem;margin-bottom:1.4rem;display:flex;gap:1.6rem;flex-wrap:wrap;font-size:.82rem}
+.settings-strip .kv b{font-family:var(--font-mono);color:var(--muted);font-weight:500}
+
+.scene-list{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.6rem}
+.scene{display:flex;align-items:flex-start;gap:.8rem;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.8rem 1rem}
+.scene .num{font-family:var(--font-mono);font-weight:600;color:var(--accent);min-width:1.6rem}
+.scene input{flex:1;border:none;background:transparent;font-family:inherit;font-size:.92rem;padding:.2rem 0}
+.scene input:focus{outline:none;border-bottom:1px solid var(--accent)}
+.scene .rm{color:var(--muted);cursor:pointer;font-size:.85rem;padding:.2rem}
+.scene .rm:hover{color:#a33}
+.add-scene{display:flex;gap:.5rem}
+.add-scene input{flex:1;padding:.6rem .85rem;border:1px dashed var(--line-2);border-radius:10px;font-family:inherit;font-size:.85rem}
+
+.section-h{font-family:var(--font-display);font-size:1.1rem;font-weight:700;text-transform:uppercase;margin:1.8rem 0 .5rem}
+.expand-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem 1.3rem}
+.lock{font-size:.82rem;color:var(--muted);background:#faf9f7;border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin-bottom:.8rem;line-height:1.6}
+.lock b{color:var(--ink)}
+table.shots{width:100%;border-collapse:collapse;font-size:.82rem}
+table.shots th{text-align:left;color:var(--muted);font-weight:500;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+table.shots td{padding:.5rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--muted);white-space:nowrap}
+
+.savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;justify-content:flex-end;gap:.6rem}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 1.0</div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="3-project-view.html">Blue</a><span>/</span><span class="cur">Scenes</span></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="rail-wrap"><div class="rail">
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html'"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step active"><span class="n">2</span>Scenes</div>
+  <div class="rail-step"><span class="n">3</span>Generate</div>
+  <div class="rail-step" onclick="location.href='6-checker-gallery.html'"><span class="n">4</span>Check</div>
+  <div class="rail-step"><span class="n">5</span>Compose</div>
+  <div class="rail-step" onclick="location.href='7-review-gallery.html'"><span class="n">6</span>Review</div>
+  <div class="rail-step"><span class="n">7</span>Deliver</div>
+</div></div>
+
+<div class="wrap">
+  <h1>Scenes</h1>
+  <p class="sub">Kindtail — Blue. Edit the short-phrase scene list freely — the product and creative-constant tags from step 1 combine with each scene when shots are expanded, so don't repeat them here.</p>
+
+  <div class="settings-strip">
+    <span class="kv"><b>batch_size</b> 10</span>
+    <span class="kv"><b>generation_aspect</b> 4:3</span>
+    <span class="kv"><b>master_size</b> 2000x1500</span>
+    <span class="kv"><b>model</b> marketing_studio_image</span>
+  </div>
+
+  <div class="ai-bar">
+    <span class="lbl">✨ AI draft</span>
+    <span class="desc">Writes 10 scenes (batch_size above) using the brief tags + this client's previous scene lists.</span>
+    <button class="btn btn-ai">Ask Claude to draft scenes</button>
+  </div>
+
+  <div class="scene-list">
+    <div class="scene"><span class="num">1</span><input value="Sunlit minimalist living room, floor-to-ceiling windows, crate door open, angle of crate front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">2</span><input value="Designer walk-in closet, curated wardrobe backdrop, crate door open, angle of crate front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">3</span><input value="Marble-floored entryway, statement mirror and console, crate door open, angle of crate front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">4</span><input value="Sleek loft bedroom, oversized art leaning on wall, crate door open, angle of crate front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">5</span><input value="Boutique-style reading nook, velvet armchair corner, crate door open, angle of crate front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">6</span><input value="Covered patio lounge, skyline softly blurred, crate door open, angle of 3/4 right front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">7</span><input value="Modern kitchen island, morning light pooling on counter, crate door open, angle of crate 3/4 right front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">8</span><input value="Gallery-white hallway, single sculptural bench, crate door open, angle of crate 3/4 right front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">9</span><input value="Plush living room rug, low designer coffee table, crate door open, angle of crate 3/4 right front"><span class="rm">✕</span></div>
+    <div class="scene"><span class="num">10</span><input value="Sunroom conservatory, curated plants and woven textures, crate door open, angle of crate 3/4 right front"><span class="rm">✕</span></div>
+  </div>
+  <div class="add-scene">
+    <input placeholder="+ add a scene, e.g. Rooftop terrace at golden hour, crate door open">
+    <button class="btn btn-ghost">Add</button>
+  </div>
+
+  <div class="section-h">Expanded shots (auto)</div>
+  <div class="expand-panel">
+    <div class="lock"><b>Product lock</b> (prepended to every prompt): a kindtail folding dog crate, rectangular box, dusty slate-blue matte plastic, honeycomb lattice on every panel, door always open, shown front or 3/4-right only. <b>Style lock:</b> fashion-editorial lifestyle photography, slate blue as anchor color, soft window daylight, dog + color-matched accessory in frame.</div>
+    <table class="shots">
+      <tr><th>#</th><th>File</th><th>Motif</th><th>Prompt (after locks)</th></tr>
+      <tr><td>1</td><td class="file">crate-blue-living-01</td><td>Sunlit living room</td><td>The crate beside a floor-to-ceiling window in a sunlit minimalist living room, soft slate-blue linen sofa nearby, a husky mix lying inside the crate with a steel-blue collar, bright natural daylight pooling across a pale oak floor, shot straight-on from the front with the door open.</td></tr>
+      <tr><td>2</td><td class="file">crate-blue-closet-02</td><td>Designer closet</td><td>The crate in a designer walk-in closet, blue and neutral-toned garments visible on soft-focus racks behind, a small terrier sitting just outside the open door wearing a slate-blue bow, warm editorial light, shot straight-on from the front.</td></tr>
+      <tr><td>3</td><td class="file">crate-blue-entry-03</td><td>Marble entryway</td><td>The crate beside a marble-floored entryway console, a round mirror with a brushed steel-blue frame softly reflecting light above, a woman's hand in a slate-blue sleeve resting on the crate's top panel, dog stepping in from the open door, shot straight-on from the front.</td></tr>
+    </table>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:.7rem">…7 more rows, plus the run log — this table is auto-written, edit the Scenes list above and ask Claude to "regenerate step 2" instead of hand-editing rows.</p>
+    <div style="margin-top:.8rem"><button class="btn btn-ai">⟳ Expand shots for changed scenes</button></div>
+  </div>
+
+  <div class="savebar">
+    <button class="btn btn-ghost">Cancel</button>
+    <button class="btn btn-primary">Save scenes</button>
+  </div>
+</div>
+</body>
+</html>

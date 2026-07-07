@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Blue — Kindtail | Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="lib/db.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --st-checking:#7a4fa0; --st-checking-wash:#f1e8fb;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
+.crumbs a:hover{color:var(--ink)}
+.crumbs .cur{color:var(--ink);font-weight:600}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
+
+.projhead{background:#fff;border-bottom:1px solid var(--line)}
+.projhead-in{max-width:82rem;margin:0 auto;padding:1.4rem 1.6rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem}
+h1{font-family:var(--font-display);font-size:1.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.projhead .sub{font-size:.88rem;color:var(--muted);margin-top:.25rem}
+.status-pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:600;padding:.35rem .8rem;border-radius:100px;text-transform:uppercase;letter-spacing:.03em;color:var(--st-checking);background:var(--st-checking-wash)}
+.status-pill .sw{width:6px;height:6px;border-radius:50%;background:var(--st-checking)}
+
+.rail-wrap{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
+.rail{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
+.rail-step{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
+.rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
+.rail-step.done .n{background:#2e7d32;color:#fff}
+.rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.rail-step.active .n{background:var(--accent);color:#fff}
+.rail-step:hover{color:var(--ink)}
+
+.wrap{max-width:82rem;margin:0 auto;padding:2rem 1.6rem 4rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem 1.7rem;margin-bottom:1.4rem}
+.panel h2{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase;margin-bottom:.4rem}
+.panel .hint{font-size:.85rem;color:var(--muted);margin-bottom:1rem;max-width:60ch;line-height:1.6}
+
+.grid-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.8rem}
+.thumb{border-radius:10px;overflow:hidden;background:#eee;aspect-ratio:4/3;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;font-size:.68rem;padding:.4rem .5rem;font-family:var(--font-mono)}
+
+.tally{display:flex;gap:1.6rem;flex-wrap:wrap;margin-top:.6rem}
+.tally-item{display:flex;flex-direction:column}
+.tally-num{font-family:var(--font-mono);font-size:1.6rem;font-weight:600}
+.tally-label{font-size:.78rem;color:var(--muted)}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.65rem 1.2rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.btn:hover{opacity:.9}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+
+.summary-row{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+@media(max-width:800px){.summary-row{grid-template-columns:1fr}}
+.tag-preview-mini{font-family:var(--font-mono);font-size:.75rem;line-height:1.9;background:#faf9f7;border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem}
+.tag-preview-mini b{color:#c62828}
+.tag-preview-mini b.should{color:#e65100}
+.tag-preview-mini b.flavor{color:#5f5e5a}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 2.0</div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><span id="crumb-client"></span><span>/</span><span class="cur" id="crumb-proj"></span></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="projhead"><div class="projhead-in">
+  <div>
+    <h1 id="proj-name">…</h1>
+    <div class="sub" id="proj-sub"></div>
+  </div>
+  <span class="status-pill" id="status-pill"><span class="sw"></span><span id="status-label"></span></span>
+</div></div>
+
+<div class="rail-wrap"><div class="rail" id="rail"></div></div>
+
+<div class="wrap">
+  <div class="summary-row">
+    <div class="panel">
+      <h2>Brief snapshot</h2>
+      <p class="hint">The weighted tags driving this batch's prompts and checker severity. Full editor in step 1.</p>
+      <div class="tag-preview-mini" id="tag-preview">(no tags yet)</div>
+      <div style="margin-top:1rem"><a class="btn btn-ghost" id="edit-tags-link" href="#">Edit tags →</a></div>
+    </div>
+
+    <div class="panel">
+      <h2>Checker status</h2>
+      <p class="hint">Stage 1 + 2 vision check against the weighted tags above. Your override on any image is final.</p>
+      <div class="tally">
+        <div class="tally-item"><span class="tally-num" id="tally-approved">0</span><span class="tally-label">approved</span></div>
+        <div class="tally-item"><span class="tally-num" id="tally-rejected">0</span><span class="tally-label">not approved</span></div>
+        <div class="tally-item"><span class="tally-num" id="tally-flagged">0</span><span class="tally-label">flagged for review</span></div>
+      </div>
+      <div style="margin-top:1rem"><a class="btn btn-primary" id="checker-link" href="#">Open checker gallery →</a></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Latest renders</h2>
+    <p class="hint" id="renders-hint"></p>
+    <div class="grid-mini" id="renders-grid"></div>
+  </div>
+</div>
+<script>
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+const projectId = qs('project');
+const STATUS_LABEL = { brief:'Brief / Tags', generating:'Generating', checking:'Checking', compose:'Compose', review:'Review', delivered:'Delivered' };
+// No separate "Generate" step — generation isn't a page, it's the action the
+// Scenes editor's CTA kicks off (ask Boss/Claude to run the image-gen batch),
+// which lands you on Check once renders exist. Matches the real pipeline
+// (control.html's "2-Image-Creation" covers scenes + renders as one step).
+// No separate "Deliver" step either — control.html never had one, the
+// "6-Client-Review" folder was always both the review view AND the zip
+// download source. Review's "Download all as zip" CTA IS delivery.
+const RAIL_STEPS = [
+  {key:'tags', n:1, label:'Brief / Tags', href:'4-tags-editor.html'},
+  {key:'scenes', n:2, label:'Scenes', href:'5-scenes-editor.html'},
+  {key:'check', n:3, label:'Check', href:'6-checker-gallery.html'},
+  {key:'compose', n:4, label:'Compose', href:'8-compose.html'},
+  {key:'review', n:5, label:'Review', href:'7-review-gallery.html'},
+];
+// "furthest incomplete step" mapping from project status, per design-notes.md.
+// 'generating' already routes to the Check step — that's where the Scenes
+// page's "Generate & check" CTA sends you while the batch runs. 'delivered'
+// maps one past the last index so every step shows done/checkmarked — there's
+// nothing left to do once the zip's been sent.
+const STATUS_STEP_INDEX = { brief:0, generating:2, checking:2, compose:3, review:4, delivered:5 };
+
+function tagPreviewHtml(tags){
+  if (!tags || (!tags.product?.length && !tags.creative?.length)) return '(no tags yet — start in the tags editor)';
+  const all = [...(tags.product||[]), ...(tags.creative||[])];
+  const line = w => all.filter(t=>t.w===w).map(t=>esc(t.t)).join(' · ') || '—';
+  return `<b>ALWAYS:</b> ${line('must')}<br><b class="should">PREFER:</b> ${line('should')}<br><b class="flavor">DETAIL:</b> ${line('flavor')}`;
+}
+
+function renderRail(status){
+  const activeIdx = STATUS_STEP_INDEX[status] ?? 0;
+  document.getElementById('rail').innerHTML = RAIL_STEPS.map((s,i) => {
+    const cls = i < activeIdx ? 'done' : i === activeIdx ? 'active' : '';
+    const n = i < activeIdx ? '✓' : s.n;
+    const click = s.href ? ` onclick="location.href='${s.href}?project=${encodeURIComponent(projectId)}'"` : '';
+    return `<div class="rail-step ${cls}"${click}><span class="n">${n}</span>${s.label}</div>`;
+  }).join('');
+}
+
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = '1-login.html'; return; }
+  if (!projectId) { document.getElementById('proj-name').textContent = 'No project specified'; return; }
+
+  const project = await db.getProject(projectId);
+  const clientName = project.clients ? project.clients.name : '';
+  document.title = `${project.name} — ${clientName} | Tolerance Studio`;
+  document.getElementById('crumb-client').textContent = clientName;
+  document.getElementById('crumb-proj').textContent = project.name;
+  document.getElementById('proj-name').textContent = project.name;
+  document.getElementById('proj-sub').textContent = `${clientName} · ${project.product || ''} · started ${project.started_on}`;
+  const status = project.status || 'brief';
+  document.getElementById('status-pill').className = 'status-pill s-' + status;
+  document.getElementById('status-label').textContent = STATUS_LABEL[status] || status;
+  document.getElementById('tag-preview').innerHTML = tagPreviewHtml(project.tags);
+  document.getElementById('edit-tags-link').href = `4-tags-editor.html?project=${encodeURIComponent(projectId)}`;
+  document.getElementById('checker-link').href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
+  renderRail(status);
+
+  const renders = await db.listRenders(projectId);
+  let approved = 0, rejected = 0, flagged = 0;
+  for (const r of renders) {
+    const v = r.human_override || r.verdict;
+    if (v === 'approved') approved++;
+    else if (v === 'rejected') rejected++;
+    if (r.checker && r.checker.stage2_verdict === 'HUMAN_REVIEW' && !r.human_override) flagged++;
+  }
+  document.getElementById('tally-approved').textContent = approved;
+  document.getElementById('tally-rejected').textContent = rejected;
+  document.getElementById('tally-flagged').textContent = flagged;
+  document.getElementById('renders-hint').textContent = `${renders.length} renders in this batch.`;
+  document.getElementById('renders-grid').innerHTML = renders.slice(0, 10).map(r => {
+    const url = r.storage_path ? sb.storage.from('projects').getPublicUrl(r.storage_path).data.publicUrl : '';
+    return `<div class="thumb"><img src="${esc(url)}"><div class="cap">${esc(r.filename)}</div></div>`;
+  }).join('') || '<p style="color:var(--muted);font-size:.85rem">No renders uploaded yet.</p>';
+}
+init();
+</script>
+</body>
+</html>

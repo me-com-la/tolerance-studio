@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tags — Blue — Kindtail | Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*,*::before,*::as{margin:0}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
+.crumbs a:hover{color:var(--ink)}
+.crumbs .cur{color:var(--ink);font-weight:600}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
+.rail-wrap{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
+.rail{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
+.rail-step{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
+.rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
+.rail-step.done .n{background:#2e7d32;color:#fff}
+.rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.rail-step.active .n{background:var(--accent);color:#fff}
+
+.wrap{max-width:60rem;margin:0 auto;padding:2rem 1.6rem 4rem}
+h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:1.6rem}
+
+.ai-bar{display:flex;align-items:center;gap:.7rem;background:#fff;border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1.6rem}
+.ai-bar .lbl{font-weight:600;font-size:.9rem}
+.ai-bar .desc{font-size:.8rem;color:var(--muted);flex:1}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.9}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+.btn-ai{background:var(--accent);color:#fff}
+
+.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem}
+.legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
+.sw-must{background:#c62828}.sw-should{background:#e65100}.sw-flavor{background:#5f5e5a}
+
+.tag-group{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1rem}
+.tag-group h3{font-size:.92rem;font-weight:600;margin-bottom:.15rem}
+.tag-group .grp-hint{font-size:.8rem;color:var(--muted);margin-bottom:.8rem}
+.tags{display:flex;flex-wrap:wrap;gap:.5rem}
+.tag{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;user-select:none;color:#fff;line-height:1.2;transition:transform .1s}
+.tag:hover{transform:translateY(-1px)}
+.tag .x{opacity:.65;font-weight:400;font-size:.78rem}
+.tag .x:hover{opacity:1}
+.tag.must{background:#c62828}
+.tag.should{background:#e65100}
+.tag.flavor{background:#5f5e5a}
+.add-row{display:flex;gap:.5rem;margin-top:.9rem}
+.add-row input{flex:1;padding:.55rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem}
+.add-row select{padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff}
+
+.preview{font-family:var(--font-mono);font-size:.8rem;line-height:2;background:#faf9f7;border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin-top:1.2rem}
+.preview b{color:#c62828}
+.preview b.should{color:#e65100}
+.preview b.flavor{color:#5f5e5a}
+
+.savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;justify-content:flex-end;gap:.6rem}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 1.0</div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="3-project-view.html">Blue</a><span>/</span><span class="cur">Brief / Tags</span></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="rail-wrap"><div class="rail">
+  <div class="rail-step active"><span class="n">1</span>Brief / Tags</div>
+  <div class="rail-step" onclick="location.href='5-scenes-editor.html'"><span class="n">2</span>Scenes</div>
+  <div class="rail-step"><span class="n">3</span>Generate</div>
+  <div class="rail-step" onclick="location.href='6-checker-gallery.html'"><span class="n">4</span>Check</div>
+  <div class="rail-step"><span class="n">5</span>Compose</div>
+  <div class="rail-step" onclick="location.href='7-review-gallery.html'"><span class="n">6</span>Review</div>
+  <div class="rail-step"><span class="n">7</span>Deliver</div>
+</div></div>
+
+<div class="wrap">
+  <h1>Brief tags</h1>
+  <p class="sub">Kindtail — Blue — PAWD Crate. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.</p>
+
+  <div class="ai-bar">
+    <span class="lbl">✨ AI draft</span>
+    <span class="desc">Seeds from Kindtail's previous campaigns — review the weights, they're a starting point.</span>
+    <button class="btn btn-ai">Ask Claude to draft tags</button>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
+    <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
+    <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
+  </div>
+
+  <div class="tag-group">
+    <h3>Product spec</h3>
+    <div class="grp-hint">What must be true on the product itself.</div>
+    <div class="tags">
+      <span class="tag must">front or 3/4-right angle only<span class="x">✕</span></span>
+      <span class="tag must">honeycomb lattice on every panel<span class="x">✕</span></span>
+      <span class="tag must">one solid slate-blue tone<span class="x">✕</span></span>
+      <span class="tag must">molded matte plastic, no metal wire<span class="x">✕</span></span>
+      <span class="tag must">rectangular box, not cube<span class="x">✕</span></span>
+      <span class="tag must">door always all the way open<span class="x">✕</span></span>
+      <span class="tag should">kindtail wordmark, top panel, tone-on-tone<span class="x">✕</span></span>
+      <span class="tag should">accordion pleat side ridges<span class="x">✕</span></span>
+      <span class="tag should">flat top, shallow recessed center panel<span class="x">✕</span></span>
+      <span class="tag flavor">light-grey interior pad<span class="x">✕</span></span>
+      <span class="tag flavor">clean, no wear or damage<span class="x">✕</span></span>
+    </div>
+    <div class="add-row">
+      <input placeholder="e.g. matte finish, no gloss">
+      <select><option>Product spec</option><option>Creative constants</option></select>
+      <button class="btn btn-ghost">Add</button>
+    </div>
+  </div>
+
+  <div class="tag-group">
+    <h3>Creative constants</h3>
+    <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
+    <div class="tags">
+      <span class="tag must">blue-led palette, decor matches crate<span class="x">✕</span></span>
+      <span class="tag should">dog with color-matched accessory<span class="x">✕</span></span>
+      <span class="tag should">owner outfit color-matched<span class="x">✕</span></span>
+      <span class="tag should">soft window daylight, warm-to-neutral<span class="x">✕</span></span>
+      <span class="tag should">no competing bright colors<span class="x">✕</span></span>
+      <span class="tag flavor">fashion-editorial lifestyle mood<span class="x">✕</span></span>
+      <span class="tag flavor">clean uncluttered background<span class="x">✕</span></span>
+      <span class="tag flavor">faces in focus allowed<span class="x">✕</span></span>
+    </div>
+    <div class="add-row">
+      <input placeholder="e.g. matte finish, no gloss">
+      <select><option>Product spec</option><option selected>Creative constants</option></select>
+      <button class="btn btn-ghost">Add</button>
+    </div>
+  </div>
+
+  <div class="preview">
+    <b>ALWAYS:</b> front or 3/4-right angle only · honeycomb lattice on every panel · one solid slate-blue tone · molded matte plastic, no metal wire · rectangular box, not cube · door always all the way open · blue-led palette, decor matches crate<br>
+    <b class="should">PREFER:</b> kindtail wordmark, top panel, tone-on-tone · accordion pleat side ridges · flat top, shallow recessed center panel · dog with color-matched accessory · owner outfit color-matched · soft window daylight, warm-to-neutral · no competing bright colors<br>
+    <b class="flavor">DETAIL:</b> light-grey interior pad · clean, no wear or damage · fashion-editorial lifestyle mood · clean uncluttered background · faces in focus allowed
+  </div>
+
+  <div class="savebar">
+    <button class="btn btn-ghost">Cancel</button>
+    <button class="btn btn-primary">Save tags</button>
+  </div>
+</div>
+</body>
+</html>

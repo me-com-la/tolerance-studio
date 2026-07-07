@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tags — Blue — Kindtail | Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="lib/db.js"></script>
+<script src="lib/functions.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*,*::before,*::as{margin:0}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
+.crumbs a:hover{color:var(--ink)}
+.crumbs .cur{color:var(--ink);font-weight:600}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
+.rail-wrap{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
+.rail{max-width:82rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
+.rail-step{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
+.rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
+.rail-step.done .n{background:#2e7d32;color:#fff}
+.rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.rail-step.active .n{background:var(--accent);color:#fff}
+
+.wrap{max-width:60rem;margin:0 auto;padding:2rem 1.6rem 4rem}
+h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:1.6rem}
+
+.ai-bar{display:flex;align-items:center;gap:.7rem;background:#fff;border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1.6rem}
+.ai-bar .lbl{font-weight:600;font-size:.9rem}
+.ai-bar .desc{font-size:.8rem;color:var(--muted);flex:1}
+.ai-status{font-size:.8rem;color:var(--muted)}
+.ai-status.busy{font-style:italic}
+.ai-status.err{color:#c62828;font-style:normal}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.9}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+.btn-ai{background:var(--accent);color:#fff}
+
+/* ---------- project brief panel (read-only, locked after creation) ---------- */
+.brief-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1.6rem}
+.brief-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.brief-head h3{font-size:.92rem;font-weight:600}
+.brief-lock{font-size:.7rem;color:var(--muted);background:var(--chip);padding:.2rem .6rem;border-radius:100px}
+.brief-grid{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem;margin-bottom:.8rem}
+.brief-grid dt{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem}
+.brief-grid dd{margin:0}
+.brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
+.brief-photos img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.brief-photos .none{font-size:.8rem;color:var(--muted)}
+
+.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem}
+.legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
+.sw-must{background:#c62828}.sw-should{background:#e65100}.sw-flavor{background:#5f5e5a}
+
+.tag-group{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1rem}
+.tag-group h3{font-size:.92rem;font-weight:600;margin-bottom:.15rem}
+.tag-group .grp-hint{font-size:.8rem;color:var(--muted);margin-bottom:.8rem}
+.tags{display:flex;flex-wrap:wrap;gap:.5rem}
+.tag{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;user-select:none;color:#fff;line-height:1.2;transition:transform .1s}
+.tag:hover{transform:translateY(-1px)}
+.tag .x{opacity:.65;font-weight:400;font-size:.78rem}
+.tag .x:hover{opacity:1}
+.tag.must{background:#c62828}
+.tag.should{background:#e65100}
+.tag.flavor{background:#5f5e5a}
+.add-row{display:flex;gap:.5rem;margin-top:.9rem}
+.add-row input{flex:1;padding:.55rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem}
+.add-row select{padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:#fff}
+
+.preview{font-family:var(--font-mono);font-size:.8rem;line-height:2;background:#faf9f7;border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin-top:1.2rem}
+.preview b{color:#c62828}
+.preview b.should{color:#e65100}
+.preview b.flavor{color:#5f5e5a}
+
+.savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;justify-content:flex-end;gap:.6rem}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 2.0</div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Brief / Tags</span></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="rail-wrap"><div class="rail">
+  <div class="rail-step active"><span class="n">1</span>Brief / Tags</div>
+  <div class="rail-step" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(projectId)"><span class="n">2</span>Scenes</div>
+  <div class="rail-step" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">3</span>Check</div>
+  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Compose</div>
+  <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
+</div></div>
+
+<div class="wrap">
+  <h1>Brief tags</h1>
+  <p class="sub" id="page-sub">Loading…</p>
+
+  <div class="brief-panel">
+    <div class="brief-head"><h3>Project brief</h3><span class="brief-lock">set at creation — locked</span></div>
+    <dl class="brief-grid">
+      <dt>Client</dt><dd id="brief-client">…</dd>
+      <dt>Campaign</dt><dd id="brief-campaign">…</dd>
+      <dt>Product</dt><dd id="brief-product">…</dd>
+      <dt>Description</dt><dd id="brief-description">…</dd>
+    </dl>
+    <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
+  </div>
+
+  <div class="ai-bar">
+    <span class="lbl">✨ AI draft</span>
+    <span class="desc">Seeds from this client's previous campaigns — review the weights, they're a starting point.</span>
+    <span class="ai-status" id="ai-status"></span>
+    <button class="btn btn-ai" id="ai-draft-btn" onclick="aiDraftTags()">Ask Claude to draft tags</button>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
+    <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
+    <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
+  </div>
+
+  <div class="tag-group">
+    <h3>Product spec</h3>
+    <div class="grp-hint">What must be true on the product itself.</div>
+    <div class="tags" id="tags-product"></div>
+    <div class="add-row">
+      <input id="add-text-product" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('product')">
+      <select disabled><option>Product spec</option></select>
+      <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
+    </div>
+  </div>
+
+  <div class="tag-group">
+    <h3>Creative constants</h3>
+    <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
+    <div class="tags" id="tags-creative"></div>
+    <div class="add-row">
+      <input id="add-text-creative" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('creative')">
+      <select disabled><option selected>Creative constants</option></select>
+      <button class="btn btn-ghost" onclick="addTag('creative')">Add</button>
+    </div>
+  </div>
+
+  <div class="preview" id="preview">(no tags yet)</div>
+
+  <div class="savebar">
+    <button class="btn btn-ghost" onclick="location.reload()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveAndContinue()">Save &amp; continue →</button>
+  </div>
+</div>
+<script>
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+const projectId = qs('project');
+const WEIGHT_CYCLE = ['flavor','should','must'];
+let project = null, tags = { product: [], creative: [] };
+
+function chipHtml(group, i, t){
+  return `<span class="tag ${t.w}" onclick="cycleTag('${group}',${i})">${esc(t.t)}<span class="x" onclick="event.stopPropagation();removeTag('${group}',${i})">✕</span></span>`;
+}
+function renderTags(){
+  document.getElementById('tags-product').innerHTML = tags.product.map((t,i)=>chipHtml('product',i,t)).join('') || '<span style="color:var(--muted);font-size:.82rem">no tags yet</span>';
+  document.getElementById('tags-creative').innerHTML = tags.creative.map((t,i)=>chipHtml('creative',i,t)).join('') || '<span style="color:var(--muted);font-size:.82rem">no tags yet</span>';
+  const all = [...tags.product, ...tags.creative];
+  const line = w => all.filter(t=>t.w===w).map(t=>esc(t.t)).join(' · ') || '—';
+  document.getElementById('preview').innerHTML =
+    `<b>ALWAYS:</b> ${line('must')}<br><b class="should">PREFER:</b> ${line('should')}<br><b class="flavor">DETAIL:</b> ${line('flavor')}`;
+}
+function cycleTag(group, i){
+  const t = tags[group][i];
+  t.w = WEIGHT_CYCLE[(WEIGHT_CYCLE.indexOf(t.w)+1)%3];
+  renderTags();
+}
+function removeTag(group, i){ tags[group].splice(i,1); renderTags(); }
+function addTag(group){
+  const inp = document.getElementById('add-text-'+group);
+  const txt = (inp.value||'').trim();
+  if (!txt) return;
+  tags[group].push({t:txt, w:'should'});
+  inp.value = '';
+  renderTags();
+}
+async function saveAndContinue(){
+  await db.saveTags(projectId, tags);
+  location.href = `5-scenes-editor.html?project=${encodeURIComponent(projectId)}`;
+}
+
+// Fills the read-only brief panel: creation-time facts + the uploaded
+// reference photos (everything under <slug>/<projectId>/assets/ in storage).
+async function renderBrief(){
+  document.getElementById('brief-client').textContent = (project.clients && project.clients.name) || '—';
+  document.getElementById('brief-campaign').textContent = project.name || '—';
+  document.getElementById('brief-product').textContent = project.product || '—';
+  document.getElementById('brief-description').textContent = project.description || '—';
+  const photosEl = document.getElementById('brief-photos');
+  try {
+    const slug = project.clients && project.clients.slug;
+    const files = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
+    if (!files.length){
+      photosEl.innerHTML = '<span class="none">no reference photos uploaded (projects made before the new-project modal existed won\'t have any — the checker\'s reference can still be set by hand)</span>';
+      return;
+    }
+    const urls = await Promise.all(files.map(f => db.getSignedUrl(`${slug}/${projectId}/assets/${f.name}`)));
+    photosEl.innerHTML = urls.map((u,i) =>
+      `<img src="${esc(u)}" title="${esc(files[i].name)}" onclick="window.open('${esc(u)}','_blank')">`).join('');
+  } catch (e) {
+    photosEl.innerHTML = `<span class="none">couldn't load photos: ${esc(e.message)}</span>`;
+  }
+}
+async function aiDraftTags(){
+  const btn = document.getElementById('ai-draft-btn');
+  const status = document.getElementById('ai-status');
+  try {
+    const result = await withBusy(btn, status, 'drafting…', () =>
+      callFunction('ai-draft', { projectId, kind: 'tags' }));
+    tags = result.tags && (result.tags.product || result.tags.creative) ? result.tags : tags;
+    renderTags();
+  } catch (e) { /* status element already shows the error via withBusy */ }
+}
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = '1-login.html'; return; }
+  if (!projectId) { document.getElementById('page-sub').textContent = 'No project specified'; return; }
+  project = await db.getProject(projectId);
+  const clientName = project.clients ? project.clients.name : '';
+  document.title = `Tags — ${project.name} — ${clientName} | Tolerance Studio`;
+  document.getElementById('crumb-proj').textContent = project.name;
+  document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
+  document.getElementById('page-sub').textContent =
+    `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
+  tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
+  renderTags();
+  renderBrief();
+}
+init();
+</script>
+</body>
+</html>
