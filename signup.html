@@ -25,7 +25,7 @@
 
 <section class="sec" style="padding-top:0">
   <div class="wrap auth-wrap">
-    <form class="auth-card" onsubmit="return doSignUp()">
+    <form class="auth-card" onsubmit="doSignUp(); return false">
       <div class="field"><label for="email">Email</label>
         <input id="email" type="email" placeholder="you@company.com" required autocomplete="email"></div>
       <div class="field"><label for="pw">Password</label>
