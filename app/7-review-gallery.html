@@ -66,6 +66,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 .fav-btn.on{color:var(--accent)}
 .card .body{padding:.9rem 1rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
 .fname{font-size:.78rem;color:var(--muted)}
+.imgsize{font-size:.72rem;color:var(--muted);font-family:var(--font-mono)}
 .comment{width:100%;border:1px solid var(--line-2);border-radius:8px;padding:.5rem .7rem;font-family:inherit;font-size:.82rem;resize:none;min-height:2.4rem}
 
 .footnote{text-align:center;color:var(--muted);font-size:.82rem;padding:2rem 1.6rem 3rem}
@@ -163,6 +164,34 @@ async function resolveSignedUrls(rs){
   }));
 }
 
+// Image size label — pixel dimensions come free from the <img> itself once
+// loaded (onload="reportImageDims"); file size needs a separate HEAD
+// request against the same signed URL (Content-Length header), cached per
+// storage path so re-renders (e.g. after a favorite/comment) don't refetch.
+const fileSizeCache = {};
+function formatBytes(bytes){
+  if (!bytes) return '';
+  if (bytes < 1024*1024) return `${(bytes/1024).toFixed(0)}KB`;
+  return `${(bytes/(1024*1024)).toFixed(1)}MB`;
+}
+function renderImageSize(renderId, dims, sizeText){
+  const el = document.getElementById(`imgsize-${renderId}`);
+  if (!el) return;
+  el.textContent = [dims, sizeText].filter(Boolean).join(' · ');
+}
+async function reportImageDims(img, renderId){
+  const dims = `${img.naturalWidth}×${img.naturalHeight}`;
+  renderImageSize(renderId, dims, fileSizeCache[img.src]);
+  if (!(img.src in fileSizeCache)) {
+    try {
+      const res = await fetch(img.src, { method: 'HEAD' });
+      const len = parseInt(res.headers.get('Content-Length') || '0', 10);
+      fileSizeCache[img.src] = formatBytes(len);
+    } catch (e) { fileSizeCache[img.src] = ''; }
+    renderImageSize(renderId, dims, fileSizeCache[img.src]);
+  }
+}
+
 function toggleFav(renderId){
   const fb = loadFeedback();
   fb[renderId] = fb[renderId] || {};
@@ -187,11 +216,12 @@ async function render(){
     const f = fb[r.id] || {};
     return `<div class="card">
       <div class="imgwrap">
-        <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
+        <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)" onload="reportImageDims(this,'${r.id}')">
         <button class="fav-btn ${f.fav?'on':''}" onclick="toggleFav('${r.id}')">${f.fav?'♥':'♡'}</button>
       </div>
       <div class="body">
         <span class="fname">${esc(r.filename)}</span>
+        <span class="imgsize" id="imgsize-${r.id}"></span>
         <textarea class="comment" placeholder="Add a note (optional)…" onchange="saveComment('${r.id}', this.value)">${esc(f.comment||'')}</textarea>
       </div>
     </div>`;
