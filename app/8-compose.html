@@ -380,8 +380,6 @@ function renderPreview(){
   const font = document.getElementById('cmp-font').value;
   if (!headline) return; // nothing to typeset yet
 
-  const [spanLo, spanHi] = spec.span;
-  const zoneTop = H * (1 - spanHi);
   const [vZone, hZone] = activePlacement.split('-');
 
   // Mandatory text scrim — cosine falloff, strength .60 extent .60 — same
@@ -466,14 +464,19 @@ function renderPreview(){
   const totalH = textStackH + (cta ? FIELD_GAP + ctaH : 0);
   const marginY = H * 0.07;
 
+  // Each zone picks where the TOP of the stack sits, then adds the first
+  // line's ascent to get its baseline — same pattern for all three, so
+  // "bottom" mirrors "top" (marginY from the near edge) instead of the old
+  // spanLo/spanHi heuristic, which was tuned against a cruder height
+  // estimate from before totalH switched to real glyph metrics and drifted
+  // out of sync once that changed.
   let cursorY;
   if (vZone === 'top') {
     cursorY = marginY + (first ? first.ascent : 0);
   } else if (vZone === 'middle') {
     cursorY = H/2 - totalH/2 + (first ? first.ascent : 0);
   } else {
-    cursorY = H - H*spanLo - totalH*0.15;
-    cursorY = Math.max(cursorY, zoneTop + spec.headline);
+    cursorY = H - marginY - totalH + (first ? first.ascent : 0);
   }
 
   ctx.textAlign = textAlign;
