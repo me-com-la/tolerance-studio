@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tolerance Studio — product imagery built from your files, delivered in 1–2 weeks</title>
+<meta name="description" content="Tolerance Studio builds product and campaign imagery for high-SKU brands from your existing files. Anchored to your real product, brand-consistent, at about 80% less than a photo shoot. Two free renders to start.">
+
+<!-- Open Graph: makes the link preview cleanly when pasted into email or chat -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Product imagery built from your files. No photo shoot.">
+<meta property="og:description" content="Product and campaign imagery anchored to your real product, brand-consistent, at about 80% less than a photo shoot. Two free renders to start.">
+<meta property="og:image" content="images/Toyota/4k.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+:root{
+  --bg:#ffffff; --surface:#f4f3f0;
+  --line:rgba(17,16,20,.1); --line-strong:rgba(17,16,20,.18);
+  --ink:#111014; --muted:#6b6966;
+  --accent:#d8502d; --accent-wash:#fbeae3; --accent-ink:#7a2a14;
+  --display:'Barlow Condensed',sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --maxw:60rem; --radius:8px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 clamp(1.2rem,4vw,2.4rem)}
+.sec{padding:clamp(2.6rem,5vw,4rem) 0;border-top:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:.67rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:.8rem;display:block}
+.sec-h{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:700;letter-spacing:.03em;text-transform:uppercase;line-height:1.05;margin-bottom:.8rem}
+.lead{font-size:1.02rem;color:var(--muted);max-width:54ch;line-height:1.7}
+.muted{color:var(--muted)}
+.btn{display:inline-flex;align-items:center;font-family:var(--body);font-size:.9rem;font-weight:500;padding:.72rem 1.4rem;border-radius:5px;cursor:pointer;transition:opacity .15s,transform .15s;border:1px solid transparent}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+
+/* hero */
+.os-hero{padding:clamp(2.6rem,6vw,4.4rem) 0 clamp(2rem,4vw,3rem)}
+.os-kick{display:inline-block;background:var(--accent-wash);color:var(--accent-ink);font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;padding:.35rem .8rem;border-radius:100px;margin-bottom:1.3rem}
+.os-hero h1{font-family:var(--display);font-size:clamp(2.1rem,5.4vw,3.7rem);font-weight:700;line-height:1.02;letter-spacing:.02em;text-transform:uppercase;max-width:17ch;margin-bottom:1.1rem}
+.os-hero h1 .hl{color:var(--accent)}
+.os-hero p{font-size:clamp(.95rem,1.5vw,1.05rem);color:var(--muted);max-width:50ch;line-height:1.7;margin-bottom:1.5rem}
+.os-actions{display:flex;gap:.85rem;flex-wrap:wrap}
+
+/* problem band */
+.band{background:var(--ink);color:#fff}
+.band .wrap{padding:clamp(2.2rem,4vw,3rem) clamp(1.2rem,4vw,2.4rem)}
+.band p{font-family:var(--display);font-size:clamp(1.3rem,2.8vw,2rem);font-weight:600;letter-spacing:.02em;line-height:1.25;max-width:24ch;text-transform:uppercase}
+.band p .hl{color:var(--accent)}
+.band small{display:block;margin-top:1rem;font-family:var(--body);font-size:.92rem;font-weight:400;color:rgba(255,255,255,.6);max-width:52ch;text-transform:none;letter-spacing:0;line-height:1.65}
+
+/* before/after slider */
+.ba{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line-strong);background:#111;user-select:none;touch-action:none;line-height:0;aspect-ratio:1200/816;margin-top:1.2rem}
+.ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ba .after-layer{clip-path:inset(0 0 0 50%)}
+.ba .ba-tag{position:absolute;top:.75rem;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:rgba(17,16,20,.78);padding:.25rem .6rem;border-radius:4px;z-index:3}
+.ba .ba-tag.l{left:.75rem}.ba .ba-tag.r{right:.75rem}
+.ba .handle{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;transform:translateX(-50%);z-index:4}
+.ba .grip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(17,16,20,.3);color:var(--ink);font-size:.85rem;font-weight:700;z-index:4}
+.ba input[type=range]{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;z-index:5}
+.ba-cap{font-size:.84rem;color:var(--muted);margin-top:.7rem}
+
+/* deliverable list */
+.get-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem 2rem;margin-top:1.4rem}
+.get-grid li{list-style:none;font-size:.95rem;line-height:1.5;padding-left:1.5rem;position:relative;color:var(--ink)}
+.get-grid li::before{content:"✓";position:absolute;left:0;top:0;color:var(--accent);font-weight:700}
+.get-grid li b{font-weight:500}
+
+/* math */
+.math-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-strong);border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden;margin-top:1.4rem}
+.math-cell{background:var(--surface);padding:1.4rem 1.2rem}
+.math-num{font-family:var(--mono);font-size:clamp(1.2rem,2.5vw,1.7rem);color:var(--ink);line-height:1;margin-bottom:.45rem}
+.math-num.accent{color:var(--accent)}
+.math-label{font-size:.78rem;color:var(--muted);line-height:1.4}
+
+/* cost comparison */
+.cmp-head{font-size:.95rem;color:var(--muted);margin-top:.2rem;margin-bottom:1.2rem}
+.cmp2{border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden}
+.cmp2-row{display:grid;grid-template-columns:1.1fr 1fr 1fr;border-bottom:1px solid var(--line)}
+.cmp2-row:last-child{border-bottom:none}
+.cmp2 .c{padding:.95rem 1.1rem;border-right:1px solid var(--line);font-size:.92rem;line-height:1.45;color:var(--ink)}
+.cmp2 .c:last-child{border-right:none}
+.cmp2 .c.lbl{background:var(--surface);color:var(--muted);font-size:.8rem;display:flex;align-items:center}
+.cmp2 .c.us{background:var(--accent-wash)}
+.cmp2-row.head .c{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cmp2-row.head .c.us{color:var(--accent-ink);font-weight:700}
+.cmp2 .big{font-family:var(--display);font-size:clamp(1.4rem,3.2vw,2rem);font-weight:700;letter-spacing:.02em;line-height:1}
+.cmp2 .c.us .big{color:var(--accent)}
+@media(max-width:560px){
+  .cmp2-row{grid-template-columns:1fr 1fr}
+  .cmp2 .c.lbl{grid-column:1 / -1;border-right:none;border-bottom:1px solid var(--line);font-weight:600;color:var(--ink);background:var(--surface)}
+}
+.cmp-payoff{text-align:center;margin-top:1.3rem;font-family:var(--display);font-size:clamp(1.3rem,3vw,1.9rem);font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.cmp-payoff .hl{color:var(--accent)}
+.cmp-payoff small{display:block;font-family:var(--body);font-size:.84rem;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);margin-top:.4rem}
+
+/* price */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-strong);border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden;margin-top:1.2rem}
+.tier{background:var(--bg);padding:1.7rem 1.5rem}
+.tier.featured{background:var(--ink);color:#fff}
+.tier-badge{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tier.featured .tier-badge{color:rgba(255,255,255,.5)}
+.tier-name{font-family:var(--display);font-size:1.4rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-top:.2rem}
+.tier-price{font-family:var(--mono);font-size:1.5rem;color:var(--accent);margin:.3rem 0 .5rem}
+.tier.featured .tier-price{color:#fff}
+.tier-desc{font-size:.86rem;color:var(--muted);line-height:1.55}
+.tier.featured .tier-desc{color:rgba(255,255,255,.62)}
+
+/* close */
+.close{background:var(--surface);text-align:center}
+.close .wrap{padding:clamp(2.6rem,5vw,3.6rem) clamp(1.2rem,4vw,2.4rem)}
+.close h2{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:.7rem}
+.close p{color:var(--muted);max-width:44ch;margin:0 auto 1.5rem;line-height:1.7}
+.close .os-actions{justify-content:center}
+.close .mail{display:block;margin-top:1.1rem;font-family:var(--mono);font-size:.84rem;color:var(--accent-ink)}
+
+footer{border-top:1px solid var(--line);padding:1.8rem 0}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted);flex-wrap:wrap;gap:1rem}
+footer a{color:var(--muted)}footer a:hover{color:var(--ink)}
+.footer-links{display:flex;gap:1.4rem;flex-wrap:wrap}
+
+@media(max-width:680px){
+  .math-grid{grid-template-columns:repeat(2,1fr)}
+  .price-grid,.get-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HERO ──────────────────────────────────────── -->
+<header class="os-hero">
+  <div class="wrap">
+    <span class="os-kick">One-page brief · product imagery studio</span>
+    <h1>Your products, shot to your brand. <span class="hl">In 1–2 weeks.</span> No shoot.</h1>
+    <p>We build product and campaign imagery from your existing files. Anchored to your real product, consistent with your brand — at about 80% less than a photo shoot.</p>
+    <div class="os-actions">
+      <a class="btn btn-primary" href="contact.html">Get 2 free renders &rarr;</a>
+      <a class="btn btn-ghost" href="client-toyota.html">See the work</a>
+    </div>
+  </div>
+</header>
+
+<!-- ── PROBLEM ───────────────────────────────────── -->
+<section class="band">
+  <div class="wrap">
+    <p>A 250-SKU brand burns <span class="hl">$125k+ a year</span> on product photography, and half the line still looks thin.</p>
+    <small>Every new release waits weeks for a shoot. Listings come back inconsistent, off-spec, or low-res, and the weak ones quietly cost you the sale. There's a version of this that doesn't need a shoot date.</small>
+  </div>
+</section>
+
+<!-- ── PROOF ─────────────────────────────────────── -->
+<section class="sec">
+  <div class="wrap">
+    <span class="eyebrow">The difference, on one part</span>
+    <h2 class="sec-h">Before and after. Same part.</h2>
+    <p class="lead">Same part, same spec. One is a typical listing shot. The other came through our pipeline, anchored to the real product. Drag to compare.</p>
+    <div class="ba" id="ba">
+      <img src="images/Toyota/lowres.jpg" alt="Typical thin listing on a plain background">
+      <img class="after-layer" src="images/Toyota/4k.jpg" alt="Same part built from real files in a branded context">
+      <span class="ba-tag l">Your listing</span>
+      <span class="ba-tag r">From our pipeline</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after">
+      <div class="handle"><span class="grip">&#8249;&#8250;</span></div>
+    </div>
+    <p class="ba-cap">Real client part. The geometry, threads, and finish stay exact, the context is built around it.</p>
+  </div>
+</section>
+
+<!-- ── WHAT YOU GET ──────────────────────────────── -->
+<section class="sec">
+  <div class="wrap">
+    <span class="eyebrow">The deliverable</span>
+    <h2 class="sec-h">What you get</h2>
+    <ul class="get-grid">
+      <li><b>Up to 10 images per SKU, one setup</b> — angles and variations of a single look, not 10 different scenes</li>
+      <li><b>Built from</b> your CAD, engineering files, or rough photos</li>
+      <li><b>Built from your real files</b> — geometry, finish, threads, badging stay true to the source</li>
+      <li><b>Listing images plus</b> lifestyle and campaign variants</li>
+      <li><b>Sized per channel</b> — listing, ad, and print resolutions</li>
+      <li><b>One revision round</b> and a client gallery, usage rights tracked</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── THE MATH ──────────────────────────────────── -->
+<section class="sec">
+  <div class="wrap">
+    <span class="eyebrow">The math</span>
+    <h2 class="sec-h">Same shot list, a fifth of the cost</h2>
+    <p class="cmp-head">One SKU, up to 10 images in a single setup — angles and variations of one location or studio look — priced the same way on both sides.</p>
+    <div class="cmp2">
+      <div class="cmp2-row head">
+        <div class="c lbl"></div>
+        <div class="c">Photo studio</div>
+        <div class="c us">Tolerance Studio</div>
+      </div>
+      <div class="cmp2-row">
+        <div class="c lbl">Cost per SKU</div>
+        <div class="c"><span class="big">$500</span></div>
+        <div class="c us"><span class="big">$100</span></div>
+      </div>
+      <div class="cmp2-row">
+        <div class="c lbl">Turnaround</div>
+        <div class="c">2–4 weeks</div>
+        <div class="c us">1–2 weeks</div>
+      </div>
+      <div class="cmp2-row">
+        <div class="c lbl">Each new variant</div>
+        <div class="c">A fresh reshoot</div>
+        <div class="c us">One setup, no reshoot</div>
+      </div>
+      <div class="cmp2-row">
+        <div class="c lbl">Revisions</div>
+        <div class="c">Reshoot to change</div>
+        <div class="c us">1 round included</div>
+      </div>
+      <div class="cmp2-row">
+        <div class="c lbl">Your products</div>
+        <div class="c">Shipped in, then back</div>
+        <div class="c us">Stay put, we work from files</div>
+      </div>
+    </div>
+    <p class="cmp-payoff"><span class="hl">80% less</span> per SKU, same shot list.<small>Studio: ~10 images in one setup at ~$50 each, a typical 2025 basic rate; a lifestyle location or extra setups cost much more. Tolerance: $100 per SKU, the first-project rate ($1,500 for 15 SKUs).</small></p>
+  </div>
+</section>
+
+<!-- ── PRICE ─────────────────────────────────────── -->
+<section class="sec">
+  <div class="wrap">
+    <span class="eyebrow">Price</span>
+    <h2 class="sec-h">Start free. Scale when it's working.</h2>
+    <p class="lead">No big commitment to find out if it works on your products. Try it free, prove it on a first project, then turn on a monthly flow.</p>
+    <div class="price-grid">
+      <div class="tier">
+        <div class="tier-badge">Step 1 · Free</div>
+        <div class="tier-name">2 renders</div>
+        <div class="tier-price">$0</div>
+        <p class="tier-desc">Pick two of your products. We render them, no charge, no commitment.</p>
+      </div>
+      <div class="tier featured">
+        <div class="tier-badge">Step 2 · First project</div>
+        <div class="tier-name">15 SKUs</div>
+        <div class="tier-price">$1,500</div>
+        <p class="tier-desc">Up to 10 images per SKU within one setup — angles and variations of a single location or studio look, up to 150 images. One revision round, delivered in 1–2 weeks. 15-SKU minimum.</p>
+      </div>
+      <div class="tier">
+        <div class="tier-badge">Step 3 · Ongoing</div>
+        <div class="tier-name">Monthly</div>
+        <div class="tier-price">from $1,500<span style="font-size:.62em">/mo</span></div>
+        <p class="tier-desc">A set volume each month, new releases rendered as they launch, seasonal variants with no reshoot. Scales with your catalog.</p>
+      </div>
+    </div>
+    <p class="muted" style="font-size:.82rem;margin-top:1rem">Projects start at 15 SKUs. One revision round included per project; extra rounds $250.</p>
+  </div>
+</section>
+
+<!-- ── CLOSE ─────────────────────────────────────── -->
+<section class="close">
+  <div class="wrap">
+    <h2>See it on your own products first.</h2>
+    <p>Pick two of your products. We'll render them and send them back, no charge. If they aren't better than what's live, no harm done.</p>
+    <div class="os-actions">
+      <a class="btn btn-primary" href="contact.html">Get 2 free renders &rarr;</a>
+    </div>
+    <a class="mail" href="mailto:hello@tolerancestudio.com">hello@tolerancestudio.com</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; product imagery studio</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="client-toyota.html">Work</a>
+      <a href="contact.html">Get 2 free renders</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var ba=document.getElementById('ba');
+  if(!ba)return;
+  var range=ba.querySelector('input[type=range]');
+  var after=ba.querySelector('.after-layer');
+  var handle=ba.querySelector('.handle');
+  function set(v){after.style.clipPath='inset(0 0 0 '+v+'%)';handle.style.left=v+'%';}
+  range.addEventListener('input',function(){set(this.value);});
+  set(50);
+})();
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

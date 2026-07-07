@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Projects — Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111014; --paper:#f7f6f3; --card:#ffffff;
+  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
+  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
+  --chip:#eceae6; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --st-brief:#8a6d3b; --st-brief-wash:#f6efdf;
+  --st-generating:#1a4fa0; --st-generating-wash:#e8f0fe;
+  --st-checking:#7a4fa0; --st-checking-wash:#f1e8fb;
+  --st-compose:#b45309; --st-compose-wash:#fff3e0;
+  --st-review:#1f6f6b; --st-review-wash:#e2f1ef;
+  --st-delivered:#2e7d32; --st-delivered-wash:#e8f5e9;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.topbar-in{max-width:78rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:-.01em}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
+
+.wrap{max-width:78rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem}
+h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary{background:var(--ink);color:#fff}
+
+.toolbar{display:flex;gap:.6rem;margin-bottom:1.6rem;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:200px;max-width:22rem;padding:.6rem .9rem;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:.88rem;background:#fff}
+.filter-pill{font-size:.8rem;padding:.45rem .9rem;border-radius:100px;background:var(--chip);border:1px solid transparent;cursor:pointer;color:var(--ink);font-family:inherit}
+.filter-pill.active{background:var(--ink);color:#fff}
+
+.client-group{margin-bottom:2.4rem}
+.client-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.client-name{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.client-count{font-size:.78rem;color:var(--muted);background:var(--chip);padding:.15rem .55rem;border-radius:100px}
+
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.proj-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem 1.3rem;cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:.6rem;text-decoration:none;color:inherit}
+.proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(17,16,20,.08)}
+.proj-name{font-weight:600;font-size:1rem}
+.proj-product{font-size:.82rem;color:var(--muted)}
+.proj-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
+.proj-date{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+.status-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.7rem;font-weight:600;padding:.28rem .65rem;border-radius:100px;text-transform:uppercase;letter-spacing:.03em}
+.status-pill .sw{width:6px;height:6px;border-radius:50%}
+.s-brief{color:var(--st-brief);background:var(--st-brief-wash)}.s-brief .sw{background:var(--st-brief)}
+.s-generating{color:var(--st-generating);background:var(--st-generating-wash)}.s-generating .sw{background:var(--st-generating)}
+.s-checking{color:var(--st-checking);background:var(--st-checking-wash)}.s-checking .sw{background:var(--st-checking)}
+.s-compose{color:var(--st-compose);background:var(--st-compose-wash)}.s-compose .sw{background:var(--st-compose)}
+.s-review{color:var(--st-review);background:var(--st-review-wash)}.s-review .sw{background:var(--st-review)}
+.s-delivered{color:var(--st-delivered);background:var(--st-delivered-wash)}.s-delivered .sw{background:var(--st-delivered)}
+
+.new-card{border:1.5px dashed var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;font-weight:500;min-height:120px;background:transparent}
+.new-card:hover{color:var(--ink);border-color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot"></span>Tolerance Studio 1.0</div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Projects</h1>
+      <p class="page-sub">12 projects across 3 clients</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('newproj').scrollIntoView()">＋ New project</button>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" placeholder="Search projects or clients…">
+    <button class="filter-pill active">All</button>
+    <button class="filter-pill">Brief / Tags</button>
+    <button class="filter-pill">Generating</button>
+    <button class="filter-pill">Checking</button>
+    <button class="filter-pill">Compose</button>
+    <button class="filter-pill">Review</button>
+    <button class="filter-pill">Delivered</button>
+  </div>
+
+  <div class="client-group">
+    <div class="client-head"><span class="client-name">Kindtail</span><span class="client-count">4 projects</span></div>
+    <div class="proj-grid">
+      <a class="proj-card" href="3-project-view.html">
+        <div class="proj-name">Blue</div>
+        <div class="proj-product">PAWD Crate — slate-blue folding crate</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-06</span>
+          <span class="status-pill s-checking"><span class="sw"></span>Checking</span>
+        </div>
+      </a>
+      <a class="proj-card" href="#">
+        <div class="proj-name">Blue 2</div>
+        <div class="proj-product">PAWD Crate — rerun batch</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-06</span>
+          <span class="status-pill s-brief"><span class="sw"></span>Brief / Tags</span>
+        </div>
+      </a>
+      <a class="proj-card" href="#">
+        <div class="proj-name">Pink</div>
+        <div class="proj-product">PAWD Crate — pink variant</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-06</span>
+          <span class="status-pill s-generating"><span class="sw"></span>Generating</span>
+        </div>
+      </a>
+      <a class="proj-card" href="#">
+        <div class="proj-name">Summer Promotion</div>
+        <div class="proj-product">Bowls — summer capsule lifestyle</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-02</span>
+          <span class="status-pill s-delivered"><span class="sw"></span>Delivered</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="client-group">
+    <div class="client-head"><span class="client-name">Wingstudio</span><span class="client-count">4 projects</span></div>
+    <div class="proj-grid">
+      <a class="proj-card" href="7-review-gallery.html">
+        <div class="proj-name">Santa-Barbara-July-2026</div>
+        <div class="proj-product">Wooden Vases — local show promo</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-04</span>
+          <span class="status-pill s-review"><span class="sw"></span>Review</span>
+        </div>
+      </a>
+      <a class="proj-card" href="#">
+        <div class="proj-name">Ramin</div>
+        <div class="proj-product">Wooden Vases — new collection</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-05</span>
+          <span class="status-pill s-brief"><span class="sw"></span>Brief / Tags</span>
+        </div>
+      </a>
+      <a class="proj-card" href="#">
+        <div class="proj-name">Santa-Barbara-July-2026 2</div>
+        <div class="proj-product">Wooden Vases — batch 2</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-05</span>
+          <span class="status-pill s-compose"><span class="sw"></span>Compose</span>
+        </div>
+      </a>
+      <a class="proj-card" href="#">
+        <div class="proj-name">Vase 215</div>
+        <div class="proj-product">Wooden Vases — SKU 215</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-06</span>
+          <span class="status-pill s-brief"><span class="sw"></span>Brief / Tags</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="client-group">
+    <div class="client-head"><span class="client-name">Toyota</span><span class="client-count">1 project</span></div>
+    <div class="proj-grid">
+      <a class="proj-card" href="#">
+        <div class="proj-name">Summer Sale 20% off</div>
+        <div class="proj-product">Fuel part — promo campaign</div>
+        <div class="proj-meta">
+          <span class="proj-date">started 2026-07-05</span>
+          <span class="status-pill s-brief"><span class="sw"></span>Brief / Tags</span>
+        </div>
+      </a>
+      <div class="proj-card new-card" id="newproj">＋ new Toyota project</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,4 +1,562 @@
-<!doctype html>
-<html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=1-login.html">
-<title>Tolerance Studio</title></head>
-<body>Redirecting to <a href="1-login.html">sign in</a>…</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tolerance Studio — product imagery built around your brand</title>
+<meta name="description" content="Tolerance Studio is a product imagery studio. We learn your visual identity and apply it to everything you make. AI-powered production, human creative direction, at a fraction of studio cost.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+:root{
+  --bg:#ffffff;
+  --surface:#f5f4f1;
+  --line:rgba(17,16,20,.07);
+  --line-strong:rgba(17,16,20,.14);
+  --ink:#111014;
+  --muted:#6b6966;
+  --accent:#d8502d;
+  --accent-wash:#fbeae3;
+  --accent-ink:#7a2a14;
+  --display:'Barlow Condensed',sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono','Courier New',monospace;
+  --maxw:68rem;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(17,16,20,.06),0 0 0 1px rgba(17,16,20,.05);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--surface);color:var(--ink);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 clamp(1.2rem,4vw,2.4rem)}
+
+/* layout */
+.sec{padding:clamp(3rem,6vw,5rem) 0}
+.sec-head{margin-bottom:2rem}
+
+/* typography */
+.eyebrow{
+  display:inline-flex;align-items:center;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);background:var(--bg);
+  border:1px solid var(--line-strong);
+  padding:.28rem .8rem;border-radius:100px;
+  margin-bottom:1.2rem;
+}
+.sec-h{font-family:var(--display);font-size:clamp(2rem,4.5vw,3rem);font-weight:700;letter-spacing:.02em;text-transform:uppercase;line-height:1.0;margin-bottom:.65rem}
+.sec-lead{font-size:.97rem;color:var(--muted);max-width:52ch;line-height:1.7}
+.muted{color:var(--muted)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;font-family:var(--body);font-size:.88rem;font-weight:500;padding:.7rem 1.4rem;border-radius:8px;cursor:pointer;transition:opacity .15s,transform .15s;text-decoration:none;border:1px solid transparent}
+.btn:hover{opacity:.82;transform:translateY(-1px)}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--muted);border-color:var(--line-strong)}
+.btn-ghost:hover{color:var(--ink)}
+.btn-inv{background:#fff;color:var(--ink);border-color:#fff}
+
+/* hero */
+.hero{
+  position:relative;
+  padding:clamp(3.5rem,8vw,6rem) 0 clamp(2.5rem,5vw,4rem);
+  background-image:url('images/hero bg.png');
+  background-size:cover;background-position:center center;
+  overflow:hidden;
+}
+.hero .wrap{position:relative;z-index:1}
+.hero-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;white-space:nowrap;display:block}
+.hero h1{font-family:var(--display);font-size:clamp(2.4rem,6vw,4.4rem);font-weight:700;line-height:.95;letter-spacing:.02em;text-transform:uppercase;max-width:14ch;margin-bottom:1.2rem;color:#fff}
+.hero p{font-size:clamp(.88rem,1.4vw,.97rem);color:rgba(255,255,255,.72);max-width:42ch;line-height:1.7;margin-bottom:1.6rem}
+.hero-actions{display:flex;gap:.85rem;flex-wrap:wrap}
+.hero .btn-primary{background:#fff;color:var(--ink);border-color:#fff}
+.hero .btn-ghost{color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.3)}
+.hero .btn-ghost:hover{color:#fff;border-color:#fff}
+@media(max-width:600px){.hero{background-image:url('images/hero bg m.png');background-position:center top}}
+
+/* stat cards */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.stat{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem 1.4rem}
+.stat-num{font-family:var(--mono);font-size:clamp(1.1rem,2.5vw,1.6rem);color:var(--ink);line-height:1;margin-bottom:.45rem}
+.stat-label{font-size:.78rem;color:var(--muted);line-height:1.5}
+
+/* pipeline step cards — image on top, content below */
+.pipeline-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.step{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.step-img{aspect-ratio:4/3;overflow:hidden;line-height:0}
+.step-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.step:hover .step-img img{transform:scale(1.04)}
+.step-body{padding:1.3rem 1.2rem 1.5rem;display:flex;flex-direction:column;flex:1}
+.step-num{font-family:var(--mono);font-size:.62rem;color:var(--accent);letter-spacing:.1em;margin-bottom:.3rem}
+.step-title{font-family:var(--display);font-size:1rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:.35rem}
+.step-desc{font-size:.82rem;color:var(--muted);line-height:1.55}
+
+/* pillar cards */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:1.25rem}
+.pillar{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.8rem 1.6rem}
+.pillar.dark{background:var(--ink)}
+.pillar h3{font-family:var(--display);font-size:1.1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);margin-bottom:.55rem}
+.pillar.dark h3{color:#fff}
+.pillar p{font-size:.85rem;color:var(--muted);line-height:1.6}
+.pillar.dark p{color:rgba(255,255,255,.55)}
+
+/* before/after slider */
+.ba-wrap{margin-top:1.1rem}
+.ba{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line-strong);background:#111;user-select:none;touch-action:none;line-height:0;aspect-ratio:804/488}
+.ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ba .after-layer{clip-path:inset(0 0 0 50%)}
+.ba .ba-tag{position:absolute;top:.75rem;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:rgba(17,16,20,.75);padding:.25rem .6rem;border-radius:4px;z-index:3;line-height:1.2}
+.ba .ba-tag.l{left:.75rem}.ba .ba-tag.r{right:.75rem}
+.ba .handle{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;transform:translateX(-50%);z-index:4}
+.ba .grip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(17,16,20,.25);color:var(--ink);font-size:.8rem;font-weight:700}
+.ba input[type=range]{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;z-index:5}
+.ba-cap{font-size:.8rem;color:var(--muted);margin-top:.65rem}
+.ba .handle2{width:2px;background:rgba(255,255,255,.6);pointer-events:none}
+
+/* pricing */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.tier{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:2rem 1.6rem;display:flex;flex-direction:column;gap:.4rem}
+.tier.featured{background:var(--ink);color:#fff}
+.tier-badge{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tier.featured .tier-badge{color:rgba(255,255,255,.4)}
+.tier-name{font-family:var(--display);font-size:1.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-top:.15rem}
+.tier-price{font-family:var(--mono);font-size:1.5rem;color:var(--ink);margin:.25rem 0 .15rem}
+.tier.featured .tier-price{color:#fff}
+.tier-desc{font-size:.82rem;color:var(--muted);line-height:1.5;padding-bottom:.6rem;border-bottom:1px solid var(--line)}
+.tier.featured .tier-desc{color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.1)}
+.tier ul{list-style:none;display:flex;flex-direction:column;gap:.4rem;flex:1;margin-top:.5rem}
+.tier ul li{font-size:.82rem;color:var(--muted);padding-left:1rem;position:relative}
+.tier ul li::before{content:'—';position:absolute;left:0;color:var(--accent)}
+.tier.featured ul li{color:rgba(255,255,255,.6)}
+.tier-cta{margin-top:1.2rem}
+.math-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:1.25rem}
+.math-cell{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.2rem}
+.math-num{font-family:var(--mono);font-size:clamp(1.1rem,2.2vw,1.5rem);color:var(--ink);line-height:1;margin-bottom:.4rem}
+.math-label{font-size:.78rem;color:var(--muted);line-height:1.4}
+
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.gallery figure{margin:0;border-radius:var(--radius);overflow:hidden;background:#111;aspect-ratio:4/3;box-shadow:var(--shadow);position:relative}
+.gallery figure img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.gallery figure:hover img{transform:scale(1.04)}
+.gallery .lbl{position:absolute;top:.7rem;left:.7rem;background:rgba(17,16,20,.8);color:#fff;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.22rem .55rem;border-radius:4px}
+.src-pair{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem}
+.src-pair figure{margin:0;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);position:relative;aspect-ratio:4/3;background:#111}
+.src-pair figure img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* contact */
+.contact-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:clamp(2rem,5vw,4rem);align-items:start}
+.contact-info{padding-top:.5rem}
+.contact-info h2{margin-bottom:.8rem}
+.contact-info p{font-size:.95rem;color:var(--muted);line-height:1.7;margin-bottom:1.4rem}
+.next-steps{display:flex;flex-direction:column;gap:.75rem}
+.next-card{background:var(--bg);border-radius:var(--radius);padding:1.2rem 1.4rem;box-shadow:var(--shadow)}
+.next-card h4{font-size:.88rem;font-weight:500;margin-bottom:.3rem}
+.next-card p{font-size:.82rem;color:var(--muted);line-height:1.55}
+.next-card a{color:var(--accent);font-size:.85rem}
+.contact-form{display:flex;flex-direction:column;gap:.9rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.field{display:flex;flex-direction:column;gap:.35rem}
+.field label{font-size:.8rem;color:var(--muted);font-weight:500}
+.field input,.field textarea,.field select{font-family:var(--body);font-size:.9rem;color:var(--ink);background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;padding:.65rem .85rem;transition:border-color .15s;width:100%}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:100px}
+.form-note{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.2rem}
+#sent{background:var(--surface);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow);display:none}
+#sent h3{font-family:var(--display);font-size:1.5rem;text-transform:uppercase;margin-bottom:.5rem}
+
+/* footer */
+footer{background:var(--bg);border-top:1px solid var(--line);padding:1.8rem 0}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted);flex-wrap:wrap;gap:1rem}
+footer a{color:var(--muted);transition:color .15s}
+footer a:hover{color:var(--ink)}
+.footer-links{display:flex;gap:1.5rem}
+
+/* responsive */
+@media(max-width:860px){
+  .pipeline-steps{grid-template-columns:repeat(2,1fr)}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .pillars{grid-template-columns:1fr}
+  .gallery{grid-template-columns:repeat(2,1fr)}
+  .pricing-grid{grid-template-columns:1fr}
+  .math-grid{grid-template-columns:repeat(2,1fr)}
+  .contact-grid{grid-template-columns:1fr}
+}
+@media(max-width:540px){
+  .pipeline-steps{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .src-pair{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ── HERO ──────────────────────────────────────── -->
+<header class="hero">
+  <div class="wrap">
+    <span class="hero-label">Tolerance Studio</span>
+    <h1>Your products, shot to your brand.</h1>
+    <p>We learn your visual identity and apply it to everything you make. Consistent lighting, palette, and staging, without booking a shoot. Free two-image sample.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#contact">Get 2 free renders &rarr;</a>
+      <a class="btn btn-ghost" href="#how-it-works">See how it works</a>
+    </div>
+  </div>
+</header>
+
+<!-- ── PROOF STRIP ───────────────────────────────── -->
+<section class="sec" style="padding:1.8rem 0">
+  <div class="wrap">
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-num">60–70%</div>
+        <div class="stat-label">below studio cost, same brand quality</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">2 weeks</div>
+        <div class="stat-label">from brief to delivery, not a calendar of shoot dates</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Every image</div>
+        <div class="stat-label">reviewed before delivery — we don't ship raw AI output</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Consistent</div>
+        <div class="stat-label">lighting, palette, and staging held across your whole line</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TWO WORKFLOWS ─────────────────────────────── -->
+<section class="sec" id="workflows" style="padding-top:1.5rem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Two workflows</span>
+      <h2 class="sec-h">Pick the guarantee that fits the job.</h2>
+      <p class="sec-lead">Same intake — your product photos and your brand rules. Two different engines behind them, and a human review on everything.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="wf-grid">
+      <a href="standard.html" style="background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem;display:block;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+        <span class="eyebrow" style="margin-bottom:.8rem">Standard</span>
+        <h3 style="font-family:var(--display);font-size:1.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.05;margin-bottom:.5rem">Full creative range</h3>
+        <p style="font-size:.9rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">AI draws your product into any scene you can brief — any angle, people and pets interacting with it. Because a redrawn product can drift, every render is machine-checked against your real photos and human-reviewed before you see it.</p>
+        <span style="font-size:.86rem;font-weight:500;color:var(--accent-ink)">See the Standard workflow &rarr;</span>
+      </a>
+      <a href="pro.html" style="background:var(--ink);color:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem;display:block;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+        <span class="eyebrow" style="margin-bottom:.8rem;background:transparent;color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25)">PRO</span>
+        <h3 style="font-family:var(--display);font-size:1.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.05;margin-bottom:.5rem">Pixel-true accuracy</h3>
+        <p style="font-size:.9rem;color:rgba(255,255,255,.72);line-height:1.7;margin-bottom:1rem">PRO never redraws your product. Your photo's pixels are locked in place and the scene is generated around them — zero drift, by construction. What customers zoom in on is your actual product.</p>
+        <span style="font-size:.86rem;font-weight:500;color:#fff">See the PRO workflow &rarr;</span>
+      </a>
+    </div>
+  </div>
+</section>
+<style>@media(max-width:700px){#workflows .wf-grid{grid-template-columns:1fr !important}}</style>
+
+<!-- ── HOW IT WORKS ──────────────────────────────── -->
+<section class="sec" id="how-it-works">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The studio process</span>
+      <h2 class="sec-h">Built around your brand. From day one.</h2>
+      <p class="sec-lead">We learn your visual identity first. Everything after that runs like a production pipeline.</p>
+    </div>
+
+    <div class="pipeline-steps">
+      <div class="step">
+        <div class="step-img"><img src="assets/work/pipeline-01.jpg" alt="Brand intake" loading="lazy"></div>
+        <div class="step-body">
+          <div class="step-num">01</div>
+          <div class="step-title">Brand intake</div>
+          <p class="step-desc">We pull your references, existing imagery, and guidelines. This locks your lighting direction, palette, surfaces, and camera feel before a single image is made.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-img"><img src="assets/work/pipeline-02.jpg" alt="Source and scope" loading="lazy"></div>
+        <div class="step-body">
+          <div class="step-num">02</div>
+          <div class="step-title">Source &amp; scope</div>
+          <p class="step-desc">We look at what you have — photos, CAD renders, or drawings — and scope the right approach. We use the best tool for each job.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-img"><img src="assets/work/pipeline-03.jpg" alt="Production" loading="lazy"></div>
+        <div class="step-body">
+          <div class="step-num">03</div>
+          <div class="step-title">Production</div>
+          <p class="step-desc">Every scene built to your brand spec. AI handles the scale; we handle the direction and make sure it looks like your brand, not a stock photo.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-img"><img src="images/Toyota/variations.jpg" alt="Review and ship" loading="lazy"></div>
+        <div class="step-body">
+          <div class="step-num">04</div>
+          <div class="step-title">Review &amp; ship</div>
+          <p class="step-desc">You get a review gallery. Every image checked against your spec before delivery — geometry, finish, color, hardware. Nothing leaves until it clears.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <h3>We learn your brand</h3>
+        <p>Palette, lighting direction, surface finishes, camera angle, ≤3 settings. Locked before production starts. 300 images feel like one shoot.</p>
+      </div>
+      <div class="pillar dark">
+        <h3>We pick the right tool for the job</h3>
+        <p>AI, compositing, retouching — whatever gets it right for that product. You don't need to know which one we used. You just get imagery that looks like your brand.</p>
+      </div>
+      <div class="pillar">
+        <h3>We review every image</h3>
+        <p>A spec check on every delivery: geometry, finish, color, hardware, badging. Raw AI output doesn't ship. You approve against a clear checklist.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── SLIDERS ─────────────────────────────────────── -->
+<section class="sec">
+  <div class="wrap">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
+
+      <div>
+        <span class="eyebrow">One setup, every variant</span>
+        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">One setup. Every channel.</h2>
+        <div class="ba-wrap">
+          <div class="ba" id="ba">
+            <img src="images/Toyota/image1.png" alt="Original campaign cut">
+            <img class="after-layer" src="images/Toyota/image2.png" alt="Talent swapped, no reshoot">
+            <span class="ba-tag l">Original cut</span>
+            <span class="ba-tag r">Swapped</span>
+            <input type="range" min="0" max="100" value="50" aria-label="Drag to compare">
+            <div class="handle"><span class="grip">&#8249;&#8250;</span></div>
+          </div>
+        </div>
+        <p class="ba-cap">Talent and wardrobe swapped, no reshoot. Drag to compare.</p>
+      </div>
+
+      <div>
+        <span class="eyebrow">Lifestyle replacements</span>
+        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Lifestyle Replacements</h2>
+        <div class="ba-wrap">
+          <div class="ba" id="ba3">
+            <img src="images/Toyota/man1.jpg" alt="Lifestyle variant 1">
+            <img class="mid-layer" src="images/Toyota/man2.jpg" alt="Lifestyle variant 2">
+            <img class="top-layer" src="images/Toyota/man3.jpg" alt="Lifestyle variant 3">
+            <span class="ba-tag l">Variant 1</span>
+            <span class="ba-tag r">Variant 3</span>
+            <div class="handle" id="ba3-handle1"><span class="grip">&#8249;&#8250;</span></div>
+            <div class="handle handle2" id="ba3-handle2"></div>
+            <input type="range" id="ba3-range" min="0" max="100" value="50" aria-label="Drag to compare">
+          </div>
+        </div>
+        <p class="ba-cap">Same product, three lifestyle contexts. Drag to compare.</p>
+      </div>
+
+    </div><!-- end grid -->
+  </div>
+</section>
+
+<!-- ── PRICING ───────────────────────────────────── -->
+<section class="sec" id="pricing">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Pricing</span>
+      <h2 class="sec-h">Three ways to start</h2>
+      <p class="sec-lead">Most brands start with a pilot — see what we deliver on your own products before committing. After that, it runs like a studio on retainer.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="tier">
+        <div class="tier-badge">Start here</div>
+        <div class="tier-name">Pilot</div>
+        <div class="tier-price">$2.5–4k</div>
+        <p class="tier-desc">A fixed-scope first project. Proves the accuracy before you commit.</p>
+        <ul>
+          <li>One product line, around 25 items</li>
+          <li>Branded imagery from your existing assets</li>
+          <li>Proves the accuracy before you commit</li>
+          <li>Delivered in about two weeks</li>
+        </ul>
+        <div class="tier-cta"><a class="btn btn-ghost" href="#contact">Book a pilot</a></div>
+      </div>
+      <div class="tier featured">
+        <div class="tier-badge">Most brands</div>
+        <div class="tier-name">Retainer</div>
+        <div class="tier-price">$3–5k / mo</div>
+        <p class="tier-desc">The ongoing engine. New releases rendered as they launch.</p>
+        <ul>
+          <li>Set volume of images each month</li>
+          <li>New releases rendered as they launch</li>
+          <li>Seasonal campaign variants, no reshoot</li>
+          <li>Client gallery with usage rights tracked</li>
+        </ul>
+        <div class="tier-cta"><a class="btn btn-inv" href="#contact">Start a retainer</a></div>
+      </div>
+      <div class="tier">
+        <div class="tier-badge">One-off</div>
+        <div class="tier-name">Campaign</div>
+        <div class="tier-price">$1.5–3k</div>
+        <p class="tier-desc">A single lifestyle scene with variants across every channel. Marketing-ready, not spec.</p>
+        <ul>
+          <li>A single lifestyle scene</li>
+          <li>Sized for every model and channel</li>
+          <li>Campaign variants, clearly labeled marketing imagery</li>
+          <li>One-off, no commitment</li>
+        </ul>
+        <div class="tier-cta"><a class="btn btn-ghost" href="#contact">Plan a campaign</a></div>
+      </div>
+    </div>
+    <div class="math-grid">
+      <div class="math-cell">
+        <div class="math-num">$85–250</div>
+        <div class="math-label">traditional studio cost per product — what you skip</div>
+      </div>
+      <div class="math-cell">
+        <div class="math-num">~$100</div>
+        <div class="math-label">per product with Tolerance Studio (15-product minimum)</div>
+      </div>
+      <div class="math-cell">
+        <div class="math-num">Human review</div>
+        <div class="math-label">on every image before delivery — no raw AI output shipped</div>
+      </div>
+      <div class="math-cell">
+        <div class="math-num">2 samples free</div>
+        <div class="math-label">so you see the accuracy on your own product before you pay</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ───────────────────────────────────── -->
+<section class="sec" id="contact">
+  <div class="wrap">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <span class="eyebrow">Free sample</span>
+        <h2 class="sec-h">See it on your own products first.</h2>
+        <p>Pick two of your products and tell us a little about your brand. We'll render them, no charge. If they don't look better than what you have now, nothing lost.</p>
+        <div class="next-steps">
+          <div class="next-card">
+            <h4>What happens next</h4>
+            <p>We review what you send, render two images to your brand, and get them back within a few days. If the results work, we scope a pilot. No deck, no sales call required.</p>
+          </div>
+          <div class="next-card">
+            <h4>Prefer email?</h4>
+            <p>Reach us directly and tell us what you've got.</p>
+            <a href="mailto:hello@tolerancestudio.com">hello@tolerancestudio.com</a>
+          </div>
+        </div>
+      </div>
+      <!-- Wired for Netlify Forms. To use Formspree: set action="https://formspree.io/f/XXXX",
+           remove data-netlify, the hidden form-name input, and the onsubmit handler. -->
+      <form class="contact-form" name="five-parts" method="POST" data-netlify="true" netlify-honeypot="bot-field"
+            onsubmit="return tsSubmit(this,'sent')">
+        <input type="hidden" name="form-name" value="five-parts">
+        <p hidden><label>Don't fill this out: <input name="bot-field"></label></p>
+        <div class="form-row">
+          <div class="field"><label>Name</label><input name="name" type="text" placeholder="Your name" required></div>
+          <div class="field"><label>Brand / store</label><input name="brand" type="text" placeholder="yourstore.com" required></div>
+        </div>
+        <div class="field"><label>Email</label><input name="email" type="email" placeholder="you@company.com" required></div>
+        <div class="field"><label>Roughly how many products?</label>
+          <select name="skus">
+            <option value="">Select a range</option>
+            <option>Under 100</option>
+            <option>100–500</option>
+            <option>500–2,000</option>
+            <option>Over 2,000</option>
+          </select>
+        </div>
+        <div class="field"><label>What do you have? (photos, CAD renders, drawings, or a mix)</label>
+          <select name="source_type">
+            <option value="">Select what best describes your assets</option>
+            <option>Real product photos</option>
+            <option>CAD renders or engineering files</option>
+            <option>Line drawings or sketches</option>
+            <option>A mix — some photos, some drawings</option>
+            <option>Not sure yet</option>
+          </select>
+        </div>
+        <div class="field"><label>Which two products, and where can we find them?</label>
+          <textarea name="parts" placeholder="Links, part numbers, or just describe them — we'll find them"></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit">Send my two parts &rarr;</button>
+        <p class="form-note">We'll review your assets, render two, and get them back within a few days.</p>
+      </form>
+      <div id="sent">
+        <h3>Got it.</h3>
+        <p class="muted">Thanks. We'll review your assets and get your two renders back within a few days.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; product imagery studio</div>
+    <div class="footer-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#work">Work</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Netlify Forms AJAX submit — keeps the inline "Got it" reveal.
+function tsSubmit(form, sentId){
+  var data = new URLSearchParams(new FormData(form)).toString();
+  fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:data})
+    .then(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; })
+    .catch(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; });
+  return false;
+}
+</script>
+<script>
+(function(){
+  var ba=document.getElementById('ba');
+  if(!ba)return;
+  var range=ba.querySelector('input[type=range]');
+  var after=ba.querySelector('.after-layer');
+  var handle=ba.querySelector('.handle');
+  function set(v){after.style.clipPath='inset(0 0 0 '+v+'%)';handle.style.left=v+'%';}
+  range.addEventListener('input',function(){set(range.value);});
+  set(50);
+})();
+
+// 3-way slider
+(function(){
+  var ba=document.getElementById('ba3');
+  if(!ba)return;
+  var range=ba.querySelector('#ba3-range');
+  var mid=ba.querySelector('.mid-layer');
+  var top=ba.querySelector('.top-layer');
+  var h1=ba.querySelector('#ba3-handle1');
+  var h2=ba.querySelector('#ba3-handle2');
+  function set3(v){
+    // v = 0-100
+    // 0-50: man1 → man2 (mid layer reveals from left)
+    // 50-100: man2 → man3 (top layer reveals from left)
+    var midPct = Math.min(v * 2, 100);
+    var topPct = Math.max((v - 50) * 2, 0);
+    mid.style.clipPath = 'inset(0 0 0 ' + (100 - midPct) + '%)';
+    top.style.clipPath = 'inset(0 0 0 ' + (100 - topPct) + '%)';
+    h1.style.left = (100 - midPct) + '%';
+    h2.style.left = (100 - topPct) + '%';
+    h2.style.opacity = topPct > 0 && topPct < 100 ? '1' : '0';
+  }
+  range.addEventListener('input',function(){set3(+range.value);});
+  set3(50);
+})();
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

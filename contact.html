@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tolerance Studio: get 5 free renders</title>
+<meta name="description" content="Send Tolerance Studio five of your parts and we'll render them accurate to spec, free.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="tag">Free sample</span>
+    <h1 class="display">Send us five parts</h1>
+    <p class="lead">Pick the five worst listings in your catalog. We'll render them accurate to spec and send them back, no charge. If they aren't better than what's live, no harm done.</p>
+  </div>
+</header>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="grid g-2" style="align-items:start;gap:2.5rem">
+
+      <!--
+        FORM DELIVERY: wired for Netlify Forms (zero third-party account).
+        On a Netlify deploy, submissions appear under Forms in the dashboard and
+        email to you once you add a notification (Forms > Settings > Form notifications).
+        To use Formspree instead: set action="https://formspree.io/f/XXXX" method="POST",
+        delete the data-netlify line, the hidden form-name input, and the onsubmit handler.
+      -->
+      <form name="five-parts" method="POST" data-netlify="true" netlify-honeypot="bot-field"
+            onsubmit="return tsSubmit(this,'sent')">
+        <input type="hidden" name="form-name" value="five-parts">
+        <p hidden><label>Don't fill this out: <input name="bot-field"></label></p>
+        <div class="field"><label for="name">Name</label><input id="name" name="name" type="text" required></div>
+        <div class="field"><label for="brand">Brand / store</label><input id="brand" name="brand" type="text" placeholder="yourstore.com" required></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required></div>
+        <div class="field"><label for="skus">Roughly how many SKUs?</label>
+          <select id="skus" name="skus"><option>Under 100</option><option>100-500</option><option>500-2,000</option><option>Over 2,000</option></select>
+        </div>
+        <div class="field"><label for="msg">Which five parts, and where can we find them?</label><textarea id="msg" name="parts" placeholder="Links or product names work fine."></textarea></div>
+        <button class="btn btn-primary" type="submit">Send my five parts &rarr;</button>
+      </form>
+
+      <div id="sent" class="card" style="display:none">
+        <h3>Got it.</h3>
+        <p class="muted">Thanks. We'll render your five and get them back within a few days.</p>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:1rem">
+          <h3>What happens next</h3>
+          <p class="muted">We render your five parts, send them over, and if you like them we scope a pilot or retainer. No deck, no pressure.</p>
+        </div>
+        <div class="card">
+          <h3>Prefer email?</h3>
+          <p class="muted">Reach us directly and attach your worst listings.</p>
+          <p style="margin-top:.6rem"><a class="badge-soft" href="mailto:hello@onspec.studio">hello@onspec.studio</a></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; product-correct imagery studio</div>
+    <div><a href="index.html#how-it-works">How it works</a> &nbsp; <a href="index.html#pricing">Pricing</a> &nbsp; <a href="one-sheet.html">One-sheet</a> &nbsp; <a href="contact.html">Contact</a></div>
+  </div>
+</footer>
+
+<script>
+// Submit via AJAX so the inline "Got it" message still shows on Netlify.
+function tsSubmit(form, sentId){
+  var data = new URLSearchParams(new FormData(form)).toString();
+  fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:data})
+    .then(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; })
+    .catch(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; });
+  return false;
+}
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

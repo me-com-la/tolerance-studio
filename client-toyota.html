@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tolerance Studio: Toyota — parts rendered correct enough to sell from</title>
+<meta name="description" content="The origin proof behind Tolerance Studio: thousands of Toyota parts that were never photographed, rendered from engineering files and held exact to spec.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/case-study.css">
+<style>
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0 0}
+  .checklist li{font-size:.92rem;padding-left:1.8rem;position:relative;line-height:1.5}
+  .checklist li::before{content:"";position:absolute;left:0;top:.12rem;width:15px;height:15px;border:1.5px solid var(--line-2);border-radius:4px}
+  .rule{background:var(--chip);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:.6rem .9rem;font-size:.9rem;margin-top:.9rem}
+  .routes{display:flex;flex-direction:column;gap:.55rem;margin:.7rem 0 0}
+  .routes .r{background:#fff;border:1px solid var(--line-2);border-radius:10px;padding:.7rem .9rem;font-size:.9rem;line-height:1.5}
+  .routes .r b{font-family:'Space Grotesk',sans-serif}
+  .routes .r.primary{border-color:var(--accent)}
+  .levers{font-size:.9rem;color:var(--muted);margin-top:.8rem;line-height:1.6}
+  .levers b{color:var(--ink);font-family:'Space Grotesk',sans-serif}
+
+  /* ── hero gallery 1:1 ──────────────────────────────────── */
+  .hero .cs-gallery figure{aspect-ratio:1/1;overflow:hidden;margin:0}
+  .hero .cs-gallery figure img{width:100%;height:100%;object-fit:cover}
+
+  /* ── tighter section gaps ──────────────────────────────── */
+  section{padding:clamp(1.8rem,4vw,2.8rem) 0}
+
+  /* ── AI pipeline strip ─────────────────────────────────── */
+  .ws-pipeline{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:0;align-items:end;margin:2rem 0 0;border-radius:12px;overflow:hidden}
+  .ws-pipeline .step-wrap{display:flex;flex-direction:column;width:100%;min-width:0}
+  .ws-pipeline .step{margin:0;width:100%;border-radius:0;overflow:hidden;border:none;background:#f0efed;position:relative;aspect-ratio:1/1}
+  .ws-pipeline .step img{position:absolute;inset:10px;object-fit:cover;display:block}
+  .ws-pipeline .step-lbl{display:block;font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.5rem;text-align:center}
+  .ws-pipeline .arr{font-size:1rem;color:var(--accent);text-align:center;padding:0 .4rem 1.6rem;background:#f0efed}
+  @media(max-width:860px){
+    .ws-pipeline{grid-template-columns:1fr 1fr;row-gap:1.2rem;border-radius:0;overflow:visible}
+    .ws-pipeline .step{border-radius:var(--radius)}
+    .ws-pipeline .arr{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Engineering to Image</span>
+    <h1 class="display">Toyota</h1>
+    <p class="lead">Thousands of parts with no studio shot and no realistic way to shoot them all. We built the imagery from engineering files instead, and held every part exact to spec. This is the work the rest of Tolerance Studio is built on.</p>
+  </div>
+  <div class="wrap" style="padding-top:1.5rem">
+    <div class="cs-gallery" style="margin:0">
+      <figure style="margin:0"><img src="images/Toyota/hero.jpg" alt="Photoreal render of a Toyota part built from engineering source" loading="lazy"></figure>
+      <figure style="margin:0"><img src="images/Toyota/paint.jpg" alt="Toyota paint render" loading="lazy"></figure>
+      <figure style="margin:0"><img src="images/Toyota/seat.jpg" alt="Toyota seat render" loading="lazy"></figure>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">What "correct" means here</span>
+      <h2 class="display">Accuracy isn't a style. It's the product.</h2>
+    </div>
+    <ul class="checklist">
+      <li><b>Geometry</b> — dimensions and proportions match the real part. No warping.</li>
+      <li><b>Material</b> — metal reads as metal, with the right grain and weight.</li>
+      <li><b>Finish</b> — gloss, matte, anodize, or coating matches the actual SKU.</li>
+      <li><b>Hardware</b> — correct bolts, threads, and connectors. Nothing invented or dropped.</li>
+      <li><b>Badging</b> — part numbers and marks stay legible and correct.</li>
+    </ul>
+    <div class="rule">Rule: one wrong bolt, thread, or number and the image is rejected. Spec is pass or fail, never close enough.</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it was made</span>
+      <h2 class="display">The method is set per part</h2>
+      <p class="lead">Toyota parts sit at the hard end of the accuracy axis, so most of this work leans on compositing rather than pure generation.</p>
+    </div>
+    <div class="routes">
+      <div class="r primary"><b>Primary — Route B (AI scene + composited product):</b> the real part shot or CAD render drops into a built setting. Used wherever threads, hardware, or badging have to be exact, which is most parts.</div>
+      <div class="r"><b>Secondary — Route A (full AI generation):</b> kept for simpler forms where the model holds geometry on its own.</div>
+    </div>
+    <p class="levers"><b>Creative direction:</b> clinical, product-first; the part treated as the hero. &nbsp;·&nbsp; <b>Visual style:</b> clean directional light, neutral surfaces, accurate materials. &nbsp;·&nbsp; <b>Setting:</b> catalog white, workbench, and in-vehicle lifestyle.</p>
+  </div>
+</section>
+
+
+<section>
+  <div class="wrap cs-reveal">
+    <div class="section-head" style="margin-bottom:1.6rem">
+      <span class="cs-eyebrow">How the pipeline works</span>
+      <h2 class="display">One recreation. Every angle.</h2>
+      <p class="cs-lead">Once a part is rebuilt from source, it never needs to be shot again. Any angle, any surface, any scene — all rendered from the same single recreation at full 4K resolution.</p>
+    </div>
+    <div class="ws-pipeline" style="grid-template-columns:repeat(4,1fr)">
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/Toyota/angle1.jpg" alt="Toyota part angle 1">
+        </figure>
+      </div>
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/Toyota/angle2.jpg" alt="Toyota part angle 2">
+        </figure>
+      </div>
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/Toyota/angle3.jpg" alt="Toyota part angle 3">
+        </figure>
+      </div>
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/Toyota/angle4.jpg" alt="Toyota part angle 4">
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap cs-reveal">
+    <div class="section-head" style="margin-bottom:1.6rem">
+      <span class="cs-eyebrow">Same pipeline</span>
+      <h2 class="display">Sketch to 4K — brake rotor</h2>
+    </div>
+    <div class="ws-reveal-slider" style="position:relative;overflow:hidden;border-radius:12px;cursor:col-resize;user-select:none;touch-action:none;aspect-ratio:4/3;margin-top:1.5rem;max-width:50%;margin-left:auto;margin-right:auto">
+      <img src="images/Toyota/part2.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt="Part composited into a finished scene">
+      <img class="ws-before-img" src="images/Toyota/part1.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top left;display:block;clip-path:inset(0 50% 0 0)" alt="Part source">
+      <div class="ws-divider" style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(255,255,255,.9);box-shadow:0 0 10px rgba(0,0,0,.25);transform:translateX(-50%);pointer-events:none">
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.2);color:#555;font-size:16px;pointer-events:none">⟷</div>
+      </div>
+      <span style="position:absolute;top:.75rem;left:.75rem;background:rgba(0,0,0,.55);color:#fff;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:4px;pointer-events:none">Sketch</span>
+      <span style="position:absolute;top:.75rem;right:.75rem;background:rgba(0,0,0,.55);color:#fff;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:4px;pointer-events:none">Composited</span>
+    </div>
+    <p class="cs-ba-cap">Drag to compare the source sketch to the finished composite.</p>
+  </div>
+</section>
+
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; internal site &middot; confidential</div>
+    <div><a href="client-wingstudio.html">Wing Studio</a> &nbsp; <a href="client-kindtail.html">KindTail</a> &nbsp; <a href="phases.html">Launch plan</a></div>
+  </div>
+</footer>
+
+<script src="assets/nav.js"></script>
+<script src="assets/case-study.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('.ws-reveal-slider').forEach(function(el){
+    var before = el.querySelector('.ws-before-img');
+    var divider = el.querySelector('.ws-divider');
+    var dragging = false;
+
+    function setPos(pct){
+      pct = Math.max(2, Math.min(98, pct));
+      before.style.clipPath = 'inset(0 ' + (100-pct) + '% 0 0)';
+      divider.style.left = pct + '%';
+    }
+
+    function getPct(clientX){
+      var r = el.getBoundingClientRect();
+      return (clientX - r.left) / r.width * 100;
+    }
+
+    el.addEventListener('mousedown', function(e){
+      dragging = true;
+      setPos(getPct(e.clientX));
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e){
+      if (!dragging) return;
+      setPos(getPct(e.clientX));
+    });
+    window.addEventListener('mouseup', function(){ dragging = false; });
+
+    el.addEventListener('touchstart', function(e){
+      dragging = true;
+      setPos(getPct(e.touches[0].clientX));
+    }, {passive:true});
+    window.addEventListener('touchmove', function(e){
+      if (!dragging) return;
+      setPos(getPct(e.touches[0].clientX));
+    }, {passive:true});
+    window.addEventListener('touchend', function(){ dragging = false; });
+  });
+})();
+</script>
+</body>
+</html>

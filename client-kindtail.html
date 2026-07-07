@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tolerance Studio: KindTail — production brief</title>
+<meta name="description" content="POC production brief for KindTail — seasonal and lifestyle variants of hero products without booking another shoot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/case-study.css">
+<style>
+  .meta-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.4rem 0 0}
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0 0}
+  .checklist li{font-size:.92rem;padding-left:1.8rem;position:relative;line-height:1.5}
+  .checklist li::before{content:"";position:absolute;left:0;top:.12rem;width:15px;height:15px;border:1.5px solid var(--line-2);border-radius:4px}
+  .rule{background:var(--chip);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:.6rem .9rem;font-size:.9rem;margin-top:.9rem}
+  .routes{display:flex;flex-direction:column;gap:.55rem;margin:.7rem 0 0}
+  .routes .r{background:#fff;border:1px solid var(--line-2);border-radius:10px;padding:.7rem .9rem;font-size:.9rem;line-height:1.5}
+  .routes .r b{font-family:'Space Grotesk',sans-serif}
+  .routes .r.primary{border-color:var(--accent)}
+  .levers{font-size:.9rem;color:var(--muted);margin-top:.8rem;line-height:1.6}
+  .levers b{color:var(--ink);font-family:'Space Grotesk',sans-serif}
+
+  /* ── hero gallery 1:1 ──────────────────────────────────── */
+  .hero .cs-gallery figure{aspect-ratio:1/1;overflow:hidden;margin:0}
+  .hero .cs-gallery figure img{width:100%;height:100%;object-fit:cover}
+
+  /* ── tighter section gaps ──────────────────────────────── */
+  section{padding:clamp(1.8rem,4vw,2.8rem) 0}
+
+  /* ── AI pipeline strip ─────────────────────────────────── */
+  .ws-pipeline{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:0;align-items:end;margin:2rem 0 0;border-radius:12px;overflow:hidden}
+  .ws-pipeline .step-wrap{display:flex;flex-direction:column;width:100%;min-width:0}
+  .ws-pipeline .step{margin:0;width:100%;border-radius:0;overflow:hidden;border:none;background:#f0efed;position:relative;aspect-ratio:1/1}
+  .ws-pipeline .step img{position:absolute;inset:10px;object-fit:cover;display:block}
+  .ws-pipeline .step-lbl{display:block;font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.5rem;text-align:center}
+  .ws-pipeline .arr{font-size:1rem;color:var(--accent);text-align:center;padding:0 .4rem 1.6rem;background:#f0efed}
+  @media(max-width:860px){
+    .ws-pipeline{grid-template-columns:1fr 1fr;row-gap:1.2rem;border-radius:0;overflow:visible}
+    .ws-pipeline .step{border-radius:var(--radius)}
+    .ws-pipeline .arr{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Lifestyle · seasonal proof</span>
+    <h1 class="display">KindTail</h1>
+    <p class="lead">A design-led DTC pet brand with strong existing imagery. The brief isn't "fix your photos." It's seasonal and lifestyle variants of hero products, built from their own product shots, without booking another shoot. Everything below is real output from KindTail's actual listings.</p>
+  </div>
+  <div class="wrap" style="padding-top:1.5rem">
+    <div class="cs-gallery" style="margin:0">
+      <figure style="margin:0"><img src="images/KindTail/pawd-crate-fall-scene-test.png" alt="KindTail PAWD crate styled in a warm fall living room" loading="lazy"></figure>
+      <figure style="margin:0"><img src="images/KindTail/pawd-crate-blue-coastal-scene.png" alt="KindTail blue PAWD crate in a bright coastal living room" loading="lazy"></figure>
+      <figure style="margin:0"><img src="images/KindTail/pawd-crate-spring-scene.png" alt="KindTail PAWD crate in a fresh spring living room" loading="lazy"></figure>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Free sample · built from their own listings</span>
+      <h2 class="display">Before → after</h2>
+      <p class="lead">Two KindTail products, taken straight from their live white-background listings and placed in art-directed seasonal scenes. The product stays exact, the world around it changes. This is the free sample a brand gets before any invoice.</p>
+    </div>
+    <figure style="margin:1.4rem 0 0"><img src="images/KindTail/kindtail-beforeafter-white.jpg" alt="KindTail white PAWD crate: flat listing versus styled fall scene" style="width:100%;border-radius:12px;display:block" loading="lazy"><figcaption style="font-size:.82rem;color:var(--muted);margin-top:.5rem">PAWD crate, white — live listing (left) to a warm fall living room (right).</figcaption></figure>
+    <figure style="margin:1.6rem 0 0"><img src="images/KindTail/kindtail-beforeafter-blue.jpg" alt="KindTail blue PAWD crate: flat listing versus styled coastal scene" style="width:100%;border-radius:12px;display:block" loading="lazy"><figcaption style="font-size:.82rem;color:var(--muted);margin-top:.5rem">PAWD crate, blue — masked from a busy listing, dropped into a bright coastal room. Lattice and fur held.</figcaption></figure>
+    <figure style="margin:1.6rem 0 0"><img src="images/KindTail/kindtail-range-strip.jpg" alt="One KindTail crate across fall, spring, and coastal looks" style="width:100%;border-radius:12px;display:block" loading="lazy"><figcaption style="font-size:.82rem;color:var(--muted);margin-top:.5rem">One catalog, one brand world — the range that lets a brand buy fall, spring, and summer campaigns off the same products.</figcaption></figure>
+    <div class="rule" style="margin-top:1.4rem">Each scene: minutes of generation, held product-correct, art-directed. The studio's work is the direction and the accuracy check, not the labor.</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Spec / accuracy checklist</span>
+      <h2 class="display">Binary pass/fail</h2>
+    </div>
+    <ul class="checklist">
+      <li><b>Geometry</b> — crate proportions, fold mechanism, and mesh pattern correct. No warping.</li>
+      <li><b>Material</b> — fabric, mesh, and frame finish read true; no plastic-look where there's metal or fabric.</li>
+      <li><b>Mechanism</b> — latches, hinges, and dividers correct. Nothing invented.</li>
+      <li><b>Branding</b> — KindTail marks and labels legible and correct.</li>
+      <li><b>Color</b> — within KindTail's palette spec.</li>
+      <li><b>No phantom features</b> — no size, port, or fitting the real product doesn't have.</li>
+    </ul>
+    <div class="rule">Rule: any single fail = reject.</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">★ The per-job variable</span>
+      <h2 class="display">Production method</h2>
+      <p class="lead">KindTail mixes a hardware-accurate hero (the crate) with forgiving soft goods (mats, bowls, pads), so more than one route runs within the same job.</p>
+    </div>
+    <div class="routes">
+      <div class="r primary"><b>Primary — Route B (AI scene + composited product):</b> real product shot composited into AI-built home settings. Used for the crate wherever the fold mechanism and mesh must be exact.</div>
+      <div class="r"><b>Secondary — Route A (full AI generation):</b> mats, bowls, and pads tolerate full generation where forms are simple and no mechanism is in frame.</div>
+      <div class="r"><b>Route C (composite / retouch):</b> existing hero shots relit and re-staged for seasonal variants — no new product photography needed.</div>
+    </div>
+    <p class="levers"><b>Creative direction:</b> warm, modern, design-forward home; matches their established brand world, never generic. &nbsp;·&nbsp; <b>Visual style:</b> soft natural light, clean modern interiors, KindTail palette, consistent camera feel. &nbsp;·&nbsp; <b>Setting:</b> modern living spaces, entryways, travel and car scenes.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap cs-reveal">
+    <div class="section-head" style="margin-bottom:1.6rem">
+      <span class="cs-eyebrow">How the pipeline works</span>
+      <h2 class="display">From product shot to on-brand scene</h2>
+      <p class="cs-lead">Every piece starts with a real product photo or existing hero image. The pipeline takes it from there — isolate the object, build the AI scene around it, composite together in high res.</p>
+    </div>
+    <div class="ws-pipeline">
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/KindTail/src-white-crate.png" alt="KindTail source listing photo">
+        </figure>
+        <span class="step-lbl">Source listing</span>
+      </div>
+      <div class="arr">→</div>
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/KindTail/pawd-crate-white-cutout.png" alt="Product masked and isolated">
+        </figure>
+        <span class="step-lbl">Isolated</span>
+      </div>
+      <div class="arr">→</div>
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/KindTail/pawd-crate-fall-scene-test.png" alt="Product placed in an art-directed scene">
+        </figure>
+        <span class="step-lbl">Scene built</span>
+      </div>
+      <div class="arr">→</div>
+      <div class="step-wrap">
+        <figure class="step">
+          <img src="images/KindTail/pawd-crate-spring-scene.png" alt="Second seasonal variant from the same product">
+        </figure>
+        <span class="step-lbl">Seasonal variant</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap cs-reveal">
+    <div class="section-head" style="margin-bottom:1.6rem">
+      <span class="cs-eyebrow">Same pipeline · different piece</span>
+      <h2 class="display">Sketch to scene — the PAWD crate</h2>
+    </div>
+    <div class="ws-reveal-slider" style="position:relative;overflow:hidden;border-radius:12px;cursor:col-resize;user-select:none;touch-action:none;aspect-ratio:4/3;margin-top:1.5rem;max-width:50%;margin-left:auto;margin-right:auto">
+      <img src="images/KindTail/pawd-crate-fall-scene-test.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt="PAWD crate composited into a modern living room scene">
+      <img class="ws-before-img" src="images/KindTail/src-white-crate.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top left;display:block;clip-path:inset(0 50% 0 0)" alt="Source product photo of PAWD crate">
+      <div class="ws-divider" style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(255,255,255,.9);box-shadow:0 0 10px rgba(0,0,0,.25);transform:translateX(-50%);pointer-events:none">
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.2);color:#555;font-size:16px;pointer-events:none">⟷</div>
+      </div>
+      <span style="position:absolute;top:.75rem;left:.75rem;background:rgba(0,0,0,.55);color:#fff;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:4px;pointer-events:none">Source</span>
+      <span style="position:absolute;top:.75rem;right:.75rem;background:rgba(0,0,0,.55);color:#fff;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:4px;pointer-events:none">Composited</span>
+    </div>
+    <p class="cs-ba-cap">Drag to compare the source product shot to the finished composite.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; internal site &middot; confidential</div>
+    <div><a href="client-toyota.html">Toyota</a> &nbsp; <a href="client-wingstudio.html">Wing Studio</a> &nbsp; <a href="phases.html">Launch plan</a></div>
+  </div>
+</footer>
+
+<script src="assets/nav.js"></script>
+<script src="assets/case-study.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('.ws-reveal-slider').forEach(function(el){
+    var before = el.querySelector('.ws-before-img');
+    var divider = el.querySelector('.ws-divider');
+    var dragging = false;
+
+    function setPos(pct){
+      pct = Math.max(2, Math.min(98, pct));
+      before.style.clipPath = 'inset(0 ' + (100-pct) + '% 0 0)';
+      divider.style.left = pct + '%';
+    }
+
+    function getPct(clientX){
+      var r = el.getBoundingClientRect();
+      return (clientX - r.left) / r.width * 100;
+    }
+
+    el.addEventListener('mousedown', function(e){
+      dragging = true;
+      setPos(getPct(e.clientX));
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e){
+      if (!dragging) return;
+      setPos(getPct(e.clientX));
+    });
+    window.addEventListener('mouseup', function(){ dragging = false; });
+
+    el.addEventListener('touchstart', function(e){
+      dragging = true;
+      setPos(getPct(e.touches[0].clientX));
+    }, {passive:true});
+    window.addEventListener('touchmove', function(e){
+      if (!dragging) return;
+      setPos(getPct(e.touches[0].clientX));
+    }, {passive:true});
+    window.addEventListener('touchend', function(){ dragging = false; });
+  });
+})();
+</script>
+</body>
+</html>
