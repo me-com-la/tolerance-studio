@@ -9,6 +9,44 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<script>
+// Temporary beta gate (added 2026-07-07, remove for public launch): homepage
+// hides behind a keyword while the Owner tests the live site. Client-side
+// only — keeps casual visitors out, not a security boundary (the apps are
+// protected by real auth regardless). Keyword lasts for the browser session.
+(function(){
+  var KEY = 'tolerance2026';
+  try { if (sessionStorage.getItem('ts-gate') === 'open') return; } catch(e){ return; }
+  document.documentElement.style.visibility = 'hidden';
+  window.addEventListener('DOMContentLoaded', function(){
+    var w = document.createElement('div');
+    w.id = 'ts-gate';
+    w.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#ffffff;display:flex;align-items:center;justify-content:center;visibility:visible';
+    w.innerHTML =
+      '<form id="ts-gate-form" style="display:flex;flex-direction:column;gap:.8rem;align-items:center;font-family:\'IBM Plex Sans\',system-ui,sans-serif">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#d8502d">Private beta</div>' +
+        '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:2rem;font-weight:700;text-transform:uppercase;color:#111014">Tolerance Studio</div>' +
+        '<input id="ts-gate-in" type="password" placeholder="Access keyword" autocomplete="off" style="font-family:inherit;font-size:.95rem;padding:.7rem .9rem;border:1px solid rgba(17,16,20,.22);border-radius:8px;width:16rem;text-align:center">' +
+        '<button type="submit" style="font-family:inherit;font-size:.88rem;font-weight:500;padding:.7rem 1.6rem;border-radius:8px;border:none;cursor:pointer;background:#111014;color:#fff">Enter →</button>' +
+        '<div id="ts-gate-err" style="font-size:.8rem;color:#7a2a14;min-height:1.2em"></div>' +
+      '</form>';
+    document.body.appendChild(w);
+    document.documentElement.style.visibility = '';
+    var inp = document.getElementById('ts-gate-in');
+    inp.focus();
+    document.getElementById('ts-gate-form').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      if (inp.value.trim().toLowerCase() === KEY){
+        try { sessionStorage.setItem('ts-gate','open'); } catch(e){}
+        w.remove();
+      } else {
+        document.getElementById('ts-gate-err').textContent = 'Not it — ask the studio for the keyword.';
+        inp.select();
+      }
+    });
+  });
+})();
+</script>
 <style>
 :root{
   --bg:#ffffff;
