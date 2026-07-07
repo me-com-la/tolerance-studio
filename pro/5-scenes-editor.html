@@ -355,7 +355,7 @@ async function generateAndCheck(){
     await saveBatchSize();
 
     note.textContent = 'Expanding your scenes into full prompts…';
-    await callLocalService('expand-shots', { projectId });
+    await callFunction('expand-shots', { projectId });
 
     note.textContent = 'Loading your product cutout…';
     const clientSlug = project.clients.slug;
@@ -411,7 +411,7 @@ async function aiDraftScenes(){
   }
   try {
     const result = await withBusy(btn, status, 'drafting…', () =>
-      callLocalService('ai-draft', { projectId, kind: 'scenes', batchSize: draftCount }));
+      callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: draftCount }));
     const drafted = (result.text || '').split('\n')
       .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean)
       .slice(0, draftCount)

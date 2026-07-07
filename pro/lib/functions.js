@@ -13,9 +13,12 @@ const FUNCTIONS_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 // db.js call). Throws on any non-ok response or {ok:false} body, with the
 // function's own error message when available.
 //
-// NOT currently used by ai-draft/expand-shots in this fork — see
-// callLocalService() below. Kept for `checker`/anything that doesn't hit
-// the JWT gateway bug, and as the real path once that's resolved.
+// Used for ai-draft/expand-shots/checker (2026-07-08 — the JWT gateway
+// bug this project hit right after creation, described in
+// tools/pixel-lock/service.py's header, is gone; a live session-JWT call
+// against this project's Edge Functions gateway now succeeds). Only
+// `composite`/`remove-background` still go through callLocalService()
+// below — those genuinely need OpenCV, which Deno can't run.
 async function callFunction(name, body) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) throw new Error('not signed in');
@@ -36,12 +39,13 @@ async function callFunction(name, body) {
 }
 
 // Calls the local pixel-lock service (tools/pixel-lock/service.py,
-// http://127.0.0.1:8805) instead of a Supabase Edge Function. Used for
-// ai-draft/expand-shots/composite in this fork because this Supabase
-// project's Edge Functions gateway currently rejects the browser's own
-// login session JWT (a real platform-side signing-key issue, not an app
-// bug — see tools/pixel-lock/service.py's header). Same error contract as
-// callFunction() so withBusy() call sites don't need to change.
+// http://127.0.0.1:8805) instead of a Supabase Edge Function. Only used for
+// composite/remove-background now (2026-07-08) — those need real OpenCV,
+// which Deno Edge Functions can't run, so they stay local by necessity.
+// ai-draft/expand-shots moved back to callFunction() above once the JWT
+// gateway bug that originally forced them here turned out to be resolved.
+// Same error contract as callFunction() so withBusy() call sites don't
+// need to change.
 const LOCAL_SERVICE = 'http://127.0.0.1:8805';
 async function callLocalService(name, body) {
   let res;

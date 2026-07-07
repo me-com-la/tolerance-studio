@@ -233,7 +233,7 @@ async function aiDraftTags(){
   const status = document.getElementById('ai-status');
   try {
     const result = await withBusy(btn, status, 'drafting…', () =>
-      callLocalService('ai-draft', { projectId, kind: 'tags' }));
+      callFunction('ai-draft', { projectId, kind: 'tags' }));
     tags = result.tags && (result.tags.product || result.tags.creative) ? result.tags : tags;
     renderTags();
   } catch (e) { /* status element already shows the error via withBusy */ }

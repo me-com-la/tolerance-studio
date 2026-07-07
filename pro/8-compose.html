@@ -315,7 +315,7 @@ async function draftCopy(){
   const btn = document.getElementById('copy-draft-btn');
   const status = document.getElementById('copy-status');
   try {
-    const result = await withBusy(btn, status, 'drafting…', () => callLocalService('ai-draft', { projectId, kind: 'copy' }));
+    const result = await withBusy(btn, status, 'drafting…', () => callFunction('ai-draft', { projectId, kind: 'copy' }));
     const opts = result.options || [];
     document.getElementById('copy-options').innerHTML = opts.map((o, i) => `
       <div class="opt-card">
