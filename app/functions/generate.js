@@ -22,12 +22,13 @@
 // Model: gemini-3.1-flash-image ("Nano Banana 2") — chosen over the cheaper
 // gemini-3.1-flash-lite-image for product-fidelity reasons (Owner call,
 // same logic as the real api-decision.md bake-off: pay for the model that
-// holds detail). Resolution HARD-CAPPED at 1K (Owner rule, 2026-07-06) —
-// imageConfig.imageSize is always "1K" regardless of any project setting.
-// Field name verified empirically (not trusted from a fetched summary that
-// separately fabricated a nonexistent "/v1beta/interactions" endpoint):
-// requesting imageSize:"2K" in a live call returned an actual 2048x2048
-// image versus the default 1024x1024 with no size field set.
+// holds detail). Resolution cap raised to 2K (Owner call, 2026-07-07,
+// bumped from the original 1K cap set 2026-07-06). imageConfig.imageSize
+// is always "2K" regardless of any project setting. Field name verified
+// empirically (not trusted from a fetched summary that separately
+// fabricated a nonexistent "/v1beta/interactions" endpoint): requesting
+// imageSize:"2K" in a live call returned an actual 2048x2048 image versus
+// the default 1024x1024 with no size field set.
 //
 // Multi-reference rule (from the real api-decision.md, 2026-07-06 note):
 // "for complex products (anything with a door, hinge, or asymmetric
@@ -108,7 +109,7 @@ async function generateShotImage(geminiKey, { prompt, aspectRatio, referenceImag
     contents: [{ parts }],
     generationConfig: {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: aspectRatio || '1:1', imageSize: '1K' }, // hard cap, Owner rule
+      imageConfig: { aspectRatio: aspectRatio || '1:1', imageSize: '2K' }, // cap, Owner rule (raised from 1K 2026-07-07)
     },
   };
   const { status, json: resp } = await httpsJson(
@@ -319,7 +320,7 @@ async function generateProjectRenders(deps, params) {
   const checkedCount = succeeded.filter((s) => s.checkNote.startsWith('checked')).length;
   const summary =
     `${succeeded.length}/${shots.items.length} shots generated via Gemini ` +
-    `(${GEMINI_MODEL}, ${aspectRatio}, 1K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` +
+    `(${GEMINI_MODEL}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` +
     (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '');
   await db.createRunLogEntry(project.id, 'generate', summary);
 
