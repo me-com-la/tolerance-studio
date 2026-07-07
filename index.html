@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tolerance Studio — product imagery built around your brand</title>
-<meta name="description" content="Tolerance Studio is a product imagery studio. We learn your visual identity and apply it to everything you make. AI-powered production, human creative direction, at a fraction of studio cost.">
+<meta name="description" content="Three ways to get brand-true product imagery without a reshoot: Standard, a self-serve AI app for range (free for 2 projects, $10/mo unlimited); PRO, a self-serve AI app that locks your product's real pixels ($20/mo); and a full-service Creative Director tier for brands who want it fully handled.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <style>
 :root{
   --bg:#ffffff;
-  --surface:#f5f4f1;
+  --surface:#ffffff;
   --line:rgba(17,16,20,.07);
   --line-strong:rgba(17,16,20,.14);
   --ink:#111014;
@@ -59,23 +59,30 @@ img{max-width:100%;display:block}
 .btn-ghost:hover{color:var(--ink)}
 .btn-inv{background:#fff;color:var(--ink);border-color:#fff}
 
-/* hero */
+/* hero — headline first, work ticker under it */
 .hero{
   position:relative;
-  padding:clamp(3.5rem,8vw,6rem) 0 clamp(2.5rem,5vw,4rem);
-  background-image:url('images/hero bg.png');
-  background-size:cover;background-position:center center;
+  padding:clamp(3.5rem,8vw,6rem) 0 0;
+  background:var(--surface);
   overflow:hidden;
+  text-align:center;
 }
-.hero .wrap{position:relative;z-index:1}
+.hero .wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
 .hero-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;white-space:nowrap;display:block}
-.hero h1{font-family:var(--display);font-size:clamp(2.4rem,6vw,4.4rem);font-weight:700;line-height:.95;letter-spacing:.02em;text-transform:uppercase;max-width:14ch;margin-bottom:1.2rem;color:#fff}
-.hero p{font-size:clamp(.88rem,1.4vw,.97rem);color:rgba(255,255,255,.72);max-width:42ch;line-height:1.7;margin-bottom:1.6rem}
-.hero-actions{display:flex;gap:.85rem;flex-wrap:wrap}
-.hero .btn-primary{background:#fff;color:var(--ink);border-color:#fff}
-.hero .btn-ghost{color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.3)}
-.hero .btn-ghost:hover{color:#fff;border-color:#fff}
-@media(max-width:600px){.hero{background-image:url('images/hero bg m.png');background-position:center top}}
+.hero h1{font-family:var(--display);font-size:clamp(2.6rem,7.5vw,5.4rem);font-weight:700;line-height:.95;letter-spacing:.01em;text-transform:uppercase;max-width:30ch;margin-bottom:1.2rem;color:var(--ink)}
+.hero p{font-size:clamp(.9rem,1.5vw,1.02rem);color:var(--muted);max-width:58ch;line-height:1.7;margin-bottom:1.6rem}
+.hero-actions{display:flex;gap:.85rem;flex-wrap:wrap;justify-content:center}
+
+/* work ticker — real renders scrolling under the headline */
+.ticker{margin-top:clamp(2.2rem,5vw,3.5rem);padding-bottom:clamp(2.5rem,5vw,4rem);overflow:hidden;width:100%}
+.ticker-track{display:flex;gap:14px;width:max-content;padding:0 14px;animation:ticker-scroll var(--ticker-dur,60s) linear infinite;will-change:transform}
+.ticker:hover .ticker-track{animation-play-state:paused}
+.ticker img{height:clamp(180px,24vw,280px);width:auto;border-radius:18px;box-shadow:var(--shadow);display:block;flex:0 0 auto}
+@keyframes ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){
+  .ticker{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ticker-track{animation:none}
+}
 
 /* stat cards */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
@@ -95,13 +102,10 @@ img{max-width:100%;display:block}
 .step-desc{font-size:.82rem;color:var(--muted);line-height:1.55}
 
 /* pillar cards */
-.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:1.25rem}
+.pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-top:1.25rem}
 .pillar{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.8rem 1.6rem}
-.pillar.dark{background:var(--ink)}
 .pillar h3{font-family:var(--display);font-size:1.1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);margin-bottom:.55rem}
-.pillar.dark h3{color:#fff}
 .pillar p{font-size:.85rem;color:var(--muted);line-height:1.6}
-.pillar.dark p{color:rgba(255,255,255,.55)}
 
 /* before/after slider */
 .ba-wrap{margin-top:1.1rem}
@@ -116,26 +120,32 @@ img{max-width:100%;display:block}
 .ba-cap{font-size:.8rem;color:var(--muted);margin-top:.65rem}
 .ba .handle2{width:2px;background:rgba(255,255,255,.6);pointer-events:none}
 
-/* pricing */
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
-.tier{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:2rem 1.6rem;display:flex;flex-direction:column;gap:.4rem}
-.tier.featured{background:var(--ink);color:#fff}
-.tier-badge{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.tier.featured .tier-badge{color:rgba(255,255,255,.4)}
-.tier-name{font-family:var(--display);font-size:1.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-top:.15rem}
-.tier-price{font-family:var(--mono);font-size:1.5rem;color:var(--ink);margin:.25rem 0 .15rem}
-.tier.featured .tier-price{color:#fff}
-.tier-desc{font-size:.82rem;color:var(--muted);line-height:1.5;padding-bottom:.6rem;border-bottom:1px solid var(--line)}
-.tier.featured .tier-desc{color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.1)}
-.tier ul{list-style:none;display:flex;flex-direction:column;gap:.4rem;flex:1;margin-top:.5rem}
-.tier ul li{font-size:.82rem;color:var(--muted);padding-left:1rem;position:relative}
-.tier ul li::before{content:'—';position:absolute;left:0;color:var(--accent)}
-.tier.featured ul li{color:rgba(255,255,255,.6)}
-.tier-cta{margin-top:1.2rem}
-.math-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:1.25rem}
-.math-cell{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.2rem}
-.math-num{font-family:var(--mono);font-size:clamp(1.1rem,2.2vw,1.5rem);color:var(--ink);line-height:1;margin-bottom:.4rem}
-.math-label{font-size:.78rem;color:var(--muted);line-height:1.4}
+/* product compare table — benefits add up left to right */
+.compare-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.compare{width:100%;min-width:700px;border-collapse:separate;border-spacing:0;background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.compare th,.compare td{padding:.85rem 1.1rem;border-bottom:1px solid var(--line)}
+.compare thead th{vertical-align:bottom;text-align:center;padding-top:1.7rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line-strong)}
+.compare thead th.feat{text-align:left}
+.compare .feat{font-size:.85rem;color:var(--muted);text-align:left;width:36%;line-height:1.5}
+.compare td.val{text-align:center;font-size:.85rem;color:var(--ink)}
+.compare td.val.txt{text-align:left;line-height:1.5}
+.compare .check{color:var(--accent);font-size:1rem;font-weight:700}
+.compare .no{color:var(--line-strong)}
+.compare tbody tr:last-child th,.compare tbody tr:last-child td{border-bottom:none}
+.compare .hl{background:var(--bg);box-shadow:inset 2px 0 0 var(--accent),inset -2px 0 0 var(--accent)}
+.plan-badge{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.4rem}
+.plan-name{font-family:var(--display);font-size:1.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1;display:block}
+.plan-price{font-family:var(--mono);font-size:.85rem;color:var(--muted);display:block;margin-top:.45rem}
+.plan-price .was-price{opacity:.55;margin-left:.35rem}
+.plan-cta{display:block;margin-top:.9rem}
+.plan-cta .btn{padding:.5rem 1.05rem;font-size:.82rem}
+
+/* honest-limits cards — moved here from pro.html, same markup/classes as there */
+.limits{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem}
+.limits ul{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem}
+.limits li{font-size:.9rem;color:var(--muted);padding-left:1.3rem;position:relative;line-height:1.6}
+.limits li::before{content:"—";position:absolute;left:0;color:var(--accent)}
+@media(max-width:700px){.honest-grid{grid-template-columns:1fr !important}}
 
 /* gallery */
 .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
@@ -147,26 +157,6 @@ img{max-width:100%;display:block}
 .src-pair figure{margin:0;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);position:relative;aspect-ratio:4/3;background:#111}
 .src-pair figure img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* contact */
-.contact-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:clamp(2rem,5vw,4rem);align-items:start}
-.contact-info{padding-top:.5rem}
-.contact-info h2{margin-bottom:.8rem}
-.contact-info p{font-size:.95rem;color:var(--muted);line-height:1.7;margin-bottom:1.4rem}
-.next-steps{display:flex;flex-direction:column;gap:.75rem}
-.next-card{background:var(--bg);border-radius:var(--radius);padding:1.2rem 1.4rem;box-shadow:var(--shadow)}
-.next-card h4{font-size:.88rem;font-weight:500;margin-bottom:.3rem}
-.next-card p{font-size:.82rem;color:var(--muted);line-height:1.55}
-.next-card a{color:var(--accent);font-size:.85rem}
-.contact-form{display:flex;flex-direction:column;gap:.9rem}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
-.field{display:flex;flex-direction:column;gap:.35rem}
-.field label{font-size:.8rem;color:var(--muted);font-weight:500}
-.field input,.field textarea,.field select{font-family:var(--body);font-size:.9rem;color:var(--ink);background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;padding:.65rem .85rem;transition:border-color .15s;width:100%}
-.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent)}
-.field textarea{resize:vertical;min-height:100px}
-.form-note{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.2rem}
-#sent{background:var(--surface);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow);display:none}
-#sent h3{font-family:var(--display);font-size:1.5rem;text-transform:uppercase;margin-bottom:.5rem}
 
 /* footer */
 footer{background:var(--bg);border-top:1px solid var(--line);padding:1.8rem 0}
@@ -181,14 +171,10 @@ footer a:hover{color:var(--ink)}
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .pillars{grid-template-columns:1fr}
   .gallery{grid-template-columns:repeat(2,1fr)}
-  .pricing-grid{grid-template-columns:1fr}
-  .math-grid{grid-template-columns:repeat(2,1fr)}
-  .contact-grid{grid-template-columns:1fr}
 }
 @media(max-width:540px){
   .pipeline-steps{grid-template-columns:1fr}
   .stats-row{grid-template-columns:1fr}
-  .form-row{grid-template-columns:1fr}
   .src-pair{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none !important}}
@@ -199,73 +185,170 @@ footer a:hover{color:var(--ink)}
 <!-- ── HERO ──────────────────────────────────────── -->
 <header class="hero">
   <div class="wrap">
-    <span class="hero-label">Tolerance Studio</span>
-    <h1>Your products, shot to your brand.</h1>
-    <p>We learn your visual identity and apply it to everything you make. Consistent lighting, palette, and staging, without booking a shoot. Free two-image sample.</p>
+    <span class="hero-label">Your product. Actual pixels. Zero drift.</span>
+    <h1>Product exact campaign assets from a single photo</h1>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="#contact">Get 2 free renders &rarr;</a>
-      <a class="btn btn-ghost" href="#how-it-works">See how it works</a>
+      <a class="btn btn-primary" href="#products">See the three products &rarr;</a>
+      <a class="btn btn-ghost" href="contact.html">Talk to a creative director</a>
     </div>
+  </div>
+  <!-- Every image below was made in the system. Add more: drop numbered
+       files into images/ticker/ (see the README in that folder). -->
+  <div class="ticker" aria-label="Imagery made with Tolerance Studio">
+    <div class="ticker-track" id="ticker-track"></div>
   </div>
 </header>
 
-<!-- ── PROOF STRIP ───────────────────────────────── -->
-<section class="sec" style="padding:1.8rem 0">
+<!-- ── THREE PRODUCTS ────────────────────────────── -->
+<section class="sec" id="products" style="padding-top:1.5rem">
   <div class="wrap">
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-num">60–70%</div>
-        <div class="stat-label">below studio cost, same brand quality</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">2 weeks</div>
-        <div class="stat-label">from brief to delivery, not a calendar of shoot dates</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">Every image</div>
-        <div class="stat-label">reviewed before delivery — we don't ship raw AI output</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">Consistent</div>
-        <div class="stat-label">lighting, palette, and staging held across your whole line</div>
-      </div>
+    <div class="sec-head">
+      <h2 class="sec-h">Pick how much you want AI to run — and how much oversight you want.</h2>
+      <p class="sec-lead">Same brand rules underneath everything. Choose the tier that matches how hands-on you want to be.</p>
+    </div>
+    <div class="compare-scroll">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th class="feat" scope="col"></th>
+            <th scope="col">
+              <span class="plan-badge">Self-serve &middot; Web app</span>
+              <span class="plan-name">Standard</span>
+              <span class="plan-price">Free during beta <s class="was-price">$10/mo</s></span>
+              <span class="plan-cta"><a class="btn btn-ghost" href="signup.html">Sign up free &rarr;</a></span>
+            </th>
+            <th scope="col">
+              <span class="plan-badge">Self-serve &middot; Web app</span>
+              <span class="plan-name">Pro</span>
+              <span class="plan-price">Free during beta <s class="was-price">$20/mo</s></span>
+              <span class="plan-cta"><a class="btn btn-ghost" href="signup.html">Sign up free &rarr;</a></span>
+            </th>
+            <th scope="col" class="hl">
+              <span class="plan-badge">Full service</span>
+              <span class="plan-name">Creative Director</span>
+              <span class="plan-price">Let's talk</span>
+              <span class="plan-cta"><a class="btn btn-primary" href="contact.html">Get 2 free renders &rarr;</a></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="feat" scope="row">Projects</th>
+            <td class="val">2 included</td>
+            <td class="val">Unlimited</td>
+            <td class="val hl">Run for you</td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Your brand tags and rules drive every render</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Product in the frame</th>
+            <td class="val txt">AI-drawn, spec-checked against your photos</td>
+            <td class="val txt">Your photo's pixels, never redrawn</td>
+            <td class="val txt hl">Your photo's pixels, never redrawn</td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Angles</th>
+            <td class="val txt">Any you can brief</td>
+            <td class="val txt">The angles you photograph</td>
+            <td class="val txt hl">Any — directed by your creative director</td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">People &amp; pets</th>
+            <td class="val txt">Interacting with the product</td>
+            <td class="val txt">Beside it, or photographed with it</td>
+            <td class="val txt hl">Directed to fit the campaign</td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Drift risk</th>
+            <td class="val txt">Possible — caught by machine check + human review</td>
+            <td class="val txt">None, by construction</td>
+            <td class="val txt hl">None — human-reviewed before it ships</td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Sized for every campaign need</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Text and CTA overlay built in — campaign-ready output</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">AI directs the scenes and tags for you</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">A real creative director builds your campaign</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Human review on every image before it ships</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">2 free sample renders on your own product</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Best for</th>
+            <td class="val txt">Range, volume, concepts</td>
+            <td class="val txt">Hero shots, PDPs, accuracy-critical SKUs</td>
+            <td class="val txt hl">Full campaigns, brand launches, high-stakes releases</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>
 
-<!-- ── TWO WORKFLOWS ─────────────────────────────── -->
-<section class="sec" id="workflows" style="padding-top:1.5rem">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">Two workflows</span>
-      <h2 class="sec-h">Pick the guarantee that fits the job.</h2>
-      <p class="sec-lead">Same intake — your product photos and your brand rules. Two different engines behind them, and a human review on everything.</p>
+<!-- ── HONEST LIMITS (Standard + PRO combined) ───── -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap honest-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+    <div class="limits">
+      <span class="eyebrow">The honest part — Standard</span>
+      <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">AI-drawn products can drift</h3>
+      <ul>
+        <li>Redrawing a product means small errors are possible — proportions, patterns, embossing, hardware.</li>
+        <li>Every render is checked against your real photos, and rejects never reach you.</li>
+        <li>You approve against a visible checklist — nothing ships on our say-so alone.</li>
+      </ul>
+      <p style="margin-top:1rem"><a class="btn btn-ghost" href="contact.html">Ask about Standard &rarr;</a></p>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="wf-grid">
-      <a href="standard.html" style="background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem;display:block;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <span class="eyebrow" style="margin-bottom:.8rem">Standard</span>
-        <h3 style="font-family:var(--display);font-size:1.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.05;margin-bottom:.5rem">Full creative range</h3>
-        <p style="font-size:.9rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">AI draws your product into any scene you can brief — any angle, people and pets interacting with it. Because a redrawn product can drift, every render is machine-checked against your real photos and human-reviewed before you see it.</p>
-        <span style="font-size:.86rem;font-weight:500;color:var(--accent-ink)">See the Standard workflow &rarr;</span>
-      </a>
-      <a href="pro.html" style="background:var(--ink);color:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem;display:block;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        <span class="eyebrow" style="margin-bottom:.8rem;background:transparent;color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25)">PRO</span>
-        <h3 style="font-family:var(--display);font-size:1.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.05;margin-bottom:.5rem">Pixel-true accuracy</h3>
-        <p style="font-size:.9rem;color:rgba(255,255,255,.72);line-height:1.7;margin-bottom:1rem">PRO never redraws your product. Your photo's pixels are locked in place and the scene is generated around them — zero drift, by construction. What customers zoom in on is your actual product.</p>
-        <span style="font-size:.86rem;font-weight:500;color:#fff">See the PRO workflow &rarr;</span>
-      </a>
+    <div class="limits">
+      <span class="eyebrow">The honest part — PRO</span>
+      <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">What PRO can't do</h3>
+      <ul>
+        <li>The scene angle is your photo's angle. A new angle needs a new photo — not more prompting.</li>
+        <li>Nothing can pass in front of the product unless it was photographed with it.</li>
+        <li>Fine detail (thin stems, wisps) needs a clean, sharp source photo — the photo is the product.</li>
+      </ul>
+      <p style="margin-top:1rem"><a class="btn btn-ghost" href="contact.html">Ask about PRO &rarr;</a></p>
     </div>
   </div>
 </section>
-<style>@media(max-width:700px){#workflows .wf-grid{grid-template-columns:1fr !important}}</style>
+
 
 <!-- ── HOW IT WORKS ──────────────────────────────── -->
 <section class="sec" id="how-it-works">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">The studio process</span>
-      <h2 class="sec-h">Built around your brand. From day one.</h2>
-      <p class="sec-lead">We learn your visual identity first. Everything after that runs like a production pipeline.</p>
+      <h2 class="sec-h">A creative director helps you build your brand.</h2>
+      <p class="sec-lead">Your creative director learns your visual identity first. Everything after that runs like a production pipeline.</p>
     </div>
 
     <div class="pipeline-steps">
@@ -305,10 +388,6 @@ footer a:hover{color:var(--ink)}
 
     <div class="pillars">
       <div class="pillar">
-        <h3>We learn your brand</h3>
-        <p>Palette, lighting direction, surface finishes, camera angle, ≤3 settings. Locked before production starts. 300 images feel like one shoot.</p>
-      </div>
-      <div class="pillar dark">
         <h3>We pick the right tool for the job</h3>
         <p>AI, compositing, retouching — whatever gets it right for that product. You don't need to know which one we used. You just get imagery that looks like your brand.</p>
       </div>
@@ -364,137 +443,13 @@ footer a:hover{color:var(--ink)}
   </div>
 </section>
 
-<!-- ── PRICING ───────────────────────────────────── -->
-<section class="sec" id="pricing">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">Pricing</span>
-      <h2 class="sec-h">Three ways to start</h2>
-      <p class="sec-lead">Most brands start with a pilot — see what we deliver on your own products before committing. After that, it runs like a studio on retainer.</p>
-    </div>
-    <div class="pricing-grid">
-      <div class="tier">
-        <div class="tier-badge">Start here</div>
-        <div class="tier-name">Pilot</div>
-        <div class="tier-price">$2.5–4k</div>
-        <p class="tier-desc">A fixed-scope first project. Proves the accuracy before you commit.</p>
-        <ul>
-          <li>One product line, around 25 items</li>
-          <li>Branded imagery from your existing assets</li>
-          <li>Proves the accuracy before you commit</li>
-          <li>Delivered in about two weeks</li>
-        </ul>
-        <div class="tier-cta"><a class="btn btn-ghost" href="#contact">Book a pilot</a></div>
-      </div>
-      <div class="tier featured">
-        <div class="tier-badge">Most brands</div>
-        <div class="tier-name">Retainer</div>
-        <div class="tier-price">$3–5k / mo</div>
-        <p class="tier-desc">The ongoing engine. New releases rendered as they launch.</p>
-        <ul>
-          <li>Set volume of images each month</li>
-          <li>New releases rendered as they launch</li>
-          <li>Seasonal campaign variants, no reshoot</li>
-          <li>Client gallery with usage rights tracked</li>
-        </ul>
-        <div class="tier-cta"><a class="btn btn-inv" href="#contact">Start a retainer</a></div>
-      </div>
-      <div class="tier">
-        <div class="tier-badge">One-off</div>
-        <div class="tier-name">Campaign</div>
-        <div class="tier-price">$1.5–3k</div>
-        <p class="tier-desc">A single lifestyle scene with variants across every channel. Marketing-ready, not spec.</p>
-        <ul>
-          <li>A single lifestyle scene</li>
-          <li>Sized for every model and channel</li>
-          <li>Campaign variants, clearly labeled marketing imagery</li>
-          <li>One-off, no commitment</li>
-        </ul>
-        <div class="tier-cta"><a class="btn btn-ghost" href="#contact">Plan a campaign</a></div>
-      </div>
-    </div>
-    <div class="math-grid">
-      <div class="math-cell">
-        <div class="math-num">$85–250</div>
-        <div class="math-label">traditional studio cost per product — what you skip</div>
-      </div>
-      <div class="math-cell">
-        <div class="math-num">~$100</div>
-        <div class="math-label">per product with Tolerance Studio (15-product minimum)</div>
-      </div>
-      <div class="math-cell">
-        <div class="math-num">Human review</div>
-        <div class="math-label">on every image before delivery — no raw AI output shipped</div>
-      </div>
-      <div class="math-cell">
-        <div class="math-num">2 samples free</div>
-        <div class="math-label">so you see the accuracy on your own product before you pay</div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ── CONTACT ───────────────────────────────────── -->
 <section class="sec" id="contact">
-  <div class="wrap">
-    <div class="contact-grid">
-      <div class="contact-info">
-        <span class="eyebrow">Free sample</span>
-        <h2 class="sec-h">See it on your own products first.</h2>
-        <p>Pick two of your products and tell us a little about your brand. We'll render them, no charge. If they don't look better than what you have now, nothing lost.</p>
-        <div class="next-steps">
-          <div class="next-card">
-            <h4>What happens next</h4>
-            <p>We review what you send, render two images to your brand, and get them back within a few days. If the results work, we scope a pilot. No deck, no sales call required.</p>
-          </div>
-          <div class="next-card">
-            <h4>Prefer email?</h4>
-            <p>Reach us directly and tell us what you've got.</p>
-            <a href="mailto:hello@tolerancestudio.com">hello@tolerancestudio.com</a>
-          </div>
-        </div>
-      </div>
-      <!-- Wired for Netlify Forms. To use Formspree: set action="https://formspree.io/f/XXXX",
-           remove data-netlify, the hidden form-name input, and the onsubmit handler. -->
-      <form class="contact-form" name="five-parts" method="POST" data-netlify="true" netlify-honeypot="bot-field"
-            onsubmit="return tsSubmit(this,'sent')">
-        <input type="hidden" name="form-name" value="five-parts">
-        <p hidden><label>Don't fill this out: <input name="bot-field"></label></p>
-        <div class="form-row">
-          <div class="field"><label>Name</label><input name="name" type="text" placeholder="Your name" required></div>
-          <div class="field"><label>Brand / store</label><input name="brand" type="text" placeholder="yourstore.com" required></div>
-        </div>
-        <div class="field"><label>Email</label><input name="email" type="email" placeholder="you@company.com" required></div>
-        <div class="field"><label>Roughly how many products?</label>
-          <select name="skus">
-            <option value="">Select a range</option>
-            <option>Under 100</option>
-            <option>100–500</option>
-            <option>500–2,000</option>
-            <option>Over 2,000</option>
-          </select>
-        </div>
-        <div class="field"><label>What do you have? (photos, CAD renders, drawings, or a mix)</label>
-          <select name="source_type">
-            <option value="">Select what best describes your assets</option>
-            <option>Real product photos</option>
-            <option>CAD renders or engineering files</option>
-            <option>Line drawings or sketches</option>
-            <option>A mix — some photos, some drawings</option>
-            <option>Not sure yet</option>
-          </select>
-        </div>
-        <div class="field"><label>Which two products, and where can we find them?</label>
-          <textarea name="parts" placeholder="Links, part numbers, or just describe them — we'll find them"></textarea>
-        </div>
-        <button class="btn btn-primary" type="submit">Send my two parts &rarr;</button>
-        <p class="form-note">We'll review your assets, render two, and get them back within a few days.</p>
-      </form>
-      <div id="sent">
-        <h3>Got it.</h3>
-        <p class="muted">Thanks. We'll review your assets and get your two renders back within a few days.</p>
-      </div>
-    </div>
+  <div class="wrap" style="text-align:center">
+    <span class="eyebrow">Get started</span>
+    <h2 class="sec-h">See it on your own products first.</h2>
+    <p class="sec-lead" style="margin:0 auto 1.6rem">Pick two of your products and tell us a little about your brand. A real creative director reviews what you send and renders them, no charge.</p>
+    <a class="btn btn-primary" href="contact.html">Contact us &rarr;</a>
   </div>
 </section>
 
@@ -504,22 +459,11 @@ footer a:hover{color:var(--ink)}
     <div class="footer-links">
       <a href="#how-it-works">How it works</a>
       <a href="#work">Work</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#contact">Contact</a>
+      <a href="contact.html">Contact</a>
     </div>
   </div>
 </footer>
 
-<script>
-// Netlify Forms AJAX submit — keeps the inline "Got it" reveal.
-function tsSubmit(form, sentId){
-  var data = new URLSearchParams(new FormData(form)).toString();
-  fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:data})
-    .then(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; })
-    .catch(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; });
-  return false;
-}
-</script>
 <script>
 (function(){
   var ba=document.getElementById('ba');
@@ -555,6 +499,52 @@ function tsSubmit(form, sentId){
   }
   range.addEventListener('input',function(){set3(+range.value);});
   set3(50);
+})();
+</script>
+<script>
+// Hero ticker — loads images/ticker/1.jpg, 2.jpg, ... in order (also tries
+// .png/.webp per number) and stops after 3 consecutive missing numbers, so
+// adding an image is just dropping the next-numbered file in that folder.
+// The loaded set is appended twice and the CSS animation slides the track
+// by -50% for a seamless loop; duration scales with content width so the
+// speed stays constant no matter how many images are in the folder.
+(function(){
+  var track = document.getElementById('ticker-track');
+  if (!track) return;
+  var exts = ['jpg','png','webp','jpeg'];
+  var MAX = 40, SPEED = 55; // px per second
+
+  function tryLoad(n, e, done){
+    if (e >= exts.length) { done(null); return; }
+    var img = new Image();
+    img.onload = function(){ done(img); };
+    img.onerror = function(){ tryLoad(n, e+1, done); };
+    img.src = 'images/ticker/' + n + '.' + exts[e];
+  }
+
+  var found = [];
+  function next(n, misses){
+    if (n > MAX || misses >= 3) { build(); return; }
+    tryLoad(n, 0, function(img){
+      if (img) { found.push(img); next(n+1, 0); }
+      else next(n+1, misses+1);
+    });
+  }
+
+  function build(){
+    if (!found.length) return;
+    found.forEach(function(img){ img.alt = ''; track.appendChild(img); });
+    found.forEach(function(img){
+      var copy = img.cloneNode();
+      copy.setAttribute('aria-hidden','true');
+      track.appendChild(copy);
+    });
+    // one full loop = half the track width (the duplicated half)
+    requestAnimationFrame(function(){
+      track.style.setProperty('--ticker-dur', (track.scrollWidth / 2 / SPEED) + 's');
+    });
+  }
+  next(1, 0);
 })();
 </script>
 <script src="assets/nav.js"></script>

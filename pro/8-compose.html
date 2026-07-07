@@ -378,19 +378,20 @@ function renderPreview(){
   const [vZone, hZone] = activePlacement.split('-');
 
   // Cover-crop the EXISTING merged render into W×H — same image, same
-  // pixels, nothing regenerated or sent anywhere. When the copy is going to
-  // sit on the left or right (not center), bias which part of that image
-  // fills the frame so the product lands on the opposite side from the
-  // text, instead of dead-center under it. This only ever crops/zooms/pans
-  // the source (drawImage with different scale+offset) — it can zoom in a
-  // little past a plain cover-crop to make room (renders are 2K+, so this
-  // holds up), but never past subject-detect.js's cap, and never so far
-  // that the product itself gets cut out of frame (see computeSubjectCrop's
-  // subjectFullyVisible fallback).
+  // pixels, nothing regenerated or sent anywhere. When the copy isn't
+  // dead-center on an axis (left/right, and/or top/bottom), bias which part
+  // of that image fills the frame on THAT axis so the product lands on the
+  // opposite side from the text, instead of sitting under it. This only
+  // ever crops/zooms/pans the source (drawImage with different scale+
+  // offset) — it can zoom in a little past a plain cover-crop to make room
+  // (renders are 2K+, so this holds up), but never past subject-detect.js's
+  // cap, and never so far that the product itself gets cut out of frame
+  // (see computeSubjectCrop's subjectFullyVisible fallback).
   let scale, dx, dy;
-  if (selectedBBox && hZone !== 'center') {
-    const targetXRatio = hZone === 'left' ? 0.66 : 0.34; // push subject away from the text's side
-    const t = SubjectDetect.computeSubjectCrop(selectedImg, W, H, selectedBBox, targetXRatio, 1.3);
+  if (selectedBBox && (hZone !== 'center' || vZone !== 'middle')) {
+    const targetXRatio = hZone === 'left' ? 0.66 : hZone === 'right' ? 0.34 : 0.5;
+    const targetYRatio = vZone === 'top' ? 0.66 : vZone === 'bottom' ? 0.34 : 0.5;
+    const t = SubjectDetect.computeSubjectCrop(selectedImg, W, H, selectedBBox, targetXRatio, targetYRatio, 1.3);
     scale = t.scale; dx = t.dx; dy = t.dy;
   } else {
     scale = Math.max(W / selectedImg.width, H / selectedImg.height);

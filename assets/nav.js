@@ -3,9 +3,7 @@
   // Marketing site links — stay inline
   var consumer = [
     { href: "index.html", label: "Home" },
-    { href: "standard.html", label: "Standard" },
-    { href: "pro.html", label: "PRO" },
-    { href: "one-sheet.html", label: "One-sheet" }
+    { href: "contact.html", label: "Contact" }
   ];
 
   // Dropdown categories — each collapses into its own menu, in this order.
@@ -15,7 +13,7 @@
   // that dropdown back for local browsing, it's still in git history.
   var dropdowns = [
     {
-      label: "Work",
+      label: "Case Study",
       items: [
         { href: "client-toyota.html", label: "Engineering to Image - Toyota" },
         { href: "client-wingstudio.html", label: "Low Resolution to 4K - Wings Studio" },
@@ -24,8 +22,6 @@
     }
   ];
 
-  var cta = { href: "contact.html", label: "Get 5 free renders" };
-
   var here = (location.pathname.split("/").pop() || "index.html");
   function link(i) {
     var a = (i.href === here) ? ' class="active"' : '';
@@ -33,7 +29,6 @@
   }
 
   var groupC = consumer.map(link).join("");
-  var ctaActive = (cta.href === here) ? ' active' : '';
 
   // Dropdown styles, injected so the nav stays self-contained
   var css =
@@ -75,15 +70,26 @@
   }
   var groupDD = dropdowns.map(ddHtml).join('<span class="nav-sep" aria-hidden="true"></span>');
 
+  // Auth link — session detected synchronously from supabase-js's localStorage
+  // key (no CDN load needed just to render the nav). account.html/login.html
+  // do the real session check; this only decides which label to show.
+  var signedIn = false;
+  try { signedIn = !!localStorage.getItem("sb-mqgfosfadmmiqlvuvbcy-auth-token"); } catch (e) {}
+  var authLinks = signedIn
+    ? [{ href: "account.html", label: "Account" }]
+    : [{ href: "login.html", label: "Log in" }, { href: "signup.html", label: "Sign up" }];
+  var groupAuth = authLinks.map(link).join("");
+
   var html =
     '<nav class="nav"><div class="wrap">' +
-      '<a class="brand" href="index.html"><img src="images/ts-logo.png" alt="Tolerance Studio" style="height:28px;width:auto;display:block;"></a>' +
+      '<a class="brand" href="index.html"><img src="images/ts-logo.png" alt="Tolerance Studio" style="height:17px;width:auto;display:block;"><span class="brand-tag">Beta</span></a>' +
       '<button id="navtoggle" aria-label="Menu" class="navtoggle"><span></span><span></span><span></span></button>' +
       '<div class="nav-links" id="navlinks">' +
         '<span class="nav-group">' + groupC + '</span>' +
         '<span class="nav-sep" aria-hidden="true"></span>' +
         groupDD +
-        '<a class="nav-cta' + ctaActive + '" href="' + cta.href + '">' + cta.label + '</a>' +
+        '<span class="nav-sep" aria-hidden="true"></span>' +
+        '<span class="nav-group">' + groupAuth + '</span>' +
       '</div>' +
     '</div></nav>';
 

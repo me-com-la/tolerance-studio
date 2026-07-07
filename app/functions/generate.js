@@ -254,6 +254,21 @@ async function generateProjectRenders(deps, params) {
   const clientSlug = project.clients && project.clients.slug;
   if (!clientSlug) return { ok: false, error: 'project has no client slug — cannot build a storage path' };
 
+  // Beta cap: at most MAX_IMAGES_PER_PROJECT images per project, counting
+  // renders that already exist (re-generating the same filename replaces its
+  // row via the upsert below, so the count stays honest). Owner rule 2026-07-07.
+  const MAX_IMAGES_PER_PROJECT = parseInt(process.env.MAX_IMAGES_PER_PROJECT || '10', 10);
+  const existingRenders = await db.countRenders(project.id);
+  const remainingQuota = MAX_IMAGES_PER_PROJECT - (existingRenders || 0);
+  if (remainingQuota <= 0) {
+    return { ok: false, error: `Beta limit reached: ${MAX_IMAGES_PER_PROJECT} images per project. Start a new project to keep going.` };
+  }
+  let capNote = '';
+  if (shots.items.length > remainingQuota) {
+    shots.items = shots.items.slice(0, remainingQuota);
+    capNote = ` Beta cap: ran ${remainingQuota} of the requested shots (${MAX_IMAGES_PER_PROJECT} images max per project).`;
+  }
+
   const aspectRatio = (project.settings && project.settings.generation_aspect) || '1:1';
   const spec = buildSpecFromTags(project);
 
@@ -321,7 +336,7 @@ async function generateProjectRenders(deps, params) {
   const summary =
     `${succeeded.length}/${shots.items.length} shots generated via Gemini ` +
     `(${GEMINI_MODEL}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` +
-    (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '');
+    (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '') + capNote;
   await db.createRunLogEntry(project.id, 'generate', summary);
 
   return { ok: failed.length === 0, generated: succeeded.length, checked: checkedCount, failed };

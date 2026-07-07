@@ -76,7 +76,10 @@ async function expandShots(deps, params) {
     'batch. Each output prompt combines: (1) the product lock — must-weighted product facts, always true, ' +
     'stated first; (2) the style lock — must/should-weighted creative constants, stated as consistent style ' +
     'guidance across the whole batch; (3) the specific scene detail for that shot. Write one flowing ' +
-    'descriptive paragraph per shot, camera-ready, 2-4 sentences, ending with the shot angle. Respond with ' +
+    'descriptive paragraph per shot, camera-ready, 2-4 sentences, ending with the shot angle. Every prompt ' +
+    'must also keep the full product in frame with even margin on all sides — never crop tight or run the ' +
+    'product edge-to-edge — so the compose step downstream has room to shift the image left or right behind ' +
+    'text without cutting the product off. Respond with ' +
     'ONLY a JSON object: {"product_lock":"...", "style_lock":"...", ' +
     '"shots":[{"motif":"short 2-4 word label","prompt":"full prompt paragraph"}, ...]} — exactly one shot ' +
     'per input scene, same order.';

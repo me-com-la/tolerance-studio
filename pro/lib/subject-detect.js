@@ -194,23 +194,34 @@ window.SubjectDetect = (function () {
   /**
    * Compute a cover-crop draw transform (scale, dx, dy — same shape as the
    * plain centered cover-crop in renderPreview) that keeps the canvas fully
-   * covered but biases the subject bbox toward `targetXRatio` (0..1 of
-   * canvas width) instead of dead center, zooming in a little further than
-   * a pure cover-crop would if that's what it takes to make room — capped at
-   * `maxZoom` so it never blows the product up absurdly on a tight source.
-   * Falls back toward center (never crops the subject itself out of frame)
-   * when the source doesn't have enough room to hit the target exactly.
+   * covered but biases the subject bbox toward `targetXRatio`/`targetYRatio`
+   * (0..1 of canvas width/height) instead of dead center on either axis,
+   * zooming in a little further than a pure cover-crop would if that's what
+   * it takes to make room — capped at `maxZoom` so it never blows the
+   * product up absurdly on a tight source. Pass 0.5 for whichever axis
+   * shouldn't be pushed (e.g. targetYRatio=0.5 when only the text's left/
+   * right zone matters, not its top/middle/bottom zone).
+   * Falls back to the closest achievable position (never crops the subject
+   * itself out of frame if any tested zoom level can avoid that) when the
+   * source doesn't have enough room to hit the target exactly.
    */
-  function computeSubjectCrop(img, W, H, bbox, targetXRatio, maxZoom) {
+  function computeSubjectCrop(img, W, H, bbox, targetXRatio, targetYRatio, maxZoom) {
+    if (targetYRatio == null) targetYRatio = 0.5;
     maxZoom = maxZoom || 1.3;
     const iw = img.naturalWidth, ih = img.naturalHeight;
     const coverScale = Math.max(W / iw, H / ih);
 
     let best = null;
-    // try increasing zoom in small steps until the target position is
-    // reachable without pushing the subject bbox outside the frame;
-    // the first (no extra zoom) step is tried first and used unless a
-    // later, more-zoomed step is needed AND still keeps the subject in frame.
+    // Try increasing zoom in small steps, always keeping the candidate that
+    // gets closest to the target position — fully-visible candidates always
+    // beat non-fully-visible ones; within the same visibility tier, smaller
+    // error wins; on an exact tie, the LATER (more-zoomed) step wins, since
+    // more zoom only ever gets tried because the lower-zoom step already
+    // fell short, so a tie means the extra zoom was free precision, not
+    // waste. Every step is compared against the running best — a fix for
+    // the previous version, which locked onto step 0's result the moment
+    // nothing was fully visible and silently ignored every later, closer
+    // step for the rest of the loop.
     const steps = 6;
     for (let s = 0; s <= steps; s++) {
       const scale = coverScale * (1 + (maxZoom - 1) * (s / steps));
@@ -222,10 +233,8 @@ window.SubjectDetect = (function () {
       let dx = targetX - bbox.cx * scale;
       dx = Math.max(dxMin, Math.min(dxMax, dx));
 
-      // keep vertical centered on the subject too, rather than the raw
-      // canvas center, so a subject sitting low/high in the source doesn't
-      // get sliced by the cover-crop's vertical cut
-      let dy = H / 2 - bbox.cy * scale;
+      const targetY = H * targetYRatio;
+      let dy = targetY - bbox.cy * scale;
       dy = Math.max(dyMin, Math.min(dyMax, dy));
 
       const bx0 = bbox.x0 * scale + dx, bx1 = bbox.x1 * scale + dx;
@@ -233,11 +242,17 @@ window.SubjectDetect = (function () {
       const subjectFullyVisible = bx0 >= -1 && bx1 <= W + 1 && by0 >= -1 && by1 <= H + 1;
 
       const achievedX = bbox.cx * scale + dx;
-      const err = Math.abs(achievedX - targetX);
+      const achievedY = bbox.cy * scale + dy;
+      const err = Math.hypot(achievedX - targetX, achievedY - targetY);
 
       const candidate = { scale, dx, dy, err, subjectFullyVisible };
-      if (subjectFullyVisible && (!best || err < best.err)) best = candidate;
-      if (!best) best = candidate; // guaranteed fallback even if never "fully visible" (subject bigger than frame)
+      if (!best) {
+        best = candidate;
+      } else if (candidate.subjectFullyVisible && !best.subjectFullyVisible) {
+        best = candidate; // any fully-visible candidate beats any not-fully-visible one
+      } else if (candidate.subjectFullyVisible === best.subjectFullyVisible && candidate.err <= best.err) {
+        best = candidate; // same tier: closer (or tied-but-more-zoomed) wins
+      }
     }
     return best;
   }

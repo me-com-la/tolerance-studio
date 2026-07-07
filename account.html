@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account | Tolerance Studio</title>
+<meta name="description" content="Your Tolerance Studio account — products and access.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/auth.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app/lib/supabase.js"></script>
+</head>
+<body>
+
+<header class="hero auth-hero">
+  <div class="wrap">
+    <span class="hero-label">Your account</span>
+    <h1>Your products.</h1>
+    <p>Everything below is included free while Tolerance Studio is in beta.</p>
+  </div>
+</header>
+
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="acct-meta">
+      <span class="acct-email" id="email">…</span>
+      <button class="btn" id="logout" style="border:1px solid rgba(17,16,20,.2)">Log out</button>
+    </div>
+    <div class="acct-grid" id="products">
+      <p class="auth-status" id="status">Loading…</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; product imagery studio</div>
+    <div class="footer-links">
+      <a href="index.html#products">Products</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+var PRODUCTS = {
+  standard: { name: 'Standard', blurb: 'AI-drawn product shots, spec-checked against your photos.', href: 'app/index.html' },
+  pro:      { name: 'Pro', blurb: 'Pixel-true product — your actual photo pixels, never redrawn.', href: 'pro/index.html' }
+};
+function card(key, ent){
+  var p = PRODUCTS[key];
+  return '<div class="acct-card"><span class="beta-pill">' +
+    (ent ? 'Free during beta' : 'No access') + '</span>' +
+    '<h3>' + p.name + '</h3><p>' + p.blurb + '</p>' +
+    (ent ? '<a class="btn btn-primary" href="' + p.href + '">Open ' + p.name + ' &rarr;</a>' : '') +
+    '</div>';
+}
+(async function(){
+  var s = await sb.auth.getSession();
+  if (!s.data.session){ location.href = 'login.html?next=account.html'; return; }
+  document.getElementById('email').textContent = s.data.session.user.email;
+  var box = document.getElementById('products');
+  var r = await sb.from('entitlements').select('product,status');
+  if (r.error){ box.innerHTML = '<p class="auth-status">Could not load products: ' + r.error.message + '</p>'; return; }
+  var have = {};
+  (r.data || []).forEach(function(e){ have[e.product] = e; });
+  box.innerHTML = card('standard', have.standard) + card('pro', have.pro);
+})();
+document.getElementById('logout').addEventListener('click', async function(){
+  await sb.auth.signOut();
+  location.href = 'index.html';
+});
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

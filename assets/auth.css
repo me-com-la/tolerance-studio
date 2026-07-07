@@ -1,0 +1,21 @@
+/* Shared styles for signup / login / account pages (marketing site) */
+.auth-hero{padding-bottom:clamp(1.5rem,3vw,2.5rem)}
+.auth-wrap{display:flex;justify-content:center}
+.auth-card{width:100%;max-width:26rem;background:var(--surface,#fff);border-radius:14px;padding:2rem;box-shadow:0 1px 3px rgba(17,16,20,.06),0 0 0 1px rgba(17,16,20,.08);display:flex;flex-direction:column;gap:.9rem}
+.auth-card .field{display:flex;flex-direction:column;gap:.35rem}
+.auth-card .field label{font-size:.8rem;color:#6b6966;font-weight:500}
+.auth-card .field input{font-family:inherit;font-size:.9rem;color:#111014;background:#fff;border:1px solid rgba(17,16,20,.14);border-radius:8px;padding:.65rem .85rem;width:100%}
+.auth-card .field input:focus{outline:none;border-color:#d8502d}
+.auth-btn{justify-content:center;width:100%}
+.auth-status{font-size:.82rem;color:#6b6966;min-height:1.2em;margin:0}
+.auth-alt{font-size:.85rem;color:#6b6966;text-align:center;margin:0}
+.auth-alt a{color:#7a2a14;text-decoration:underline}
+/* account page */
+.acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:44rem;margin:0 auto}
+.acct-card{background:#fff;border-radius:14px;padding:1.4rem 1.5rem;box-shadow:0 1px 3px rgba(17,16,20,.06),0 0 0 1px rgba(17,16,20,.08)}
+.acct-card h3{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.2rem}
+.acct-card p{font-size:.84rem;color:#6b6966;margin-bottom:.9rem}
+.beta-pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#7a2a14;background:#fbeae3;padding:.28rem .7rem;border-radius:100px;margin-bottom:.7rem}
+.acct-meta{max-width:44rem;margin:0 auto 1.2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.acct-email{font-family:'IBM Plex Mono',monospace;font-size:.82rem;color:#6b6966}
+@media(max-width:640px){.acct-grid{grid-template-columns:1fr}}

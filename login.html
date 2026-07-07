@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in | Tolerance Studio</title>
+<meta name="description" content="Log in to your Tolerance Studio account.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/auth.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app/lib/supabase.js"></script>
+</head>
+<body>
+
+<header class="hero auth-hero">
+  <div class="wrap">
+    <span class="hero-label">Welcome back</span>
+    <h1>Log in.</h1>
+    <p>Pick up where you left off.</p>
+  </div>
+</header>
+
+<section class="sec" style="padding-top:0">
+  <div class="wrap auth-wrap">
+    <form class="auth-card" onsubmit="return doLogin()">
+      <div class="field"><label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@company.com" required autocomplete="email"></div>
+      <div class="field"><label for="pw">Password</label>
+        <input id="pw" type="password" placeholder="••••••••" required autocomplete="current-password"></div>
+      <button class="btn btn-primary auth-btn" id="go" type="submit">Log in &rarr;</button>
+      <p class="auth-status" id="status" role="status"></p>
+      <p class="auth-alt">New here? <a href="signup.html">Sign up free</a></p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; product imagery studio</div>
+    <div class="footer-links">
+      <a href="index.html#products">Products</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function nextUrl(){
+  var n = new URLSearchParams(location.search).get('next');
+  // relative paths only — never bounce to another origin
+  return (n && !/^([a-z]+:)?\/\//i.test(n)) ? n : 'account.html';
+}
+(async function(){
+  var s = await sb.auth.getSession();
+  if (s.data.session) location.href = nextUrl();
+})();
+async function doLogin(){
+  var status = document.getElementById('status');
+  var btn = document.getElementById('go');
+  btn.disabled = true; status.textContent = 'signing in…';
+  var r = await sb.auth.signInWithPassword({
+    email: document.getElementById('email').value.trim(),
+    password: document.getElementById('pw').value
+  });
+  if (r.error){ btn.disabled = false; status.textContent = r.error.message; return false; }
+  location.href = nextUrl();
+  return false;
+}
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

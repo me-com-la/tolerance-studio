@@ -114,11 +114,13 @@ async function generateBackgroundImage(geminiKey, { prompt, aspectRatio }) {
  * no rotation, no distortion, no re-render of the product's own pixels.
  * placement is normalized (0-1): { scale, anchorX, anchorY } where anchorX/Y
  * is the cutout's center point as a fraction of the background's width/height.
- * Defaults to centered, scaled to 65% of the background's height — a
- * reasonable "product sits in the scene" default, not a per-shot decision.
+ * Defaults to centered, scaled to 50% of the background's height — kept
+ * smaller than a "fill the frame" composition on purpose, so there's real
+ * pixel headroom on every side for compose.py's text placement to pan into
+ * later, instead of the product running edge-to-edge with no room to shift.
  */
 async function compositeProductOntoBackground(backgroundBytes, cutoutBytes, placement) {
-  const { scale = 0.65, anchorX = 0.5, anchorY = 0.62 } = placement || {};
+  const { scale = 0.5, anchorX = 0.5, anchorY = 0.62 } = placement || {};
   const bg = sharp(backgroundBytes);
   const bgMeta = await bg.metadata();
   const cutout = sharp(cutoutBytes);
@@ -201,6 +203,21 @@ async function generateProjectRenders(deps, params) {
   const clientSlug = project.clients && project.clients.slug;
   if (!clientSlug) return { ok: false, error: 'project has no client slug — cannot build a storage path' };
 
+  // Beta cap: at most MAX_IMAGES_PER_PROJECT images per project, counting
+  // renders that already exist (re-generating the same filename replaces its
+  // row via the upsert below, so the count stays honest). Owner rule 2026-07-07.
+  const MAX_IMAGES_PER_PROJECT = parseInt(process.env.MAX_IMAGES_PER_PROJECT || '10', 10);
+  const existingRenders = await db.countRenders(project.id);
+  const remainingQuota = MAX_IMAGES_PER_PROJECT - (existingRenders || 0);
+  if (remainingQuota <= 0) {
+    return { ok: false, error: `Beta limit reached: ${MAX_IMAGES_PER_PROJECT} images per project. Start a new project to keep going.` };
+  }
+  let capNote = '';
+  if (shots.items.length > remainingQuota) {
+    shots.items = shots.items.slice(0, remainingQuota);
+    capNote = ` Beta cap: ran ${remainingQuota} of the requested shots (${MAX_IMAGES_PER_PROJECT} images max per project).`;
+  }
+
   const aspectRatio = (project.settings && project.settings.generation_aspect) || '1:1';
 
   let cutoutBuf;
@@ -236,7 +253,7 @@ async function generateProjectRenders(deps, params) {
   const summary =
     `${succeeded.length}/${shots.items.length} shots composited (AI background via ${GENERATION_MODEL}, ${aspectRatio}, ` +
     `1K cap + real product cutout pasted at fixed angle, no product regeneration).` +
-    (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '');
+    (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '') + capNote;
   await db.createRunLogEntry(project.id, 'generate', summary);
 
   return { ok: failed.length === 0, generated: succeeded.length, failed };

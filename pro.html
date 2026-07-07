@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="assets/styles.css">
 <style>
 :root{
-  --bg:#ffffff; --surface:#f5f4f1;
+  --bg:#ffffff; --surface:#ffffff;
   --line:rgba(17,16,20,.07); --line-strong:rgba(17,16,20,.14);
   --ink:#111014; --muted:#6b6966;
   --accent:#d8502d; --accent-wash:#fbeae3; --accent-ink:#7a2a14;
@@ -38,14 +38,12 @@ img{max-width:100%;display:block}
 .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
 .btn-ghost{background:transparent;color:var(--muted);border-color:var(--line-strong)}
 .btn-ghost:hover{color:var(--ink)}
-.hero{background:var(--ink);color:#fff;padding:clamp(3.5rem,8vw,6rem) 0 clamp(2.5rem,5vw,4rem)}
+.hero{background:var(--surface);color:var(--ink);padding:clamp(3.5rem,8vw,6rem) 0 clamp(2.5rem,5vw,4rem);text-align:center}
+.hero .wrap{display:flex;flex-direction:column;align-items:center}
 .hero-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;display:block}
-.hero h1{font-family:var(--display);font-size:clamp(2.4rem,6vw,4.2rem);font-weight:700;line-height:.95;letter-spacing:.02em;text-transform:uppercase;max-width:16ch;margin-bottom:1.2rem}
-.hero p{font-size:clamp(.88rem,1.4vw,.97rem);color:rgba(255,255,255,.72);max-width:46ch;line-height:1.7;margin-bottom:1.6rem}
-.hero .btn-primary{background:#fff;color:var(--ink);border-color:#fff}
-.hero .btn-ghost{color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.3)}
-.hero .btn-ghost:hover{color:#fff;border-color:#fff}
-.hero-actions{display:flex;gap:.85rem;flex-wrap:wrap}
+.hero h1{font-family:var(--display);font-size:clamp(2.6rem,7vw,4.6rem);font-weight:700;line-height:.95;letter-spacing:.02em;text-transform:uppercase;max-width:24ch;margin-bottom:1.2rem}
+.hero p{font-size:clamp(.9rem,1.5vw,1.02rem);color:var(--muted);max-width:52ch;line-height:1.7;margin-bottom:1.6rem}
+.hero-actions{display:flex;gap:.85rem;flex-wrap:wrap;justify-content:center}
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
 .step{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.2rem;display:flex;flex-direction:column}
 .step-num{font-family:var(--mono);font-size:.68rem;color:var(--accent);margin-bottom:.4rem}
@@ -82,7 +80,7 @@ img{max-width:100%;display:block}
     <h1>Your product. Actual pixels. Zero drift.</h1>
     <p>PRO never redraws your product. We cut it from your photo, lock it in place, and generate the scene around it. What ships is your photograph inside an AI-built room — accurate by construction, not by promise.</p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="contact.html">Get a free PRO sample &rarr;</a>
+      <a class="btn btn-primary" href="signup.html">Sign up free &rarr;</a>
       <a class="btn btn-ghost" href="#how">See how it works</a>
     </div>
   </div>
@@ -159,54 +157,15 @@ img{max-width:100%;display:block}
   </div>
 </section>
 
-<!-- ── HONEST LIMITS ─────────────────────────────── -->
-<section class="sec" style="padding-top:0">
-  <div class="wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
-    <div class="limits">
-      <span class="eyebrow">The honest part</span>
-      <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">What PRO can't do</h3>
-      <ul>
-        <li>The scene angle is your photo's angle. A new angle needs a new photo — not more prompting.</li>
-        <li>Nothing can pass in front of the product unless it was photographed with it.</li>
-        <li>Fine detail (thin stems, wisps) needs a clean, sharp source photo — the photo is the product.</li>
-      </ul>
-    </div>
-    <div class="limits">
-      <span class="eyebrow">When you want range instead</span>
-      <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">That's the Standard workflow</h3>
-      <ul>
-        <li>Angles you don't have photos of.</li>
-        <li>People and pets interacting with the product.</li>
-        <li>Large concept batches, checked against your real photos and human-reviewed.</li>
-      </ul>
-      <p style="margin-top:1rem"><a class="btn btn-ghost" href="standard.html">See the Standard workflow &rarr;</a></p>
-    </div>
-  </div>
-</section>
-
-<!-- ── COMPARE ───────────────────────────────────── -->
-<section class="sec" style="padding-top:0">
-  <div class="wrap">
-    <table class="compare">
-      <tr><th></th><th>Standard</th><th>PRO</th></tr>
-      <tr><td>Product in the frame</td><td>AI-drawn, spec-checked against your photos</td><td>Your photo's pixels, never redrawn</td></tr>
-      <tr><td>Drift risk</td><td>Possible — caught by machine check + human review</td><td>None, by construction</td></tr>
-      <tr><td>Angles</td><td>Any you can brief</td><td>The angles you photograph</td></tr>
-      <tr><td>People &amp; pets</td><td>Interacting with the product</td><td>Beside it, or photographed with it</td></tr>
-      <tr><td>Best for</td><td>Range, volume, concepts</td><td>Hero shots, PDPs, accuracy-critical SKUs</td></tr>
-    </table>
-  </div>
-</section>
-
 <!-- ── CTA ───────────────────────────────────────── -->
 <section class="sec" style="padding-top:0">
   <div class="wrap">
     <div class="cta-band">
       <div>
         <h2>Send one photo. Get it back in a scene.</h2>
-        <p>Free PRO sample on your own product — see your actual pixels staged before you commit to anything.</p>
+        <p>All of PRO is free while we’re in beta — sign up and see your actual pixels staged.</p>
       </div>
-      <a class="btn btn-primary" style="background:#fff;color:var(--ink);border-color:#fff" href="contact.html">Get my free sample &rarr;</a>
+      <a class="btn btn-primary" style="background:#fff;color:var(--ink);border-color:#fff" href="signup.html">Sign up free &rarr;</a>
     </div>
   </div>
 </section>
