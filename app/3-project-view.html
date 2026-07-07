@@ -197,10 +197,15 @@ async function init(){
   document.getElementById('tally-rejected').textContent = rejected;
   document.getElementById('tally-flagged').textContent = flagged;
   document.getElementById('renders-hint').textContent = `${renders.length} renders in this batch.`;
-  document.getElementById('renders-grid').innerHTML = renders.slice(0, 10).map(r => {
-    const url = r.storage_path ? sb.storage.from('projects').getPublicUrl(r.storage_path).data.publicUrl : '';
-    return `<div class="thumb"><img src="${esc(url)}"><div class="cap">${esc(r.filename)}</div></div>`;
-  }).join('') || '<p style="color:var(--muted);font-size:.85rem">No renders uploaded yet.</p>';
+  // The 'projects' bucket is private (see migrations/001_init.sql) — getPublicUrl()
+  // silently returns an unusable URL for private buckets (no auth attached, always
+  // 403s in the browser). Every other page in this app already uses
+  // db.getSignedUrl() for exactly this reason; this page just never got that fix.
+  const latest = renders.slice(0, 10);
+  const urls = await Promise.all(latest.map(r => r.storage_path ? db.getSignedUrl(r.storage_path).catch(() => '') : ''));
+  document.getElementById('renders-grid').innerHTML = latest.map((r, i) =>
+    `<div class="thumb"><img src="${esc(urls[i])}"><div class="cap">${esc(r.filename)}</div></div>`
+  ).join('') || '<p style="color:var(--muted);font-size:.85rem">No renders uploaded yet.</p>';
 }
 init();
 </script>
