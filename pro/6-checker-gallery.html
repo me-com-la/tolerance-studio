@@ -133,6 +133,13 @@ const projectId = qs('project');
 const MAX_SELECTED = 3;
 let renders = [];
 let project = null;
+// Only stage:'render' rows belong on this page — a composed image is a
+// step ahead in the pipeline (render -> check -> compose -> review) and
+// never gets its own human_override, so without this filter it silently
+// showed up here as an unselected, unchecked card instead of on Review.
+async function loadRenders(){
+  return (await db.listRenders(projectId)).filter(r => r.stage === 'render');
+}
 
 // Bucket is private (RLS-protected) — every image needs a short-lived signed
 // URL. Cached per storage_path so re-renders (e.g. after a selection click)
@@ -177,7 +184,7 @@ async function toggleSelect(renderId){
   const selectedCount = renders.filter(isSelected).length;
   if (!isSelected(r) && selectedCount >= MAX_SELECTED) return; // blocked at 3
   await db.setSelected(renderId, !isSelected(r));
-  renders = await db.listRenders(projectId);
+  renders = await loadRenders();
   await render();
 }
 
@@ -189,7 +196,7 @@ async function init(){
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Check — ${project.name} | Tolerance Studio`;
-  renders = await db.listRenders(projectId);
+  renders = await loadRenders();
   await render();
 }
 init();

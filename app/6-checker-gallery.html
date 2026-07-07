@@ -156,6 +156,14 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s??''; ret
 const projectId = qs('project');
 let renders = [];
 let project = null;
+// Only stage:'render' rows belong on this page — the pipeline moves
+// forward (render -> check -> compose -> review), and a composed image
+// never gets its own verdict, so it was falling into the "no verdict yet"
+// bucket here and showing back up on Check with a "Run checker" button
+// even though it's a step ahead, not something waiting to be checked.
+async function loadRenders(){
+  return (await db.listRenders(projectId)).filter(r => r.stage === 'render');
+}
 let referenceImageCache = null; // {mediaType, base64} — same reference reused for every render in this project
 
 // Derives a spec-checker-style spec from the weighted brief tags (no
@@ -295,7 +303,7 @@ async function render(){
 // allowed to write human_override (see lib/db.js).
 async function setVerdict(renderId, verdict){
   await db.setVerdict(renderId, verdict);
-  renders = await db.listRenders(projectId);
+  renders = await loadRenders();
   await render();
 }
 
@@ -325,7 +333,7 @@ async function runChecker(renderId){
     const candidateImage = await toBase64Image(candidateUrl);
     const spec = buildSpecFromTags(project);
     await callFunction('checker', { renderId, spec, sourceImage: referenceImageCache, candidateImage });
-    renders = await db.listRenders(projectId);
+    renders = await loadRenders();
     await render();
   } catch (e) {
     if (statusEl) { statusEl.textContent = e.message || String(e); statusEl.classList.remove('busy'); statusEl.classList.add('err'); }
@@ -379,7 +387,7 @@ async function editRender(renderId){
 
     input.value = '';
     statusEl.textContent = ''; statusEl.classList.remove('busy');
-    renders = await db.listRenders(projectId);
+    renders = await loadRenders();
     await render();
   } catch (e) {
     statusEl.textContent = e.message || String(e); statusEl.classList.remove('busy'); statusEl.classList.add('err');
@@ -394,7 +402,7 @@ async function init(){
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Checker — ${project.name} | Tolerance Studio`;
-  renders = await db.listRenders(projectId);
+  renders = await loadRenders();
   await render();
 }
 init();
