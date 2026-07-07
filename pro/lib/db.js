@@ -160,6 +160,33 @@
     return data;
   }
 
+  // Deletes a project and everything under it: the projects row (cascades
+  // to renders + run_log per 001_init.sql's `on delete cascade`), plus every
+  // file in storage under <slug>/<projectId>/ — the cascade only clears
+  // Postgres rows, not bucket objects, so those have to be removed by hand
+  // or they'd sit around unreferenced forever.
+  async function deleteProject(project) {
+    const slug = project.clients && project.clients.slug;
+    if (slug) {
+      const areas = ['assets', 'renders', 'composed', 'review', 'delivery'];
+      const paths = [];
+      for (const area of areas) {
+        const prefix = `${slug}/${project.id}/${area}`;
+        let files;
+        try { files = await listFiles(prefix); } catch (e) { continue; }
+        for (const f of files) {
+          if (f.id) paths.push(`${prefix}/${f.name}`);
+        }
+      }
+      if (paths.length) {
+        const { error: rmErr } = await client().storage.from('projects').remove(paths);
+        if (rmErr) throw rmErr;
+      }
+    }
+    const { error } = await client().from('projects').delete().eq('id', project.id);
+    if (error) throw error;
+  }
+
   // "sibling projects" for the same client, most recent first — mirrors
   // server.py's client_docs() (reads previous campaigns for continuity).
   async function listSiblingProjects(clientId, excludeProjectId, limit = 2) {
@@ -263,12 +290,19 @@
     return data;
   }
 
+  async function removeFiles(paths) {
+    if (!paths || !paths.length) return;
+    const { error } = await client().storage.from('projects').remove(paths);
+    if (error) throw error;
+  }
+
   global.db = {
     listClients,
     createClient,
     listProjects,
     getProject,
     createProject,
+    deleteProject,
     saveTags,
     saveScenes,
     saveShots,
@@ -286,5 +320,6 @@
     uploadFile,
     getSignedUrl,
     listFiles,
+    removeFiles,
   };
 })(window);

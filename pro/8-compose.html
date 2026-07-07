@@ -533,6 +533,7 @@ async function saveComposed(){
     await db.uploadFile(path, blob);
     await db.upsertRender(projectId, filename, { storage_path: path, stage: 'composed' });
     status.textContent = ''; status.classList.remove('busy');
+    renders = await db.listRenders(projectId);
     await loadRendered();
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
@@ -560,6 +561,7 @@ async function removeComposed(renderId){
   const r = renders.find(x => x.id === renderId);
   if (!r) return;
   if (!confirm('Remove this composed image?')) return;
+  await db.removeFiles([r.storage_path]);
   await sb.from('renders').delete().eq('id', renderId);
   renders = await db.listRenders(projectId);
   await loadRendered();
