@@ -91,6 +91,16 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .platform-btn.active{border-color:var(--accent);background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
 .platform-btn b{display:block;font-size:.85rem}
 
+/* 3x3 text-placement picker — which of the 9 zones the copy anchors to,
+   so the owner can dodge the product instead of it always sitting bottom-
+   center (compose.py's original fixed default, see renderPreview() below) */
+.placement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;width:132px;aspect-ratio:3/2}
+.placement-cell{border:1.5px solid var(--line-2);border-radius:6px;cursor:pointer;background:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+.placement-cell:hover{border-color:var(--line-2);background:var(--chip)}
+.placement-cell.active{border-color:var(--accent);background:var(--accent-wash)}
+.placement-cell .dot{width:7px;height:7px;border-radius:50%;background:var(--line-2)}
+.placement-cell.active .dot{background:var(--accent)}
+
 /* preview */
 .preview-wrap{position:sticky;top:140px}
 .preview-canvas-wrap{background:#eee;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;min-height:200px}
@@ -162,6 +172,10 @@ img.lb-thumb{cursor:pointer}
         <div class="field">
           <label>Size</label>
           <div class="platform-row" id="platform-row"></div>
+        </div>
+        <div class="field">
+          <label>Text position</label>
+          <div class="placement-grid" id="placement-grid"></div>
         </div>
         <div class="field">
           <label for="cmp-font">Font</label>
@@ -238,6 +252,18 @@ const PLATFORMS = {
   vertical:   { label: 'Vertical',   dims: '1080×1920', w: 1080, h: 1920, eyebrow: 32, headline: 66, body: 26, cta: 28, span: [0.70, 0.85] },
 };
 let activePlatform = 'square';
+
+// 3x3 placement grid — 'top|middle|bottom' - 'left|center|right'. Default
+// matches the original fixed bottom-center behavior so existing muscle
+// memory (and any saved composites) doesn't silently change.
+const PLACEMENTS = ['top-left','top-center','top-right','middle-left','middle-center','middle-right','bottom-left','bottom-center','bottom-right'];
+let activePlacement = 'bottom-center';
+
+function renderPlacementGrid(){
+  document.getElementById('placement-grid').innerHTML = PLACEMENTS.map(key => `
+    <button type="button" class="placement-cell ${key===activePlacement?'active':''}" title="${key.replace('-',' ')}" onclick="pickPlacement('${key}')"><span class="dot"></span></button>`).join('');
+}
+function pickPlacement(key){ activePlacement = key; renderPlacementGrid(); renderPreview(); }
 
 function renderPlatformRow(){
   document.getElementById('platform-row').innerHTML = Object.entries(PLATFORMS).map(([key, p]) => `
@@ -354,49 +380,123 @@ function renderPreview(){
   const font = document.getElementById('cmp-font').value;
   if (!headline) return; // nothing to typeset yet
 
-  const [spanLo, spanHi] = spec.span;
-  const zoneTop = H * (1 - spanHi);
+  const [vZone, hZone] = activePlacement.split('-');
 
-  // mandatory text scrim — cosine falloff from the bottom, strength .60 extent .60
-  const grad = ctx.createLinearGradient(0, H*(1-0.60), 0, H);
-  grad.addColorStop(0, 'rgba(10,9,12,0)');
-  grad.addColorStop(1, 'rgba(10,9,12,0.60)');
+  // Mandatory text scrim — cosine falloff, strength .60 extent .60 — same
+  // math as the original bottom-only version, just mirrored/centered to
+  // sit behind whichever of the 3 vertical zones the copy is anchored to,
+  // so the product elsewhere in frame is never darkened for no reason.
+  let grad;
+  if (vZone === 'top') {
+    grad = ctx.createLinearGradient(0, 0, 0, H*0.60);
+    grad.addColorStop(0, 'rgba(10,9,12,0.60)');
+    grad.addColorStop(1, 'rgba(10,9,12,0)');
+  } else if (vZone === 'middle') {
+    grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(10,9,12,0)');
+    grad.addColorStop(0.20, 'rgba(10,9,12,0)');
+    grad.addColorStop(0.50, 'rgba(10,9,12,0.60)');
+    grad.addColorStop(0.80, 'rgba(10,9,12,0)');
+    grad.addColorStop(1, 'rgba(10,9,12,0)');
+  } else {
+    grad = ctx.createLinearGradient(0, H*(1-0.60), 0, H);
+    grad.addColorStop(0, 'rgba(10,9,12,0)');
+    grad.addColorStop(1, 'rgba(10,9,12,0.60)');
+  }
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
+  const marginX = W * 0.09;
   const maxWidth = W * 0.82;
-  const cx = W / 2;
+  let cx, textAlign;
+  if (hZone === 'left') { cx = marginX; textAlign = 'left'; }
+  else if (hZone === 'right') { cx = W - marginX; textAlign = 'right'; }
+  else { cx = W / 2; textAlign = 'center'; }
 
-  // text blocks (eyebrow/headline/body only — the CTA renders as a real
-  // button below, per the Owner's reference samples in tools/sizes/: a
+  // Text blocks — eyebrow, then headline lines, then body lines, always in
+  // that top-to-bottom reading order (the CTA renders separately below as a
+  // real button, per the Owner's reference samples in tools/sizes/: a
   // filled rounded pill with its own bold centered label, not plain text
-  // floating on the scrim like the others)
+  // floating on the scrim like the others). Wrapped lines within the SAME
+  // field use a 1.1x line height (Owner rule, baseline-to-baseline). Between
+  // fields (eyebrow -> headline -> body -> CTA) we want an actual 20px of
+  // whitespace, not 20px added to a baseline gap that already contains the
+  // text's own height — so those transitions are measured off each line's
+  // real glyph metrics (actualBoundingBoxAscent/Descent), not the raw font
+  // size, otherwise the gap balloons or shrinks depending on the two fields'
+  // relative sizes.
+  const FIELD_GAP = 20;
+  function lineMetrics(text, size, bold){
+    ctx.font = `${bold ? 700 : 400} ${size}px ${fontStack(font)}`;
+    const m = ctx.measureText(text || ' ');
+    return {
+      ascent: m.actualBoundingBoxAscent || size * 0.75,
+      descent: m.actualBoundingBoxDescent || size * 0.25,
+    };
+  }
+  const fields = [];
+  if (eyebrow){ fields.push({ lines: [eyebrow], size: spec.eyebrow, bold: true }); }
+  if (headline){ ctx.font = `700 ${spec.headline}px ${fontStack(font)}`; fields.push({ lines: wrapText(ctx, headline, maxWidth), size: spec.headline, bold: true }); }
+  if (body){ ctx.font = `400 ${spec.body}px ${fontStack(font)}`; fields.push({ lines: wrapText(ctx, body, maxWidth), size: spec.body, bold: false }); }
+
   const blocks = [];
-  if (body){ ctx.font = `400 ${spec.body}px ${fontStack(font)}`; for (const l of wrapText(ctx, body, maxWidth).reverse()) blocks.unshift({ text:l, size:spec.body, bold:false, gap:0 }); }
-  if (headline){ ctx.font = `700 ${spec.headline}px ${fontStack(font)}`; const lines = wrapText(ctx, headline, maxWidth); lines.forEach((l,i)=>blocks.unshift({ text:l, size:spec.headline, bold:true, gap: i===lines.length-1? spec.headline*0.55:0 })); }
-  if (eyebrow){ ctx.font = `700 ${spec.eyebrow}px ${fontStack(font)}`; blocks.unshift({ text: eyebrow, size: spec.eyebrow, bold:true, gap: spec.eyebrow*0.6 }); }
+  fields.forEach((f) => {
+    f.lines.forEach((l, li) => {
+      const isLastLineOfField = li === f.lines.length - 1;
+      const { ascent, descent } = lineMetrics(l, f.size, f.bold);
+      blocks.push({ text: l, size: f.size, bold: f.bold, ascent, descent, fieldEnd: isLastLineOfField });
+    });
+  });
+  // advance = distance from this block's baseline to the next block's
+  // baseline (or, for the last block when a CTA follows, to the button's
+  // top edge — see below).
+  blocks.forEach((b, i) => {
+    const next = blocks[i + 1];
+    if (!b.fieldEnd) b.advance = b.size * 1.1;
+    else if (next) b.advance = b.descent + FIELD_GAP + next.ascent;
+    else if (cta) b.advance = b.descent + FIELD_GAP;
+    else b.advance = 0;
+  });
 
+  const first = blocks[0], last = blocks[blocks.length - 1];
   const ctaH = cta ? spec.cta * 2.6 : 0; // button height reserves its own space below the text blocks
-  const textH = blocks.reduce((sum,b)=> sum + b.size*1.1 + b.gap, 0);
-  const totalH = textH + (cta ? ctaH + spec.cta*0.8 : 0);
-  let cursorY = H - H*spanLo - totalH*0.15;
-  cursorY = Math.max(cursorY, zoneTop + spec.headline);
+  const textStackH = first ? first.ascent + blocks.slice(0, -1).reduce((sum, b) => sum + b.advance, 0) + last.descent : 0;
+  const totalH = textStackH + (cta ? FIELD_GAP + ctaH : 0);
+  const marginY = H * 0.07;
 
-  ctx.textAlign = 'center';
+  // Each zone picks where the TOP of the stack sits, then adds the first
+  // line's ascent to get its baseline — same pattern for all three, so
+  // "bottom" mirrors "top" (marginY from the near edge) instead of the old
+  // spanLo/spanHi heuristic, which was tuned against a cruder height
+  // estimate from before totalH switched to real glyph metrics and drifted
+  // out of sync once that changed.
+  let cursorY;
+  if (vZone === 'top') {
+    cursorY = marginY + (first ? first.ascent : 0);
+  } else if (vZone === 'middle') {
+    cursorY = H/2 - totalH/2 + (first ? first.ascent : 0);
+  } else {
+    cursorY = H - marginY - totalH + (first ? first.ascent : 0);
+  }
+
+  ctx.textAlign = textAlign;
   ctx.fillStyle = '#fff';
   for (const b of blocks){
     ctx.font = `${b.bold?700:400} ${b.size}px ${fontStack(font)}`;
     ctx.fillText(b.text, cx, cursorY);
-    cursorY += b.size*1.1 + b.gap;
+    cursorY += b.advance;
   }
 
   if (cta){
-    cursorY += spec.cta * 0.5;
     ctx.font = `700 ${spec.cta}px ${fontStack(font)}`;
     const padX = spec.cta * 1.4;
     const btnW = Math.min(ctx.measureText(cta).width + padX*2, maxWidth);
     const btnH = spec.cta * 2.6;
-    const btnX = cx - btnW/2, btnY = cursorY - btnH*0.72, radius = btnH/2;
+    let btnX, ctaCenterX;
+    if (hZone === 'left') { btnX = cx; ctaCenterX = cx + btnW/2; }
+    else if (hZone === 'right') { btnX = cx - btnW; ctaCenterX = cx - btnW/2; }
+    else { btnX = cx - btnW/2; ctaCenterX = cx; }
+    const btnY = cursorY, radius = btnH/2; // cursorY already sits exactly FIELD_GAP below the last text line's descent
     ctx.fillStyle = '#d8502d'; // accent — the app's own brand color, not the sample's yellow
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(btnX, btnY, btnW, btnH, radius);
@@ -409,7 +509,8 @@ function renderPreview(){
     }
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.fillText(cta, cx, btnY + btnH/2 + spec.cta*0.35);
+    ctx.textAlign = 'center';
+    ctx.fillText(cta, ctaCenterX, btnY + btnH/2 + spec.cta*0.35);
   }
 }
 
@@ -473,6 +574,7 @@ async function init(){
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Compose — ${project.name} | Tolerance Studio`;
   renderPlatformRow();
+  renderPlacementGrid();
   renders = await db.listRenders(projectId);
   await renderSelectStrip();
   await loadRendered();
