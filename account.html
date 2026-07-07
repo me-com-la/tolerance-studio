@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Account | Tolerance Studio</title>
-<meta name="description" content="Your Tolerance Studio account — products and access.">
+<meta name="description" content="Your Tolerance Studio account — products, access, and settings.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="assets/auth.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
+<script src="assets/auth-bridge.js"></script>
 </head>
 <body>
 
@@ -29,8 +30,26 @@
       <span class="acct-email" id="email">…</span>
       <button class="btn" id="logout" style="border:1px solid rgba(17,16,20,.2)">Log out</button>
     </div>
-    <div class="acct-grid" id="products">
+
+    <div class="acct-grid" id="products" style="margin-bottom:1rem">
       <p class="auth-status" id="status">Loading…</p>
+    </div>
+
+    <div class="acct-grid">
+      <div class="acct-card">
+        <h3>Account info</h3>
+        <p style="margin-bottom:.4rem">Signed in as <span class="acct-email" id="info-email">…</span></p>
+        <p style="margin-bottom:0">Member since <span id="info-since">…</span></p>
+      </div>
+      <div class="acct-card">
+        <h3>Change password</h3>
+        <form onsubmit="doChangePw(); return false" style="display:flex;flex-direction:column;gap:.7rem">
+          <div class="field"><label for="newpw">New password</label>
+            <input id="newpw" type="password" placeholder="8+ characters" required minlength="8" autocomplete="new-password"></div>
+          <button class="btn btn-primary auth-btn" id="pw-btn" type="submit">Update password</button>
+          <p class="auth-status" id="pw-status" role="status"></p>
+        </form>
+      </div>
     </div>
   </div>
 </section>
@@ -47,8 +66,8 @@
 
 <script>
 var PRODUCTS = {
-  standard: { name: 'Standard', blurb: 'AI-drawn product shots, spec-checked against your photos.', href: 'app/index.html' },
-  pro:      { name: 'Pro', blurb: 'Pixel-true product — your actual photo pixels, never redrawn.', href: 'pro/index.html' }
+  standard: { name: 'Standard', blurb: 'AI-drawn product shots, spec-checked against your photos.', href: 'app/2-project-list.html' },
+  pro:      { name: 'Pro', blurb: 'Pixel-true product — your actual photo pixels, never redrawn.', href: 'pro/2-project-list.html' }
 };
 function card(key, ent){
   var p = PRODUCTS[key];
@@ -58,21 +77,40 @@ function card(key, ent){
     (ent ? '<a class="btn btn-primary" href="' + p.href + '">Open ' + p.name + ' &rarr;</a>' : '') +
     '</div>';
 }
+function fullServiceCard(){
+  return '<div class="acct-card"><span class="beta-pill">Coming soon</span>' +
+    '<h3>Full Service</h3><p>A real creative director builds your campaign for you.</p>' +
+    '<a class="btn" style="border:1px solid rgba(17,16,20,.2)" href="full-service.html">Learn more &rarr;</a></div>';
+}
 (async function(){
   var s = await sb.auth.getSession();
   if (!s.data.session){ location.href = 'login.html?next=account.html'; return; }
-  document.getElementById('email').textContent = s.data.session.user.email;
+  var user = s.data.session.user;
+  document.getElementById('email').textContent = user.email;
+  document.getElementById('info-email').textContent = user.email;
+  document.getElementById('info-since').textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   var box = document.getElementById('products');
   var r = await sb.from('entitlements').select('product,status');
   if (r.error){ box.innerHTML = '<p class="auth-status">Could not load products: ' + r.error.message + '</p>'; return; }
   var have = {};
   (r.data || []).forEach(function(e){ have[e.product] = e; });
-  box.innerHTML = card('standard', have.standard) + card('pro', have.pro);
+  box.innerHTML = card('standard', have.standard) + card('pro', have.pro) + fullServiceCard();
 })();
 document.getElementById('logout').addEventListener('click', async function(){
-  await sb.auth.signOut();
+  await tsSignOutEverywhere();
   location.href = 'index.html';
 });
+async function doChangePw(){
+  var st = document.getElementById('pw-status');
+  var btn = document.getElementById('pw-btn');
+  var pw = document.getElementById('newpw').value;
+  if (pw.length < 8){ st.textContent = 'Password must be at least 8 characters.'; return; }
+  btn.disabled = true; st.textContent = 'updating…';
+  var note = await tsChangePasswordEverywhere(pw);
+  btn.disabled = false;
+  st.textContent = note || 'Password updated everywhere.';
+  if (!note) document.getElementById('newpw').value = '';
+}
 </script>
 <script src="assets/nav.js"></script>
 </body>

@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="assets/auth.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
+<script src="assets/auth-bridge.js"></script>
 </head>
 <body>
 
@@ -52,12 +53,6 @@
   var s = await sb.auth.getSession();
   if (s.data.session) location.href = 'account.html';
 })();
-// The Pro app lives on its own Supabase project with separate auth, so one
-// signup creates the same email/password account on both projects. The Pro
-// half is best-effort — if it fails, Standard still works and the Pro app's
-// login page will say "invalid credentials" until it's fixed.
-var PRO_URL = 'https://nfvcuidghyklnyixcqrw.supabase.co';
-var PRO_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mdmN1aWRnaHlrbG55aXhjcXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNzkxNzIsImV4cCI6MjA5ODk1NTE3Mn0.6AvCWkTjPr_zHoXB2rQtkq-BetQyHmBpJe9Yyo_1n7I';
 async function doSignUp(){
   var status = document.getElementById('status');
   var btn = document.getElementById('go');
@@ -66,10 +61,8 @@ async function doSignUp(){
   btn.disabled = true; status.textContent = 'creating account…';
   var r = await sb.auth.signUp({ email: email, password: password });
   if (r.error){ btn.disabled = false; status.textContent = r.error.message; return false; }
-  try {
-    var proClient = window.supabase.createClient(PRO_URL, PRO_ANON);
-    await proClient.auth.signUp({ email: email, password: password });
-  } catch (e) { /* best-effort, see note above */ }
+  // Mirror the account + session on the Pro backend (see assets/auth-bridge.js).
+  await tsEnsureProSession(email, password);
   if (r.data.session){ location.href = 'account.html'; }
   else { status.textContent = 'Check your email to confirm your account, then log in.'; btn.disabled = false; }
   return false;
