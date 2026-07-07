@@ -83,7 +83,7 @@ function httpsJson(url, headers, body) {
   });
 }
 
-/** Generates a product-free background plate via Gemini. Same 1K cap as the main app (Owner rule). */
+/** Generates a product-free background plate via Gemini. 2K cap, same as the main app (Owner rule, raised from 1K 2026-07-08). */
 async function generateBackgroundImage(geminiKey, { prompt, aspectRatio }) {
   if (GENERATION_MODEL !== 'gemini') {
     throw new Error(`GENERATION_MODEL=${GENERATION_MODEL} not wired yet — only 'gemini' is implemented (ask the Owner for the Seedream endpoint/key before adding it)`);
@@ -92,7 +92,7 @@ async function generateBackgroundImage(geminiKey, { prompt, aspectRatio }) {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: aspectRatio || '1:1', imageSize: '1K' },
+      imageConfig: { aspectRatio: aspectRatio || '1:1', imageSize: '2K' },
     },
   };
   const { status, json: resp } = await httpsJson(
@@ -252,7 +252,7 @@ async function generateProjectRenders(deps, params) {
 
   const summary =
     `${succeeded.length}/${shots.items.length} shots composited (AI background via ${GENERATION_MODEL}, ${aspectRatio}, ` +
-    `1K cap + real product cutout pasted at fixed angle, no product regeneration).` +
+    `2K cap + real product cutout pasted at fixed angle, no product regeneration).` +
     (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '') + capNote;
   await db.createRunLogEntry(project.id, 'generate', summary);
 
