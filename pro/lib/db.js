@@ -40,11 +40,16 @@
   }
 
   // ---------- projects ----------
+  // This app is the Pro pipeline — only ever show/create 'pro' rows so
+  // Standard projects (app/app, same shared DB) don't leak in here.
+  const PIPELINE = 'pro';
+
   async function listProjects() {
-    // Owner view: every project, joined with client name for grouping.
+    // Owner view: every Pro project, joined with client name for grouping.
     const { data, error } = await client()
       .from('projects')
       .select('*, clients(name, slug)')
+      .eq('pipeline', PIPELINE)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data;
@@ -70,6 +75,7 @@
         description: description || null,
         started_on: startedOn || new Date().toISOString().slice(0, 10),
         status: 'brief',
+        pipeline: PIPELINE,
         tags: { product: [], creative: [] },
         scenes: '',
         settings: {},

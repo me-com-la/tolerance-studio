@@ -40,6 +40,9 @@ a{color:inherit}
 .wrap{max-width:88rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem}
 h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.pipeline-badge{display:inline-flex;align-items:center;font-family:var(--font-body);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.28rem .6rem;border-radius:100px;vertical-align:middle;margin-left:.5rem}
+.pipeline-standard{color:var(--accent-ink);background:var(--accent-wash)}
+.pipeline-pro{color:#1a4fa0;background:#e8f0fe}
 .page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
@@ -112,7 +115,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 <div class="wrap">
   <div class="page-head">
     <div>
-      <h1>Projects</h1>
+      <h1>Projects <span class="pipeline-badge pipeline-pro">Pro</span></h1>
       <p class="page-sub" id="page-sub">Loading…</p>
     </div>
     <button class="btn btn-primary" onclick="openNewProject()">＋ New project</button>
@@ -134,7 +137,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
 <div class="modal-backdrop" id="new-project-backdrop">
   <div class="modal">
-    <h2>New project</h2>
+    <h2>New project <span class="pipeline-badge pipeline-pro">Pro</span></h2>
     <p class="modal-sub">Same first step as the old tool's "1-Client-Assets": name the campaign and drop
       in one real product photo before anything else — it becomes the source your product gets cut
       out from and pixel-locked into every scene.</p>
