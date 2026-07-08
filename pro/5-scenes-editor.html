@@ -263,19 +263,16 @@ window.addEventListener('beforeunload', (e) => {
   if (generating) { e.preventDefault(); e.returnValue = ''; }
 });
 
-// ---------- pixel-lock compositing (local service, NOT a Supabase Edge Function) ----------
-// Why this runs from the browser instead of calling a `generate` Edge
-// Function like the old (broken) version did: the real method's snap-back
-// step needs OpenCV multi-scale masked template matching, which only exists
-// as a local Python process (tools/pixel-lock/service.py) — Supabase Edge
-// Functions run Deno and can't reach localhost, and Deno has no OpenCV
-// equivalent worth trusting for this. See that file's header and
-// Obsidian Vault/2-Projects/Tolerance Studio/Pixel-Lock Pipeline.md for the
-// full method. Start it with `python3 tools/pixel-lock/service.py` before
-// using this button. callLocalService() (lib/functions.js) is the same
-// local-service caller ai-draft/expand-shots use below, for the same reason
-// (this Supabase project's Edge Functions gateway currently rejects the
-// browser's own login session JWT — see lib/functions.js's header).
+// ---------- pixel-lock compositing (Cloud Run, NOT a Supabase Edge Function) ----------
+// Why this runs on Google Cloud Run instead of a `generate` Edge Function:
+// the real method's snap-back step needs OpenCV multi-scale masked
+// template matching, and Supabase Edge Functions (Deno, 2s CPU cap) can't
+// run that. The compositor lives at tools/pixel-lock/cloudrun/ (deployed
+// 2026-07-08 — before that it was a localhost-only Python process that
+// only worked on the Owner's machine). See tools/pixel-lock/README.md and
+// Obsidian Vault/2-Projects/Tolerance Studio/Pixel-Lock Pipeline.md for
+// the full method. callLocalService() (lib/functions.js) sends the user's
+// session token; the service rejects calls without a valid login.
 
 function blobToBase64(blob){
   return new Promise((resolve, reject) => {
@@ -297,8 +294,8 @@ function base64ToBlob(b64, mime){
 // clients/<Client>/products/<Product>/originals/*-cutout.png. If no such
 // file exists, falls back to auto-removing the background from the
 // project's reference photo (projects.reference_image, uploaded at project
-// creation) via the local pixel-lock service's rembg-backed /remove-background
-// endpoint — same service the compositing step already depends on.
+// creation) via the pixel-lock service's rembg-backed /remove-background
+// endpoint — same Cloud Run service the compositing step already depends on.
 async function findCutoutBase64(clientSlug, note){
   const files = await db.listFiles(`${clientSlug}/${projectId}/assets`);
   const cutoutFile = (files || []).find(f => f.id && /cutout/i.test(f.name));

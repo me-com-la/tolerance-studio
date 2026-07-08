@@ -39,24 +39,31 @@ async function callFunction(name, body) {
   return json;
 }
 
-// Calls the local pixel-lock service (tools/pixel-lock/service.py,
-// http://127.0.0.1:8805) instead of a Supabase Edge Function. Only used for
-// composite/remove-background now (2026-07-08) — those need real OpenCV,
-// which Deno Edge Functions can't run, so they stay local by necessity.
-// ai-draft/expand-shots moved back to callFunction() above once the JWT
-// gateway bug that originally forced them here turned out to be resolved.
-// Same error contract as callFunction() so withBusy() call sites don't
-// need to change.
-const LOCAL_SERVICE = 'http://127.0.0.1:8805';
+// Calls the hosted pixel-lock compositing service (Google Cloud Run,
+// source: tools/pixel-lock/cloudrun/) — composite/remove-background need
+// real OpenCV, which Supabase's Deno Edge Functions can't run, so those
+// two live on Cloud Run instead (deployed 2026-07-08; previously this was
+// a localhost-only Python process that only worked on the Owner's
+// machine). The service verifies the caller's Supabase session token on
+// every request, so it needs the same Authorization header as
+// callFunction(). Same error contract as callFunction() so withBusy()
+// call sites don't need to change.
+const PIXEL_LOCK_SERVICE = 'https://pixel-lock-36638783261.us-west1.run.app';
 async function callLocalService(name, body) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) throw new Error('not signed in');
   let res;
   try {
-    res = await fetch(`${LOCAL_SERVICE}/${name}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    res = await fetch(`${PIXEL_LOCK_SERVICE}/${name}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(body || {}),
     });
   } catch (e) {
-    throw new Error(`can't reach the local pixel-lock service at ${LOCAL_SERVICE} — start it with: python3 tools/pixel-lock/service.py`);
+    throw new Error(`can't reach the pixel-lock compositing service at ${PIXEL_LOCK_SERVICE} — check the Cloud Run service is up`);
   }
   const json = await res.json();
   if (!res.ok || json.ok === false) throw new Error(json.error || `${name} failed (HTTP ${res.status})`);
