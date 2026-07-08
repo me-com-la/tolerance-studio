@@ -42,6 +42,7 @@
   // ---------- projects ----------
   // This app is the Standard pipeline — only ever show/create 'standard'
   // rows so Pro projects (app/pro, same shared DB) don't leak in here.
+  // Kept as two separate tiers on purpose: may become two paid tiers later.
   const PIPELINE = 'standard';
 
   async function listProjects() {

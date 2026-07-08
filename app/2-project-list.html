@@ -40,9 +40,11 @@ a{color:inherit}
 .wrap{max-width:88rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem}
 h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
-.pipeline-badge{display:inline-flex;align-items:center;font-family:var(--font-body);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.28rem .6rem;border-radius:100px;vertical-align:middle;margin-left:.5rem}
-.pipeline-standard{color:var(--accent-ink);background:var(--accent-wash)}
-.pipeline-pro{color:#1a4fa0;background:#e8f0fe}
+.subnav{background:#fff;border-bottom:1px solid var(--line)}
+.subnav-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;gap:.4rem}
+.tier-tab{padding:.85rem 1.1rem;font-size:.86rem;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+.tier-tab:hover{color:var(--ink)}
+.tier-tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 .page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
@@ -111,14 +113,18 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   <div class="brand"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
+<div class="subnav"><div class="subnav-in">
+  <a href="2-project-list.html" class="tier-tab active">Standard</a>
+  <a href="../pro/2-project-list.html" class="tier-tab">Pro</a>
+</div></div>
 
 <div class="wrap">
   <div class="page-head">
     <div>
-      <h1>Projects <span class="pipeline-badge pipeline-standard">Standard</span></h1>
+      <h1>Projects</h1>
       <p class="page-sub" id="page-sub">Loading…</p>
     </div>
-    <button class="btn btn-primary" onclick="openNewProject()">＋ New project</button>
+    <button class="btn btn-primary" onclick="openNewProject()">＋ New Standard Project</button>
   </div>
 
   <div class="toolbar">
@@ -137,7 +143,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
 <div class="modal-backdrop" id="new-project-backdrop">
   <div class="modal">
-    <h2>New project <span class="pipeline-badge pipeline-standard">Standard</span></h2>
+    <h2>New Standard Project</h2>
     <p class="modal-sub">Same first step as the old tool's "1-Client-Assets": name the campaign and drop
       in 1-3 real product photos before anything else — the checker compares every render against
       whichever photo becomes the reference.</p>
