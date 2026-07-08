@@ -6,8 +6,8 @@
  * Account, Log out. The ".brand" label (top-left) stays static — it only
  * says which app you're in, no dropdown there.
  *
- * Load AFTER supabase-js + lib/supabase.js and ../assets/auth-bridge.js
- * (logout uses tsSignOutEverywhere).
+ * Load AFTER supabase-js + lib/supabase.js (logout uses window.sb directly —
+ * Standard and Pro share one Supabase project, so there's nothing to bridge).
  */
 (function () {
   var who = document.querySelector('.topbar .who');
@@ -72,7 +72,7 @@
   var lo = document.getElementById('ts-switch-logout');
   if (lo) lo.addEventListener('click', async function (e) {
     e.preventDefault();
-    if (window.tsSignOutEverywhere) await window.tsSignOutEverywhere();
+    await window.sb.auth.signOut();
     location.href = '../index.html';
   });
 })();

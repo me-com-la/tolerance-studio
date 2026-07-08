@@ -12,7 +12,6 @@
 <link rel="stylesheet" href="assets/auth.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
-<script src="assets/auth-bridge.js"></script>
 </head>
 <body>
 
@@ -61,8 +60,6 @@ async function doSignUp(){
   btn.disabled = true; status.textContent = 'creating account…';
   var r = await sb.auth.signUp({ email: email, password: password });
   if (r.error){ btn.disabled = false; status.textContent = r.error.message; return false; }
-  // Mirror the account + session on the Pro backend (see assets/auth-bridge.js).
-  await tsEnsureProSession(email, password);
   if (r.data.session){ location.href = 'account.html'; }
   else { status.textContent = 'Check your email to confirm your account, then log in.'; btn.disabled = false; }
   return false;

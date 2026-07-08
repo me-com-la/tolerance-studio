@@ -12,7 +12,6 @@
 <link rel="stylesheet" href="assets/auth.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
-<script src="assets/auth-bridge.js"></script>
 </head>
 <body>
 
@@ -66,8 +65,6 @@ async function doLogin(){
   btn.disabled = true; status.textContent = 'signing in…';
   var r = await sb.auth.signInWithPassword({ email: email, password: password });
   if (r.error){ btn.disabled = false; status.textContent = r.error.message; return false; }
-  // Same credentials into the Pro backend too, so opening Pro never re-asks.
-  await tsEnsureProSession(email, password);
   location.href = nextUrl();
   return false;
 }

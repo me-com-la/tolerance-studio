@@ -12,7 +12,6 @@
 <link rel="stylesheet" href="assets/auth.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
-<script src="assets/auth-bridge.js"></script>
 </head>
 <body>
 
@@ -97,7 +96,7 @@ function fullServiceCard(){
   box.innerHTML = card('standard', have.standard) + card('pro', have.pro) + fullServiceCard();
 })();
 document.getElementById('logout').addEventListener('click', async function(){
-  await tsSignOutEverywhere();
+  await sb.auth.signOut();
   location.href = 'index.html';
 });
 async function doChangePw(){
@@ -106,10 +105,10 @@ async function doChangePw(){
   var pw = document.getElementById('newpw').value;
   if (pw.length < 8){ st.textContent = 'Password must be at least 8 characters.'; return; }
   btn.disabled = true; st.textContent = 'updating…';
-  var note = await tsChangePasswordEverywhere(pw);
+  var r = await sb.auth.updateUser({ password: pw });
   btn.disabled = false;
-  st.textContent = note || 'Password updated everywhere.';
-  if (!note) document.getElementById('newpw').value = '';
+  st.textContent = r.error ? r.error.message : 'Password updated.';
+  if (!r.error) document.getElementById('newpw').value = '';
 }
 </script>
 <script src="assets/nav.js"></script>
