@@ -284,8 +284,6 @@ async function openNewProject(){
   const sel = document.getElementById('np-client');
   sel.innerHTML = cachedClients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')
     + '<option value="__new__">+ New client…</option>';
-  onClientSelectChange();
-  document.getElementById('np-new-client-field').style.display = 'none';
   document.getElementById('np-new-client-name').value = '';
   document.getElementById('np-name').value = '';
   document.getElementById('np-product').value = '';
@@ -294,6 +292,7 @@ async function openNewProject(){
   selectedFiles = [];
   renderFileList();
   document.getElementById('np-status').textContent = '';
+  onClientSelectChange();
   document.getElementById('new-project-backdrop').classList.add('open');
 }
 function closeNewProject(){
