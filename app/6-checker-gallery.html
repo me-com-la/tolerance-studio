@@ -340,17 +340,16 @@ async function runChecker(renderId){
   }
 }
 
-// Edits ONE existing render in place via functions/generate.js's
-// Local service (NOT a Supabase Edge Function — see tools/edit-render/
-// service.py's header for why): feeds Gemini the render's own image bytes
-// plus a targeted instruction ("keep everything, only change X"), instead
-// of re-running full scene generation from the shot's original prompt.
-// Saves the result as a brand-new render (unchecked, no verdict yet) so
-// both versions sit side by side; run it through "Run checker" like any
-// other. Must be running before you click Edit: `python3
-// "Tolerance Studios/tools/edit-render/service.py"` — the button surfaces
-// a clear error (not a silent hang) if it can't reach it.
-const EDIT_SERVICE = 'http://127.0.0.1:8806';
+// Edits ONE existing render in place via the deployed `edit-render` Edge
+// Function (supabase/functions/edit-render/index.ts): feeds Gemini the
+// render's own image bytes plus a targeted instruction ("keep everything,
+// only change X"), instead of re-running full scene generation from the
+// shot's original prompt. Saves the result as a brand-new render
+// (unchecked, no verdict yet) so both versions sit side by side; run it
+// through "Run checker" like any other. Ported off the local-only
+// tools/edit-render/service.py (2026-07-08) — that script had no OpenCV
+// dependency, unlike pixel-lock's compositor, so it moved to a real Edge
+// Function outright instead of staying local.
 async function editRender(renderId){
   const input = document.getElementById(`edit-instr-${renderId}`);
   const statusEl = document.getElementById(`edit-status-${renderId}`);
@@ -364,17 +363,9 @@ async function editRender(renderId){
     const { mediaType, base64 } = await toBase64Image(sourceUrl);
     const aspectRatio = (project.settings && project.settings.generation_aspect) || '1:1';
 
-    let res;
-    try {
-      res = await fetch(`${EDIT_SERVICE}/edit`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_b64: base64, mime_type: mediaType, instruction, aspect_ratio: aspectRatio }),
-      });
-    } catch (e) {
-      throw new Error(`can't reach the local edit service at ${EDIT_SERVICE} — start it with: python3 "Tolerance Studios/tools/edit-render/service.py"`);
-    }
-    const json = await res.json();
-    if (!res.ok || !json.ok) throw new Error(json.error || `edit failed (HTTP ${res.status})`);
+    const json = await callFunction('edit-render', {
+      image_b64: base64, mime_type: mediaType, instruction, aspect_ratio: aspectRatio,
+    });
 
     const ext = (json.mime_type.split('/')[1] || 'png').replace('jpeg', 'jpg');
     const baseName = r.filename.replace(/\.[^.]+$/, '');
