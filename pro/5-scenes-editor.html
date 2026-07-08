@@ -355,7 +355,7 @@ async function generateAndCheck(){
     await saveBatchSize();
 
     note.textContent = 'Expanding your scenes into full prompts…';
-    await callFunction('expand-shots', { projectId });
+    await callFunction('expand-shots-pro', { projectId });
 
     note.textContent = 'Loading your product cutout…';
     const clientSlug = project.clients.slug;

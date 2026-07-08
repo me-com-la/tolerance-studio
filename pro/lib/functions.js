@@ -5,8 +5,9 @@
 // lib/supabase.js and lib/db.js — everything here is a window global.
 // Load order: supabase-js CDN -> lib/supabase.js -> lib/db.js -> lib/functions.js.
 
-const FUNCTIONS_BASE = 'https://nfvcuidghyklnyixcqrw.supabase.co/functions/v1';
-const FUNCTIONS_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mdmN1aWRnaHlrbG55aXhjcXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNzkxNzIsImV4cCI6MjA5ODk1NTE3Mn0.6AvCWkTjPr_zHoXB2rQtkq-BetQyHmBpJe9Yyo_1n7I';
+// Same project as Standard's (merged 2026-07-08 — see lib/supabase.js).
+const FUNCTIONS_BASE = 'https://mqgfosfadmmiqlvuvbcy.supabase.co/functions/v1';
+const FUNCTIONS_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZ2Zvc2ZhZG1taXFsdnV2YmN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjA3OTgsImV4cCI6MjA5ODkzNjc5OH0.E9Zj_LRU3Uetrcnv5UTOZ1mjDC7aLqKRbgPqsIypsMQ';
 
 // Calls a deployed Edge Function with the current session's JWT (so it
 // authenticates as the logged-in Owner, same RLS scope as every other

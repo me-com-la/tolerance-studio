@@ -10,11 +10,12 @@
 // Anon key is safe to embed client-side — RLS (see app/migrations/001_init.sql)
 // is what actually protects data, same pattern as GitHub/lifeos/index.html.
 
-// tolerance-studio-composite — second free project under the me-com-la
-// account, isolated from the main app's tolerance-studio project on purpose
-// (see app-composite/README.md). Owner/keys recorded in ../keys-and-deploy.md.
-const SUPABASE_URL = 'https://nfvcuidghyklnyixcqrw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mdmN1aWRnaHlrbG55aXhjcXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNzkxNzIsImV4cCI6MjA5ODk1NTE3Mn0.6AvCWkTjPr_zHoXB2rQtkq-BetQyHmBpJe9Yyo_1n7I';
+// Standard and Pro now share ONE Supabase project (merged 2026-07-08 — was
+// previously a second, isolated "tolerance-studio-composite" project;
+// see keys-and-deploy.md's Pro section for the retirement note). Same
+// project as app/app/lib/supabase.js.
+const SUPABASE_URL = 'https://mqgfosfadmmiqlvuvbcy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZ2Zvc2ZhZG1taXFsdnV2YmN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjA3OTgsImV4cCI6MjA5ODkzNjc5OH0.E9Zj_LRU3Uetrcnv5UTOZ1mjDC7aLqKRbgPqsIypsMQ';
 
 // window.supabase is the UMD global from the CDN script tag:
 // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
