@@ -293,15 +293,11 @@ async function init(){
       `${project.product || ''} — ${project.description || ''}`.replace(/^ — /, '');
     if (isOwner) wireEmailLinkButton(project, clientName);
     renders = await db.listRenders(projectId);
-    // Client-facing view: only approved/composed, matching server.py's
-    // client bucket logic (4-Selects + 5-Size-Variations/composed) — here,
-    // renders whose effective verdict is 'approved', OR a composed (text
-    // overlay added) image. Composed rows never get a verdict of their own
-    // (8-compose.html's upsertRender only sets stage:'composed') — they're
-    // always built FROM an already-approved render, so stage alone is
-    // enough to know they belong here; without this, saved composed images
-    // never appeared in review at all.
-    renders = renders.filter(r => (r.human_override || r.verdict) === 'approved' || r.stage === 'composed');
+    // Client-facing view: composed images only (8-compose.html's
+    // upsertRender sets stage:'composed'). Approved-but-not-yet-composed
+    // renders from the Check stage don't belong here — Review is the
+    // client-facing gallery of finished, composed work.
+    renders = renders.filter(r => r.stage === 'composed');
     await render();
   } catch (e) {
     // RLS denies (not signed in as this client, or project not at review/delivered

@@ -69,6 +69,7 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
 .brief-photos img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
 .brief-photos .none{font-size:.8rem;color:var(--muted)}
+.brief-photo-actions{margin-top:.7rem;display:flex;align-items:center;gap:.7rem}
 
 .legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem}
 .legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
@@ -125,6 +126,11 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
       <dt>Description</dt><dd id="brief-description">…</dd>
     </dl>
     <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
+    <div class="brief-photo-actions">
+      <button class="btn btn-ghost" id="replace-photo-btn" onclick="document.getElementById('replace-photo-input').click()">Replace photo</button>
+      <input type="file" id="replace-photo-input" accept="image/*" style="display:none" onchange="replaceReferencePhoto(this.files[0])">
+      <span class="ai-status" id="replace-photo-status"></span>
+    </div>
   </div>
 
   <div class="ai-bar">
@@ -227,6 +233,31 @@ async function renderBrief(){
   } catch (e) {
     photosEl.innerHTML = `<span class="none">couldn't load photos: ${esc(e.message)}</span>`;
   }
+}
+
+// Pro only ever uses one reference photo (findCutoutBase64 in
+// 5-scenes-editor.html reads a single manual cutout or falls back to
+// projects.reference_image) — replacing it means clearing out whatever
+// was in assets/ before, uploading the new photo, and pointing
+// reference_image at it, so there's never more than one source of truth.
+async function replaceReferencePhoto(file){
+  if (!file) return;
+  const btn = document.getElementById('replace-photo-btn');
+  const status = document.getElementById('replace-photo-status');
+  await withBusy(btn, status, 'replacing…', async () => {
+    const slug = project.clients && project.clients.slug;
+    const prefix = `${slug}/${projectId}/assets`;
+    const existing = (await db.listFiles(prefix)).filter(f => f.id);
+    if (existing.length) {
+      await sb.storage.from('projects').remove(existing.map(f => `${prefix}/${f.name}`));
+    }
+    const path = db.storagePath(slug, projectId, 'assets', file.name);
+    await db.uploadFile(path, file);
+    await db.saveReferenceImage(projectId, path);
+    project.reference_image = path;
+    document.getElementById('replace-photo-input').value = '';
+    await renderBrief();
+  });
 }
 async function aiDraftTags(){
   const btn = document.getElementById('ai-draft-btn');

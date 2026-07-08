@@ -69,6 +69,10 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
 .brief-photos img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
 .brief-photos .none{font-size:.8rem;color:var(--muted)}
+.brief-photo{position:relative;width:84px;height:84px}
+.brief-photo .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-2);background:#fff;color:var(--muted);font-size:.7rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.brief-photo .rm:hover{color:#a33;border-color:#a33}
+.brief-photo-actions{margin-top:.7rem;display:flex;align-items:center;gap:.7rem}
 
 .legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem}
 .legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
@@ -125,6 +129,11 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
       <dt>Description</dt><dd id="brief-description">…</dd>
     </dl>
     <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
+    <div class="brief-photo-actions">
+      <button class="btn btn-ghost" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
+      <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
+      <span class="ai-status" id="photo-action-status"></span>
+    </div>
   </div>
 
   <div class="ai-bar">
@@ -208,24 +217,69 @@ async function saveAndContinue(){
 
 // Fills the read-only brief panel: creation-time facts + the uploaded
 // reference photos (everything under <slug>/<projectId>/assets/ in storage).
+// Up to MAX_REFERENCE_PHOTOS stay editable here (add/remove) even though
+// the rest of the brief is locked — matches generate/index.ts's own cap
+// on how many reference photos it feeds the model (MAX_REFERENCE_IMAGES).
+const MAX_REFERENCE_PHOTOS = 3;
 async function renderBrief(){
   document.getElementById('brief-client').textContent = (project.clients && project.clients.name) || '—';
   document.getElementById('brief-campaign').textContent = project.name || '—';
   document.getElementById('brief-product').textContent = project.product || '—';
   document.getElementById('brief-description').textContent = project.description || '—';
   const photosEl = document.getElementById('brief-photos');
+  const addBtn = document.getElementById('add-photo-btn');
   try {
     const slug = project.clients && project.clients.slug;
     const files = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
+    addBtn.style.display = files.length >= MAX_REFERENCE_PHOTOS ? 'none' : '';
     if (!files.length){
-      photosEl.innerHTML = '<span class="none">no reference photos uploaded (projects made before the new-project modal existed won\'t have any — the checker\'s reference can still be set by hand)</span>';
+      photosEl.innerHTML = '<span class="none">no reference photos uploaded yet — add at least one below.</span>';
       return;
     }
     const urls = await Promise.all(files.map(f => db.getSignedUrl(`${slug}/${projectId}/assets/${f.name}`)));
-    photosEl.innerHTML = urls.map((u,i) =>
-      `<img src="${esc(u)}" title="${esc(files[i].name)}" onclick="window.open('${esc(u)}','_blank')">`).join('');
+    photosEl.innerHTML = urls.map((u,i) => `
+      <div class="brief-photo">
+        <img src="${esc(u)}" title="${esc(files[i].name)}" onclick="window.open('${esc(u)}','_blank')">
+        <button type="button" class="rm" title="Remove photo" onclick="removeReferencePhoto('${esc(files[i].name)}')">✕</button>
+      </div>`).join('');
   } catch (e) {
     photosEl.innerHTML = `<span class="none">couldn't load photos: ${esc(e.message)}</span>`;
+  }
+}
+async function addReferencePhoto(file){
+  if (!file) return;
+  const status = document.getElementById('photo-action-status');
+  status.textContent = 'uploading…'; status.classList.remove('err'); status.classList.add('busy');
+  try {
+    const slug = project.clients && project.clients.slug;
+    const path = db.storagePath(slug, projectId, 'assets', file.name);
+    await db.uploadFile(path, file);
+    if (!project.reference_image) {
+      await db.saveReferenceImage(projectId, path);
+      project.reference_image = path;
+    }
+    document.getElementById('add-photo-input').value = '';
+    status.textContent = ''; status.classList.remove('busy');
+    await renderBrief();
+  } catch (e) {
+    status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
+  }
+}
+async function removeReferencePhoto(filename){
+  const status = document.getElementById('photo-action-status');
+  try {
+    const slug = project.clients && project.clients.slug;
+    const path = `${slug}/${projectId}/assets/${filename}`;
+    await sb.storage.from('projects').remove([path]);
+    if (project.reference_image === path) {
+      const remaining = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
+      const nextPath = remaining.length ? `${slug}/${projectId}/assets/${remaining[0].name}` : null;
+      await db.saveReferenceImage(projectId, nextPath);
+      project.reference_image = nextPath;
+    }
+    await renderBrief();
+  } catch (e) {
+    status.textContent = e.message || String(e); status.classList.add('err');
   }
 }
 async function aiDraftTags(){

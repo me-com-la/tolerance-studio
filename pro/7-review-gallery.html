@@ -198,10 +198,11 @@ async function init(){
     document.getElementById('proj-desc').textContent =
       `${project.product || ''} — ${project.description || ''}`.replace(/^ — /, '');
     renders = await db.listRenders(projectId);
-    // Client-facing view: only approved/composed, matching server.py's
-    // client bucket logic (4-Selects + 5-Size-Variations/composed) — here,
-    // renders whose effective verdict is 'approved'.
-    renders = renders.filter(r => (r.human_override || r.verdict) === 'approved');
+    // Client-facing view: composed images only (8-compose.html's
+    // upsertRender sets stage:'composed'). Renders merely picked/approved
+    // at the Check stage aren't finished work yet — Review is the
+    // client-facing gallery of finished, composed work.
+    renders = renders.filter(r => r.stage === 'composed');
     await render();
   } catch (e) {
     // RLS denies (not signed in as this client, or project not at review/delivered
