@@ -171,7 +171,7 @@ img{max-width:100%;display:block}
 .compare .no{color:var(--line-strong)}
 .compare tbody tr:last-child th,.compare tbody tr:last-child td{border-bottom:none}
 .compare .hl{background:var(--bg);box-shadow:inset 2px 0 0 var(--accent),inset -2px 0 0 var(--accent)}
-.plan-badge{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.4rem}
+.plan-badge{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.4rem;vertical-align: top;}
 .plan-name{font-family:var(--display);font-size:1.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1;display:block}
 .plan-price{font-family:var(--mono);font-size:.85rem;color:var(--muted);display:block;margin-top:.45rem}
 .plan-price .was-price{opacity:.55;margin-left:.35rem}
@@ -241,7 +241,7 @@ footer a:hover{color:var(--ink)}
 <section class="sec" id="products" style="padding-top:1.5rem">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="sec-h">Pick how much you want AI to run — and how much oversight you want.</h2>
+      <h2 class="sec-h">Pick yout Tolerance, build your brand.</h2>
       <p class="sec-lead">Same brand rules underneath everything. Choose the tier that matches how hands-on you want to be.</p>
     </div>
     <div class="compare-scroll">
@@ -250,13 +250,13 @@ footer a:hover{color:var(--ink)}
           <tr>
             <th class="feat" scope="col"></th>
             <th scope="col">
-              <span class="plan-badge">Self-serve &middot; Web app</span>
+              <span class="plan-badge">Self-serve</span>
               <span class="plan-name">Standard</span>
-              <span class="plan-price">Free during beta <s class="was-price">$10/mo</s></span>
+              <span class="plan-price">Free during beta <s class="was-price"><br>$10/mo</s></span>
               <span class="plan-cta"><a class="btn btn-ghost" href="signup.html">Sign up free &rarr;</a></span>
             </th>
             <th scope="col">
-              <span class="plan-badge">Self-serve &middot; Web app</span>
+              <span class="plan-badge">Self-serve</span>
               <span class="plan-name">Pro</span>
               <span class="plan-price">Free during beta <s class="was-price">$20/mo</s></span>
               <span class="plan-cta"><a class="btn btn-ghost" href="signup.html">Sign up free &rarr;</a></span>
@@ -264,7 +264,7 @@ footer a:hover{color:var(--ink)}
             <th scope="col" class="hl">
               <span class="plan-badge">Full service</span>
               <span class="plan-name">Creative Director</span>
-              <span class="plan-price">Let's talk</span>
+              <span class="plan-price">Let's talk<br><br></span>
               <span class="plan-cta"><a class="btn btn-primary" href="contact.html">Get 2 free renders &rarr;</a></span>
             </th>
           </tr>
@@ -438,43 +438,44 @@ footer a:hover{color:var(--ink)}
   </div>
 </section>
 
-<!-- ── SLIDERS ─────────────────────────────────────── -->
+<!-- ── COMPOSE FEATURES: text overlay + size variants ── -->
 <section class="sec">
   <div class="wrap">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
 
       <div>
-        <span class="eyebrow">One setup, every variant</span>
-        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">One setup. Every channel.</h2>
-        <div class="ba-wrap">
-          <div class="ba" id="ba">
-            <img src="images/Toyota/image1.png" alt="Original campaign cut">
-            <img class="after-layer" src="images/Toyota/image2.png" alt="Talent swapped, no reshoot">
-            <span class="ba-tag l">Original cut</span>
-            <span class="ba-tag r">Swapped</span>
-            <input type="range" min="0" max="100" value="50" aria-label="Drag to compare">
-            <div class="handle"><span class="grip">&#8249;&#8250;</span></div>
-          </div>
+        <span class="eyebrow">Built into every render</span>
+        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Add text to your image.</h2>
+        <p class="ba-cap" style="margin-bottom:.9rem">Headline, body, and a CTA — placed to dodge the product, in your brand's type. No separate design pass.</p>
+        <div style="border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
+          <img src="images/ticker/9.jpg" alt="Product image with headline, body copy, and a call-to-action button composited on top" style="width:100%;height:auto;display:block">
         </div>
-        <p class="ba-cap">Talent and wardrobe swapped, no reshoot. Drag to compare.</p>
       </div>
 
       <div>
-        <span class="eyebrow">Lifestyle replacements</span>
-        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Lifestyle Replacements</h2>
-        <div class="ba-wrap">
-          <div class="ba" id="ba3">
-            <img src="images/Toyota/man1.jpg" alt="Lifestyle variant 1">
-            <img class="mid-layer" src="images/Toyota/man2.jpg" alt="Lifestyle variant 2">
-            <img class="top-layer" src="images/Toyota/man3.jpg" alt="Lifestyle variant 3">
-            <span class="ba-tag l">Variant 1</span>
-            <span class="ba-tag r">Variant 3</span>
-            <div class="handle" id="ba3-handle1"><span class="grip">&#8249;&#8250;</span></div>
-            <div class="handle handle2" id="ba3-handle2"></div>
-            <input type="range" id="ba3-range" min="0" max="100" value="50" aria-label="Drag to compare">
+        <span class="eyebrow">One render, every placement</span>
+        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Create size variations.</h2>
+        <p class="ba-cap" style="margin-bottom:.9rem">Square, portrait, story — the same shot, reframed for every platform's spec. No re-shoots, no manual cropping.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:.6rem;align-items:end">
+          <div>
+            <div style="aspect-ratio:1/1;border-radius:10px;overflow:hidden;box-shadow:var(--shadow)">
+              <img src="images/pro/crate-final.png" alt="Square crop, 1:1" style="width:100%;height:100%;object-fit:cover;display:block">
+            </div>
+            <p style="font-family:var(--mono);font-size:.68rem;color:var(--muted);text-align:center;margin-top:.4rem">1:1 Feed</p>
+          </div>
+          <div>
+            <div style="aspect-ratio:4/5;border-radius:10px;overflow:hidden;box-shadow:var(--shadow)">
+              <img src="images/pro/crate-final.png" alt="Portrait crop, 4:5" style="width:100%;height:100%;object-fit:cover;display:block">
+            </div>
+            <p style="font-family:var(--mono);font-size:.68rem;color:var(--muted);text-align:center;margin-top:.4rem">4:5 Portrait</p>
+          </div>
+          <div>
+            <div style="aspect-ratio:9/16;border-radius:10px;overflow:hidden;box-shadow:var(--shadow)">
+              <img src="images/pro/crate-final.png" alt="Story crop, 9:16" style="width:100%;height:100%;object-fit:cover;display:block">
+            </div>
+            <p style="font-family:var(--mono);font-size:.68rem;color:var(--muted);text-align:center;margin-top:.4rem">9:16 Story</p>
           </div>
         </div>
-        <p class="ba-cap">Same product, three lifestyle contexts. Drag to compare.</p>
       </div>
 
     </div><!-- end grid -->
@@ -502,43 +503,6 @@ footer a:hover{color:var(--ink)}
   </div>
 </footer>
 
-<script>
-(function(){
-  var ba=document.getElementById('ba');
-  if(!ba)return;
-  var range=ba.querySelector('input[type=range]');
-  var after=ba.querySelector('.after-layer');
-  var handle=ba.querySelector('.handle');
-  function set(v){after.style.clipPath='inset(0 0 0 '+v+'%)';handle.style.left=v+'%';}
-  range.addEventListener('input',function(){set(range.value);});
-  set(50);
-})();
-
-// 3-way slider
-(function(){
-  var ba=document.getElementById('ba3');
-  if(!ba)return;
-  var range=ba.querySelector('#ba3-range');
-  var mid=ba.querySelector('.mid-layer');
-  var top=ba.querySelector('.top-layer');
-  var h1=ba.querySelector('#ba3-handle1');
-  var h2=ba.querySelector('#ba3-handle2');
-  function set3(v){
-    // v = 0-100
-    // 0-50: man1 → man2 (mid layer reveals from left)
-    // 50-100: man2 → man3 (top layer reveals from left)
-    var midPct = Math.min(v * 2, 100);
-    var topPct = Math.max((v - 50) * 2, 0);
-    mid.style.clipPath = 'inset(0 0 0 ' + (100 - midPct) + '%)';
-    top.style.clipPath = 'inset(0 0 0 ' + (100 - topPct) + '%)';
-    h1.style.left = (100 - midPct) + '%';
-    h2.style.left = (100 - topPct) + '%';
-    h2.style.opacity = topPct > 0 && topPct < 100 ? '1' : '0';
-  }
-  range.addEventListener('input',function(){set3(+range.value);});
-  set3(50);
-})();
-</script>
 <script>
 // Hero ticker — loads images/ticker/1.jpg, 2.jpg, ... in order (also tries
 // .png/.webp per number) and stops after 3 consecutive missing numbers, so
