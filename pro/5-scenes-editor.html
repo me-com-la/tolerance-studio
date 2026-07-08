@@ -367,7 +367,12 @@ async function generateAndCheck(){
       try {
         const prompt = pixelLockPrompt(freshProject, shots, item);
         const result = await compositeOneShot(cutoutB64, prompt);
-        const filename = /\.[a-z0-9]+$/i.test(item.file) ? item.file : `${item.file}.png`;
+        // Unique per run (same timestamp convention as Compose's output
+        // filenames) — item.file alone is product+motif+index, so re-running
+        // a similar scene used to produce the SAME filename and the upsert
+        // silently REPLACED the earlier render. Every generation now keeps
+        // its own row/file.
+        const filename = `${item.file.replace(/\.[a-z0-9]+$/i, '')}-${Date.now().toString(36)}.png`;
         const path = db.storagePath(clientSlug, projectId, 'renders', filename);
         await db.uploadFile(path, base64ToBlob(result.composite_b64, 'image/png'));
         await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render' });
