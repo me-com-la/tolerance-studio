@@ -44,6 +44,24 @@ function tagLines(tags) {
   };
 }
 
+// Owner-entered approximate dimensions (inches), stored at tags.dimensions —
+// image models have no real-world scale grounding from a product name alone,
+// so a plain size line in the prompt is what corrects "looks shorter/wider
+// than it actually is" misses (e.g. a tall vase rendering squat).
+function dimensionsLine(dimensions) {
+  const { width, height, length } = dimensions || {};
+  const parts = [];
+  if (height) parts.push(`${height}in tall`);
+  if (width) parts.push(`${width}in wide`);
+  if (length) parts.push(`${length}in deep`);
+  if (!parts.length) return '(not given)';
+  if (height && width) {
+    const ratio = (height / width).toFixed(1);
+    parts.push(`height-to-width ratio ~${ratio}:1`);
+  }
+  return parts.join(', ');
+}
+
 function parseScenes(scenesText) {
   // Strips the numbering AND the "*" owner-written marker the Scenes editor
   // persists (lines like "3. * Rooftop terrace…") — the marker is UI-side
@@ -69,23 +87,27 @@ async function expandShots(deps, params) {
     return { ok: false, error: 'no scenes to expand — write the Scenes list first' };
   }
   const tags = tagLines(project.tags);
+  const dimensions = dimensionsLine(project.tags?.dimensions);
   const productSlug = slugify(project.product || project.name);
 
   const system =
     'You expand a short scene-phrase list into full AI-image-generation prompts for a product-photography ' +
     'batch. Each output prompt combines: (1) the product lock — must-weighted product facts, always true, ' +
-    'stated first; (2) the style lock — must/should-weighted creative constants, stated as consistent style ' +
-    'guidance across the whole batch; (3) the specific scene detail for that shot. Write one flowing ' +
-    'descriptive paragraph per shot, camera-ready, 2-4 sentences, ending with the shot angle. Every prompt ' +
-    'must also keep the full product in frame with even margin on all sides — never crop tight or run the ' +
-    'product edge-to-edge — so the compose step downstream has room to shift the image left or right behind ' +
-    'text without cutting the product off. Respond with ' +
+    'stated first, including the given approximate dimensions/proportions stated in plain language (e.g. ' +
+    '"a tall, slender vase, about 3x taller than it is wide") so the generated product reads at true scale ' +
+    'instead of default proportions; (2) the style lock — must/should-weighted creative constants, stated as ' +
+    'consistent style guidance across the whole batch; (3) the specific scene detail for that shot. Write one ' +
+    'flowing descriptive paragraph per shot, camera-ready, 2-4 sentences, ending with the shot angle. Every ' +
+    'prompt must also keep the full product in frame with even margin on all sides — never crop tight or run ' +
+    'the product edge-to-edge — so the compose step downstream has room to shift the image left or right ' +
+    'behind text without cutting the product off. Respond with ' +
     'ONLY a JSON object: {"product_lock":"...", "style_lock":"...", ' +
     '"shots":[{"motif":"short 2-4 word label","prompt":"full prompt paragraph"}, ...]} — exactly one shot ' +
     'per input scene, same order.';
   const user =
     `Product: ${project.product || project.name}\n\n` +
     `ALWAYS (must): ${tags.always}\nPREFER (should): ${tags.prefer}\nDETAIL (flavor): ${tags.detail}\n\n` +
+    `Approximate dimensions: ${dimensions}\n\n` +
     `Scenes (one shot per line, expand in this exact order):\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n` +
     'Respond with the JSON object only.';
 

@@ -120,7 +120,15 @@ async function generateBackgroundImage(geminiKey, { prompt, aspectRatio }) {
  * later, instead of the product running edge-to-edge with no room to shift.
  */
 async function compositeProductOntoBackground(backgroundBytes, cutoutBytes, placement) {
-  const { scale = 0.5, anchorX = 0.5, anchorY = 0.62 } = placement || {};
+  // No explicit placement given: vary scale/position per render instead of a
+  // fixed center, so a batch doesn't come out with every product identically
+  // sized and positioned. Ranges stay close to the old fixed defaults
+  // (0.5 scale, 0.5/0.62 anchor) — this is variety, not a redesign.
+  const {
+    scale = 0.6 + Math.random() * 0.3, // 0.6-0.9
+    anchorX = 0.5 + (Math.random() - 0.5) * 0.16, // 0.42-0.58
+    anchorY = 0.58 + (Math.random() - 0.5) * 0.1, // 0.53-0.63
+  } = placement || {};
   const bg = sharp(backgroundBytes);
   const bgMeta = await bg.metadata();
   const cutout = sharp(cutoutBytes);

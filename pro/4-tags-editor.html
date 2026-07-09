@@ -155,6 +155,12 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
       <select disabled><option>Product spec</option></select>
       <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
     </div>
+    <div class="grp-hint" style="margin-top:1rem">Approximate dimensions, in inches — feeds the product lock so scale reads right in generation.</div>
+    <div class="add-row">
+      <input id="dim-width" type="number" min="0" step="0.1" placeholder="Width (in)">
+      <input id="dim-height" type="number" min="0" step="0.1" placeholder="Height (in)">
+      <input id="dim-length" type="number" min="0" step="0.1" placeholder="Length/depth (in)">
+    </div>
   </div>
 
   <div class="tag-group">
@@ -207,7 +213,20 @@ function addTag(group){
   inp.value = '';
   renderTags();
 }
+function readDimensions(){
+  const num = (id) => {
+    const v = parseFloat(document.getElementById(id).value);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  return { width: num('dim-width'), height: num('dim-height'), length: num('dim-length') };
+}
+function fillDimensions(dim){
+  document.getElementById('dim-width').value = dim?.width ?? '';
+  document.getElementById('dim-height').value = dim?.height ?? '';
+  document.getElementById('dim-length').value = dim?.length ?? '';
+}
 async function saveAndContinue(){
+  tags.dimensions = readDimensions();
   await db.saveTags(projectId, tags);
   location.href = `5-scenes-editor.html?project=${encodeURIComponent(projectId)}`;
 }
@@ -282,6 +301,7 @@ async function init(){
     `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
   tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
   renderTags();
+  fillDimensions(tags.dimensions);
   renderBrief();
 }
 init();
