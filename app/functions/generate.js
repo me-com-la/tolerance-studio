@@ -2,33 +2,19 @@
 // Node/CommonJS source-of-truth mirror of the deployed Deno function at
 // supabase/functions/generate/index.ts — if you change one, change both.
 //
-// SWITCHED FROM HIGGSFIELD TO GEMINI (2026-07-06) — after exhausting every
-// REST path/slug guess against platform.higgsfield.ai, confirmed from four
-// independent sources that the reference-accurate models
-// (marketing_studio_image, ms_image, nano_banana_2, gpt_image_2/
-// product-photoshoot) are MCP/CLI-only, not exposed on the developer REST
-// API our Higgsfield key can reach. Only Soul was reachable there, and a
-// live test against the real Kindtail crate photo produced a WRONG PRODUCT
-// (generic crate, none of the honeycomb/color detail held) — confirmed
-// useless for this pipeline's whole reason to exist (spec accuracy).
-//
-// Gemini's own native image model (marketed as "Nano Banana") does the same
-// job directly over plain REST with an API key, no CLI, no MCP layer.
-// Live-tested against two real, very different products (the Kindtail
-// crate, and a much harder case — an asymmetric geometric wood vase with a
-// triangular cutout, round dowel accent, and incised lines) — both held
-// product identity faithfully.
-//
-// Model: gemini-3.1-flash-image ("Nano Banana 2") — chosen over the cheaper
-// gemini-3.1-flash-lite-image for product-fidelity reasons (Owner call,
-// same logic as the real api-decision.md bake-off: pay for the model that
-// holds detail). Resolution cap raised to 2K (Owner call, 2026-07-07,
-// bumped from the original 1K cap set 2026-07-06). imageConfig.imageSize
-// is always "2K" regardless of any project setting. Field name verified
-// empirically (not trusted from a fetched summary that separately
-// fabricated a nonexistent "/v1beta/interactions" endpoint): requesting
-// imageSize:"2K" in a live call returned an actual 2048x2048 image versus
-// the default 1024x1024 with no size field set.
+// Provider history: Higgsfield (rejected — reference-accurate models were
+// MCP/CLI-only, not reachable over REST; Soul was reachable but produced a
+// wrong product on a live test) -> Gemini called directly (2026-07-06) ->
+// fal.ai (2026-07-09, Owner rule: one provider — fal already pays for Bria
+// image gen on Pro and Standard's text/vision calls). Image generation
+// keeps the SAME underlying model (still "Nano Banana 2" / Gemini 3.1 Flash
+// Image — chosen for product fidelity, same api-decision.md bake-off logic)
+// but now goes through fal's hosted endpoint for that model instead of
+// calling generativelanguage.googleapis.com with a Google key directly, so
+// nothing in this app talks to Google or Anthropic's APIs anymore — only
+// fal. Resolution stays capped at 2K (Owner call, 2026-07-07, bumped from
+// the original 1K cap set 2026-07-06) — fal's `resolution` param, always
+// "2K" here regardless of any project setting.
 //
 // Multi-reference rule (from the real api-decision.md, 2026-07-06 note):
 // "for complex products (anything with a door, hinge, or asymmetric
@@ -42,13 +28,12 @@
 // whole batch even though generation may see a fuller reference set.
 //
 // BUG FIXED DURING LIVE TESTING (2026-07-06): the candidate image handed to
-// the checker was hardcoded to mediaType 'image/png', but Gemini doesn't
-// always return PNG bytes — it returned a real JPEG once, and Anthropic's
-// vision API validates the actual byte signature against the declared
-// media_type and rejects a mismatch outright ("the image appears to be a
-// image/jpeg image"). Fixed by capturing and using Gemini's own reported
-// mimeType for both the storage upload's contentType and the checker call,
-// never assuming a fixed format.
+// the checker was hardcoded to mediaType 'image/png', but the model doesn't
+// always return PNG bytes — it returned a real JPEG once, and a vision API
+// that validates the actual byte signature against the declared media type
+// rejects a mismatch outright. Fixed by capturing and using the model's own
+// reported mimeType for both the storage upload's contentType and the
+// checker call, never assuming a fixed format.
 //
 // Auto-chains the checker (added 2026-07-06, same day as the Higgsfield ->
 // Gemini switch): the old tool ran generation and checking together as one
@@ -66,9 +51,11 @@
 const https = require('https');
 
 const CONCURRENCY = parseInt(process.env.GENERATE_CONCURRENCY || '4', 10);
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-image';
+// fal's hosted slug for the same Gemini 3.1 Flash Image ("Nano Banana 2")
+// model Standard has always generated with — same model, different pipe.
+const IMAGE_MODEL = process.env.IMAGE_MODEL || 'fal-ai/gemini-3.1-flash-image-preview/edit';
 const MAX_REFERENCE_IMAGES = 3;
-const CHECKER_MODEL = process.env.CHECKER_MODEL || 'gemini-3.5-flash'; // matches deployed supabase/functions/generate/index.ts
+const CHECKER_MODEL = process.env.CHECKER_MODEL || 'anthropic/claude-haiku-4.5'; // matches deployed supabase/functions/generate/index.ts
 
 function fullPrompt(shots, item) {
   const parts = [shots.product_lock, shots.style_lock, item.prompt].map((s) => (s || '').trim()).filter(Boolean);
@@ -96,34 +83,73 @@ function httpsJson(url, headers, body) {
   });
 }
 
-/**
- * Generates one shot's image via Gemini, grounded on 1-3 real reference
- * photos. Returns { bytes: Buffer, mimeType: string } — mimeType is
- * whatever Gemini actually reports, never assumed.
- */
-async function generateShotImage(geminiKey, { prompt, aspectRatio, referenceImages }) {
-  const parts = [{ text: prompt }];
-  for (const img of referenceImages) parts.push({ inline_data: { mime_type: img.mimeType, data: img.base64 } });
+// Submits a job to fal's async queue and polls it to completion — same
+// proven pattern as tools/pixel-lock/service.py's bria_genfill().
+function falQueueRun(falKey, model, body) {
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        const { status, json: submitted } = await httpsJson(`https://queue.fal.run/${model}`, { Authorization: `Key ${falKey}` }, body);
+        if (status < 200 || status >= 300) throw new Error(`fal submit error: ${JSON.stringify(submitted).slice(0, 300)}`);
+        const { status_url, response_url } = submitted;
+        const deadline = Date.now() + 120000;
+        while (Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const st = await httpsGet(status_url, { Authorization: `Key ${falKey}` });
+          if (st.json.status === 'COMPLETED') {
+            const rr = await httpsGet(response_url, { Authorization: `Key ${falKey}` });
+            if (rr.status < 200 || rr.status >= 300) throw new Error(`fal result error: ${JSON.stringify(rr.json).slice(0, 300)}`);
+            return resolve(rr.json);
+          }
+          if (st.json.status === 'ERROR' || st.json.status === 'FAILED') {
+            throw new Error(`fal generation failed: ${JSON.stringify(st.json).slice(0, 300)}`);
+          }
+        }
+        throw new Error('fal generation timed out after 120s');
+      } catch (e) { reject(e); }
+    })();
+  });
+}
 
-  const body = {
-    contents: [{ parts }],
-    generationConfig: {
-      responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: aspectRatio || '1:1', imageSize: '2K' }, // cap, Owner rule (raised from 1K 2026-07-07)
-    },
-  };
-  const { status, json: resp } = await httpsJson(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-    { 'x-goog-api-key': geminiKey },
-    body,
-  );
-  if (status < 200 || status >= 300) throw new Error(`Gemini error: ${resp.error?.message || status}`);
-  for (const c of resp.candidates || []) {
-    for (const part of c.content?.parts || []) {
-      if (part.inlineData) return { bytes: Buffer.from(part.inlineData.data, 'base64'), mimeType: part.inlineData.mimeType || 'image/png' };
-    }
-  }
-  throw new Error('Gemini returned no image data');
+function httpsGet(url, headers) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers }, (res) => {
+      let raw = '';
+      res.on('data', (c) => (raw += c));
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, json: JSON.parse(raw) }); }
+        catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+/**
+ * Generates one shot's image via fal (Gemini 3.1 Flash Image / "Nano Banana
+ * 2", same model as before — see header), grounded on 1-3 real reference
+ * photos. Returns { bytes: Buffer, mimeType: string } — mimeType is
+ * whatever fal actually reports, never assumed.
+ */
+async function generateShotImage(falKey, { prompt, aspectRatio, referenceImages }) {
+  const image_urls = referenceImages.map((img) => `data:${img.mimeType};base64,${img.base64}`);
+  const result = await falQueueRun(falKey, IMAGE_MODEL, {
+    prompt,
+    image_urls,
+    aspect_ratio: aspectRatio || '1:1',
+    resolution: '2K', // cap, Owner rule (raised from 1K 2026-07-07)
+    output_format: 'png',
+  });
+  const img = (result.images || [])[0];
+  if (!img || !img.url) throw new Error(`fal returned no image: ${JSON.stringify(result).slice(0, 300)}`);
+  const { status, buffer } = await new Promise((resolve, reject) => {
+    require('https').get(img.url, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, buffer: Buffer.concat(chunks) }));
+    }).on('error', reject);
+  });
+  if (status < 200 || status >= 300) throw new Error(`failed to download generated image: HTTP ${status}`);
+  return { bytes: buffer, mimeType: img.content_type || 'image/png' };
 }
 
 async function mapWithConcurrency(items, limit, worker) {
@@ -167,34 +193,35 @@ function buildSpecFromTags(project) {
   };
 }
 
-// Checker moved off Claude onto Gemini 2.5 Flash-Lite (2026-07-09, Owner
-// call, same switch as functions/checker.js — see that file's header for
-// the reasoning). Reuses the same geminiKey generation already needs, so
-// this inline auto-check no longer needs an Anthropic key at all.
-async function callGeminiVision(geminiKey, sourceImage, candidateImage, instructions) {
+// Checker consolidated onto fal (2026-07-09, Owner rule: one provider),
+// same switch as functions/checker.js — see that file's header for the
+// reasoning. Reuses the same falKey generation already needs.
+async function callFalVision(falKey, sourceImage, candidateImage, instructions) {
   const { json: resp } = await httpsJson(
-    `https://generativelanguage.googleapis.com/v1beta/models/${CHECKER_MODEL}:generateContent`,
-    { 'x-goog-api-key': geminiKey },
+    'https://fal.run/openrouter/router/openai/v1/chat/completions',
+    { Authorization: `Key ${falKey}` },
     {
-      contents: [{
-        parts: [
-          { text: 'IMAGE 1 — real product (ground truth):' },
-          { inline_data: { mime_type: sourceImage.mediaType, data: sourceImage.base64 } },
-          { text: 'IMAGE 2 — AI-generated candidate:' },
-          { inline_data: { mime_type: candidateImage.mediaType, data: candidateImage.base64 } },
-          { text: instructions },
+      model: CHECKER_MODEL,
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'IMAGE 1 — real product (ground truth):' },
+          { type: 'image_url', image_url: { url: `data:${sourceImage.mediaType};base64,${sourceImage.base64}` } },
+          { type: 'text', text: 'IMAGE 2 — AI-generated candidate:' },
+          { type: 'image_url', image_url: { url: `data:${candidateImage.mediaType};base64,${candidateImage.base64}` } },
+          { type: 'text', text: instructions },
         ],
       }],
-      generationConfig: { responseMimeType: 'application/json' },
     },
   );
-  if (resp.error) throw new Error(resp.error.message || 'Gemini API error');
-  const text = (resp.candidates || []).flatMap((c) => c.content?.parts || []).map((p) => p.text || '').join('');
-  if (!text) throw new Error('Gemini returned no text output');
+  if (resp.error) throw new Error(resp.error.message || 'fal.ai API error');
+  const text = (resp.choices || []).map((c) => (c.message && c.message.content) || '').join('');
+  if (!text) throw new Error('fal returned no text output');
   return text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
 }
 
-async function runCheckerInline(geminiKey, spec, sourceImage, candidateImage) {
+async function runCheckerInline(falKey, spec, sourceImage, candidateImage) {
   const checks = spec.vision_checks;
   const instructions = `You are a spec-accuracy QA inspector for AI-generated product imagery.
 IMAGE 1 is the REAL product (ground truth). IMAGE 2 is an AI-generated candidate.
@@ -214,7 +241,7 @@ Respond with ONLY a JSON object:
 matches IMAGE 1 against this checklist (100 = perfect match, 0 = completely
 wrong product)}`;
 
-  const text = await callGeminiVision(geminiKey, sourceImage, candidateImage, instructions);
+  const text = await callFalVision(falKey, sourceImage, candidateImage, instructions);
   const result = JSON.parse(text);
 
   const sev = {};
@@ -242,17 +269,17 @@ wrong product)}`;
 }
 
 /**
- * Generates every shot in project.shots.items via Gemini, uploads each
+ * Generates every shot in project.shots.items via fal, uploads each
  * result into Supabase storage, auto-checks it, and upserts a `renders` row
  * per shot.
  *
- * @param {object} deps - { geminiKey, db } — checker now reuses geminiKey too
- *   (see functions/checker.js header, 2026-07-09 switch off Anthropic)
+ * @param {object} deps - { falKey, db } — checker now reuses falKey too
+ *   (see functions/checker.js header, 2026-07-09 switch to fal)
  * @param {object} params - { project } — full project row from db.getProject
  * @returns {Promise<{ok:boolean, generated:number, checked:number, failed:Array}>}
  */
 async function generateProjectRenders(deps, params) {
-  const { geminiKey, db } = deps;
+  const { falKey, db } = deps;
   const { project } = params;
 
   const shots = project.shots;
@@ -295,7 +322,7 @@ async function generateProjectRenders(deps, params) {
   // Reference photo used by the CHECKER specifically — one fixed image so
   // every shot in the batch is judged against the same ground truth.
   let checkerReferenceImage = null;
-  if (geminiKey && project.reference_image) {
+  if (falKey && project.reference_image) {
     try {
       const buf = await db.downloadFile(project.reference_image);
       checkerReferenceImage = { mediaType: buf.mimeType, base64: buf.bytes.toString('base64') };
@@ -307,18 +334,18 @@ async function generateProjectRenders(deps, params) {
 
   const outcomes = await mapWithConcurrency(shots.items, CONCURRENCY, async (item) => {
     const prompt = fullPrompt(shots, item);
-    const { bytes, mimeType } = await generateShotImage(geminiKey, { prompt, aspectRatio, referenceImages });
+    const { bytes, mimeType } = await generateShotImage(falKey, { prompt, aspectRatio, referenceImages });
 
     const filename = /\.[a-z0-9]+$/i.test(item.file) ? item.file : `${item.file}.png`;
     const path = db.storagePath(clientSlug, project.id, 'renders', filename);
     await db.uploadFile(path, bytes, mimeType);
 
-    let checkNote = 'not checked (no reference photo or Gemini key set)';
+    let checkNote = 'not checked (no reference photo or fal key set)';
     let checkerFields = {};
-    if (checkerReferenceImage && geminiKey) {
+    if (checkerReferenceImage && falKey) {
       try {
         const candidateImage = { mediaType: mimeType, base64: bytes.toString('base64') };
-        const { checker, verdict } = await runCheckerInline(geminiKey, spec, checkerReferenceImage, candidateImage);
+        const { checker, verdict } = await runCheckerInline(falKey, spec, checkerReferenceImage, candidateImage);
         checkerFields = { checker, verdict };
         checkNote = `checked: ${checker.stage2_verdict}`;
       } catch (checkErr) {
@@ -342,8 +369,8 @@ async function generateProjectRenders(deps, params) {
 
   const checkedCount = succeeded.filter((s) => s.checkNote.startsWith('checked')).length;
   const summary =
-    `${succeeded.length}/${shots.items.length} shots generated via Gemini ` +
-    `(${GEMINI_MODEL}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` +
+    `${succeeded.length}/${shots.items.length} shots generated via fal ` +
+    `(${IMAGE_MODEL}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` +
     (failed.length ? ` Failed: ${failed.map((f) => `${f.file} (${f.error})`).join('; ')}` : '') + capNote;
   await db.createRunLogEntry(project.id, 'generate', summary);
 

@@ -19,9 +19,11 @@
 // for Bria image gen on Pro, and Standard's text/vision calls consolidated
 // onto it too). Routes through fal's OpenRouter-backed chat endpoint
 // (OpenAI-compatible, images as data-URI image_url parts), model Claude
-// Haiku 4.5 — vision-capable, priced for high-volume verdict calls. Gemini
-// stays ONLY for Standard's actual image generation (functions/generate.js),
-// not for this QA-read step.
+// Haiku 4.5 — vision-capable, priced for high-volume verdict calls. Standard's
+// image generation (functions/generate.js) also moved onto fal the same day
+// (same underlying Gemini 3.1 Flash Image model, just via fal's endpoint
+// instead of Google's) — nothing in this app calls Google or Anthropic
+// directly anymore.
 //
 // GUESS FLAGGED: 001_init.sql's projects table has no `spec` / `spec.json`
 // column — spec-checker's per-SKU spec.json (code_checks, vision_checks,

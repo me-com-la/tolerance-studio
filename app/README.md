@@ -138,12 +138,15 @@ Supabase CLI, since 2026-07-09 via the Management REST API directly
 (`POST api.supabase.com/v1/projects/<ref>/functions/deploy?slug=<name>`,
 multipart `metadata` + `file`) because no CLI/node/deno binary exists on this
 machine anymore. NOT the MCP connector — that's tied to a different Supabase
-account and can't reach this project). Secrets set: `FAL_KEY` (current
-provider for all text/vision calls — ai-draft, expand-shots,
-expand-shots-pro, checker route through fal.ai's OpenRouter chat endpoint,
-model Claude Haiku 4.5), plus `GEMINI_API_KEY` (still used by generate /
-edit-render image generation) and the older `ANTHROPIC_API_KEY` /
-`HF_CREDENTIALS` (no longer referenced by any deployed function).
+account and can't reach this project). Secrets set: **`FAL_KEY` is the only
+AI provider key any deployed function uses** — ai-draft/expand-shots/
+expand-shots-pro/checker route through fal.ai's OpenRouter chat endpoint
+(model Claude Haiku 4.5); generate/edit-render route image generation
+through fal's hosted Gemini 3.1 Flash Image endpoint (same model as before,
+just not called with a Google key directly anymore). `GEMINI_API_KEY`,
+`ANTHROPIC_API_KEY`, and `HF_CREDENTIALS` are still set on the project but
+no longer referenced by any deployed function — safe to remove once
+confirmed nothing else needs them.
 Deno-specific ports live at `supabase/functions/<name>/index.ts` in the CLI
 scratch workspace used to deploy them; `app/functions/*.js` remain the
 Node-flavored source-of-truth versions these were ported from, kept in sync
