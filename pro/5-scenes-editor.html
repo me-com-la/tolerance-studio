@@ -115,7 +115,6 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 </div></div>
 
 <div class="wrap">
-  <h1>Scenes</h1>
   <p class="sub" id="page-sub">Loading…</p>
 
   <div class="settings-strip">
@@ -251,13 +250,15 @@ async function saveBatchSize(){
 }
 // The one CTA runs the whole invisible middle of the pipeline (Owner call,
 // 2026-07-06: the shot-expansion machinery is internal, users think in
-// scenes): save scenes → expand-shots (turns each scene into a full locked
-// prompt, silently) → generate (Higgsfield, which also auto-runs the
-// checker per shot) → land on the Check page with everything scored.
+// scenes): save scenes → expand-shots-pro (turns each scene into a full
+// locked prompt, silently) → pixel-lock compositing per shot → land on
+// the Select page. Pro has NO checker step (Owner call, 2026-07-09): the
+// product is real pixels, so it cannot be wrong — Select is just a picker
+// for which composites carry into Compose.
 // Full-screen takeover while the batch runs (Owner call, 2026-07-06): the
 // whole page locks behind an overlay with a "don't refresh or leave" note,
-// a beforeunload guard backs that up, and you land on Check only once
-// generation AND checking are done (the checker runs inside `generate`).
+// a beforeunload guard backs that up, and you land on Select only once
+// every shot has composited.
 let generating = false;
 window.addEventListener('beforeunload', (e) => {
   if (generating) { e.preventDefault(); e.returnValue = ''; }
@@ -316,27 +317,64 @@ async function findCutoutBase64(clientSlug, note){
   return cutout_b64;
 }
 
-// Builds the proven "keep the product exactly, replace only the
-// background" instruction (verbatim skeleton from Pixel-Lock Pipeline.md),
-// filled in with this project's must-weighted product tags (so the model
-// knows what it's preserving, in addition to seeing it in the reference
-// image) and the shot's scene description.
+// FLUX Fill prompt (2026-07-09, replaces the old Gemini-era "keep the
+// product exactly, replace only the background" instruction skeleton) —
+// with a mask, product preservation is structural, not something the
+// prompt needs to ask for. Asking for it anyway backfired: FLUX renders
+// text well, so instructional/label-style phrasing in the old prompt
+// ("Keep the X EXACTLY... Replace only the plain grey background...") was
+// partly getting rendered AS literal text/watermarks on the image instead
+// of being read as an instruction. Keep this to a plain scene description
+// only, with an explicit no-text guard.
+// Converts a real-world height (inches, Owner-entered on the tags page) into
+// a familiar-object comparison — added 2026-07-09 after the frame-percentage
+// placement fix alone still left rooms scaled wrong: the compositor's scale%
+// only controls how big the pasted cutout ends up in the final composite, it
+// gives the AI background generator zero grounding on the product's real
+// size when it paints the room/furniture around it, so a 6in object and a
+// 6ft object got scenes scaled identically off the scene phrase alone. Raw
+// inches in a prompt don't reliably move image-model output — a comparison
+// to a common, visually-familiar object does, since the model has strong
+// priors for what a "wine bottle" or "dining table" looks like in a room.
+function sizeComparisonPhrase(heightIn){
+  if (!heightIn || heightIn <= 0) return null;
+  if (heightIn < 4) return 'tiny, about the size of a votive candle or a golf ball';
+  if (heightIn < 8) return 'small, about the size of a coffee mug';
+  if (heightIn < 13) return 'about the height of a wine bottle';
+  if (heightIn < 20) return 'about knee-height on an adult, like a large houseplant pot';
+  if (heightIn < 30) return 'about the height of a side table or a large dog standing';
+  if (heightIn < 40) return 'about waist-height on an adult, like a dining table';
+  if (heightIn < 55) return 'about chest-height on an adult, like a bar cart or a tall bookshelf shelf';
+  if (heightIn < 72) return 'about the height of an adult person';
+  return 'taller than an adult person, like a wardrobe or a doorframe';
+}
+
 function pixelLockPrompt(project, shots, item){
-  const mustTags = (project.tags?.product || []).filter(t => t.w === 'must').map(t => t.t);
-  const productDesc = mustTags.length ? mustTags.join(', ') : (project.product || project.name);
   const sceneDesc = [shots.style_lock, item.prompt].map(s => (s || '').trim()).filter(Boolean).join(' ');
+  const sizePhrase = sizeComparisonPhrase(project.tags?.placement?.realHeightIn);
+  const sizeLine = sizePhrase
+    ? ` The product about to be placed into this scene is ${sizePhrase} in real life — scale the room, furniture, and any other objects in the background consistently with an object of that real-world size.`
+    : '';
+  // "No text/labels/logos" leads the prompt, not trails it — models weight
+  // earlier tokens more heavily, and FLUX Fill has no dedicated
+  // negative-prompt field to lean on instead (tried raising `guidance` in
+  // service.py to force it harder; that broke composition and produced
+  // WORSE hallucinated logo text — reverted, see flux_fill()'s comment).
   return (
-    `Keep the ${productDesc} EXACTLY as it is in the input image — identical position in the frame, ` +
-    `identical size, identical angle, identical materials and colors, do not redraw or move it. ` +
-    `Replace only the plain grey background: ${sceneDesc} ` +
-    `Add a soft natural contact shadow under the product consistent with the scene's light direction. ` +
-    `The product must remain pixel-identical to the input, and the scene must be visible through any ` +
-    `see-through cutout areas on it.`
+    `No added text, labels, logos, brand names, or watermarks anywhere in the image. ` +
+    `${sceneDesc}${sizeLine} Soft natural contact shadow beneath the product, consistent with the scene's light direction.`
   );
 }
 
-async function compositeOneShot(cutoutB64, prompt){
-  return callLocalService('composite', { cutout_b64: cutoutB64, prompt });
+// placement (optional): { scale } — Owner-entered "size in frame" percentage
+// from the tags page (tags.placement.scale, 0-1 fraction). Forwarded as-is
+// to the Cloud Run compositor's /composite endpoint, which already reads
+// placement.scale/anchor_x/anchor_y server-side (tools/pixel-lock/cloudrun's
+// stage()) — it just never received one from this call site before today,
+// so every render silently used its hardcoded 0.78 default regardless of
+// anything entered in the UI.
+async function compositeOneShot(cutoutB64, prompt, placement){
+  return callLocalService('composite', { cutout_b64: cutoutB64, prompt, placement });
 }
 
 async function generateAndCheck(){
@@ -360,13 +398,14 @@ async function generateAndCheck(){
 
     const freshProject = await db.getProject(projectId);
     const shots = freshProject.shots;
+    const placement = freshProject.tags?.placement?.scale ? { scale: freshProject.tags.placement.scale } : undefined;
     const failed = [];
     for (let i = 0; i < shots.items.length; i++) {
       const item = shots.items[i];
-      note.textContent = `Compositing image ${i + 1} of ${shots.items.length} — AI background + your real product, no regeneration…`;
+      note.textContent = `Compositing image ${i + 1} of ${shots.items.length} — Your real product, no regeneration…`;
       try {
         const prompt = pixelLockPrompt(freshProject, shots, item);
-        const result = await compositeOneShot(cutoutB64, prompt);
+        const result = await compositeOneShot(cutoutB64, prompt, placement);
         // Unique per run (same timestamp convention as Compose's output
         // filenames) — item.file alone is product+motif+index, so re-running
         // a similar scene used to produce the SAME filename and the upsert

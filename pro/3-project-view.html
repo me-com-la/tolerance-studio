@@ -99,20 +99,18 @@ h1{font-family:var(--font-display);font-size:1.9rem;font-weight:700;text-transfo
   <div class="summary-row">
     <div class="panel">
       <h2>Brief snapshot</h2>
-      <p class="hint">The weighted tags driving this batch's prompts and checker severity. Full editor in step 1.</p>
+      <p class="hint">The weighted tags driving this batch's prompts. Full editor in step 1.</p>
       <div class="tag-preview-mini" id="tag-preview">(no tags yet)</div>
       <div style="margin-top:1rem"><a class="btn btn-ghost" id="edit-tags-link" href="#">Edit tags →</a></div>
     </div>
 
     <div class="panel">
-      <h2>Checker status</h2>
-      <p class="hint">Stage 1 + 2 vision check against the weighted tags above. Your override on any image is final.</p>
+      <h2>Composites</h2>
+      <p class="hint">Real product pixels on AI-generated scenes — no checker needed; the product cannot be wrong. Pick your favorites to carry into Compose.</p>
       <div class="tally">
-        <div class="tally-item"><span class="tally-num" id="tally-approved">0</span><span class="tally-label">approved</span></div>
-        <div class="tally-item"><span class="tally-num" id="tally-rejected">0</span><span class="tally-label">not approved</span></div>
-        <div class="tally-item"><span class="tally-num" id="tally-flagged">0</span><span class="tally-label">flagged for review</span></div>
+        <div class="tally-item"><span class="tally-num" id="tally-renders">0</span><span class="tally-label">composites</span></div>
       </div>
-      <div style="margin-top:1rem"><a class="btn btn-primary" id="checker-link" href="#">Open checker gallery →</a></div>
+      <div style="margin-top:1rem"><a class="btn btn-primary" id="select-link" href="#">Open gallery →</a></div>
     </div>
   </div>
 
@@ -182,20 +180,11 @@ async function init(){
   document.getElementById('status-label').textContent = STATUS_LABEL[status] || status;
   document.getElementById('tag-preview').innerHTML = tagPreviewHtml(project.tags);
   document.getElementById('edit-tags-link').href = `4-tags-editor.html?project=${encodeURIComponent(projectId)}`;
-  document.getElementById('checker-link').href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
+  document.getElementById('select-link').href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
   renderRail(status);
 
   const renders = await db.listRenders(projectId);
-  let approved = 0, rejected = 0, flagged = 0;
-  for (const r of renders) {
-    const v = r.human_override || r.verdict;
-    if (v === 'approved') approved++;
-    else if (v === 'rejected') rejected++;
-    if (r.checker && r.checker.stage2_verdict === 'HUMAN_REVIEW' && !r.human_override) flagged++;
-  }
-  document.getElementById('tally-approved').textContent = approved;
-  document.getElementById('tally-rejected').textContent = rejected;
-  document.getElementById('tally-flagged').textContent = flagged;
+  document.getElementById('tally-renders').textContent = renders.length;
   document.getElementById('renders-hint').textContent = `${renders.length} renders in this batch.`;
   // The 'projects' bucket is private (see migrations/001_init.sql) — getPublicUrl()
   // silently returns an unusable URL for private buckets (no auth attached, always

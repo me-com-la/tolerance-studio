@@ -114,7 +114,6 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 </div></div>
 
 <div class="wrap">
-  <h1>Brief tags</h1>
   <p class="sub" id="page-sub">Loading…</p>
 
   <div class="brief-panel">
@@ -141,9 +140,9 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
   </div>
 
   <div class="legend">
-    <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
-    <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
-    <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
+    <span><span class="sw sw-must"></span>must — leads the prompt</span>
+    <span><span class="sw sw-should"></span>should — strong preference</span>
+    <span><span class="sw sw-flavor"></span>flavor — trailing detail</span>
   </div>
 
   <div class="tag-group">
@@ -155,11 +154,13 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
       <select disabled><option>Product spec</option></select>
       <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
     </div>
-    <div class="grp-hint" style="margin-top:1rem">Approximate dimensions, in inches — feeds the product lock so scale reads right in generation.</div>
+    <div class="grp-hint" style="margin-top:1rem">Product size in frame — how tall the product renders as a percentage of the image height. Leave blank to vary per render.</div>
     <div class="add-row">
-      <input id="dim-width" type="number" min="0" step="0.1" placeholder="Width (in)">
-      <input id="dim-height" type="number" min="0" step="0.1" placeholder="Height (in)">
-      <input id="dim-length" type="number" min="0" step="0.1" placeholder="Length/depth (in)">
+      <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)">
+    </div>
+    <div class="grp-hint" style="margin-top:1rem">Real height, in inches — tells the AI how to scale the room and furniture around the product so it doesn't look shrunk into or blown up past its surroundings. Leave blank to skip.</div>
+    <div class="add-row">
+      <input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)">
     </div>
   </div>
 
@@ -213,20 +214,36 @@ function addTag(group){
   inp.value = '';
   renderTags();
 }
-function readDimensions(){
-  const num = (id) => {
-    const v = parseFloat(document.getElementById(id).value);
-    return Number.isFinite(v) && v > 0 ? v : null;
-  };
-  return { width: num('dim-width'), height: num('dim-height'), length: num('dim-length') };
+// Percentage-of-frame placement (replaces the old inches-based dimensions
+// fields, 2026-07-09 Owner call — those never actually controlled render
+// scale, they only fed a vague sentence into the AI background prompt;
+// scale writes straight into item.placement.scale, the same fraction-of-
+// canvas-height value functions/generate.js's compositeProductOntoBackground
+// already uses to paste the real product cutout at an exact pixel size).
+//
+// realHeightIn (added same day, second pass — the frame-percentage alone
+// doesn't tell the AI what scale to paint the ROOM at, only how big the
+// pasted cutout ends up in the final composite; generate.js's
+// backgroundPrompt() converts this into a familiar-object comparison
+// sentence, since image models handle "about the height of a wine bottle"
+// far better than a raw inches figure).
+function readPlacement(){
+  const scaleV = parseFloat(document.getElementById('placement-scale').value);
+  const heightV = parseFloat(document.getElementById('placement-height').value);
+  const scale = Number.isFinite(scaleV) && scaleV > 0 ? Math.min(1, scaleV / 100) : null;
+  const realHeightIn = Number.isFinite(heightV) && heightV > 0 ? heightV : null;
+  if (!scale && !realHeightIn) return null;
+  const p = {};
+  if (scale) p.scale = scale;
+  if (realHeightIn) p.realHeightIn = realHeightIn;
+  return p;
 }
-function fillDimensions(dim){
-  document.getElementById('dim-width').value = dim?.width ?? '';
-  document.getElementById('dim-height').value = dim?.height ?? '';
-  document.getElementById('dim-length').value = dim?.length ?? '';
+function fillPlacement(placement){
+  document.getElementById('placement-scale').value = placement?.scale ? Math.round(placement.scale * 100) : '';
+  document.getElementById('placement-height').value = placement?.realHeightIn ?? '';
 }
 async function saveAndContinue(){
-  tags.dimensions = readDimensions();
+  tags.placement = readPlacement();
   await db.saveTags(projectId, tags);
   location.href = `5-scenes-editor.html?project=${encodeURIComponent(projectId)}`;
 }
@@ -243,7 +260,7 @@ async function renderBrief(){
     const slug = project.clients && project.clients.slug;
     const files = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
     if (!files.length){
-      photosEl.innerHTML = '<span class="none">no reference photos uploaded (projects made before the new-project modal existed won\'t have any — the checker\'s reference can still be set by hand)</span>';
+      photosEl.innerHTML = '<span class="none">no reference photos uploaded (projects made before the new-project modal existed won\'t have any — the reference photo can still be set by hand)</span>';
       return;
     }
     const urls = await Promise.all(files.map(f => db.getSignedUrl(`${slug}/${projectId}/assets/${f.name}`)));
@@ -298,10 +315,10 @@ async function init(){
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.getElementById('page-sub').textContent =
-    `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
+    `${clientName} — ${project.name} — ${project.product || ''}. Weight drives the prompt: must leads it, should is a strong preference, flavor is trailing detail.`;
   tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
   renderTags();
-  fillDimensions(tags.dimensions);
+  fillPlacement(tags.placement);
   renderBrief();
 }
 init();

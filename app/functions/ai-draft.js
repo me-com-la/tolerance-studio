@@ -5,12 +5,19 @@
 // sibling projects for the same client) instead of the filesystem.
 //
 // TODAY: plain Node/CommonJS module, meant to be run from a trusted server
-// context (not the browser — it needs the Anthropic key). Written so it can
+// context (not the browser — it needs the fal.ai key). Written so it can
 // become a Supabase Edge Function later with minimal change: swap
-// require('./_anthropic-key') for Deno.env.get('ANTHROPIC_API_KEY'), swap the
-// db.js browser calls for a server-side supabase-js client using the service
-// role key, and wrap draftKind() in Deno.serve(). The function body
-// (prompt construction, parsing) does not need to change.
+// require('./_fal-key') for Deno.env.get('FAL_KEY'), swap the db.js browser
+// calls for a server-side supabase-js client using the service role key, and
+// wrap draftKind() in Deno.serve(). The function body (prompt construction,
+// parsing) does not need to change.
+//
+// 2026-07-09: routed through fal.ai's OpenRouter chat endpoint instead of
+// calling api.anthropic.com directly (consolidating onto the one provider
+// already paying for Bria image gen). Model is still Claude — Haiku 4.5, not
+// Sonnet: this task is short structured JSON/text drafting, not deep
+// reasoning, and Haiku is ~1/2 the per-token price. Swap DRAFT_MODEL if that
+// judgment call needs revisiting.
 //
 // Continuity behavior ported from client_docs() in server.py: for 'tags' and
 // 'scenes', pull up to 2 sibling projects for the same client (most recent
@@ -22,23 +29,27 @@
 
 const https = require('https');
 
-const MODEL = process.env.DRAFT_MODEL || 'claude-sonnet-5';
+const MODEL = process.env.DRAFT_MODEL || 'anthropic/claude-haiku-4.5';
 
-function callClaude(anthropicKey, system, user, maxTokens = 2000) {
+// Routed through fal.ai's OpenRouter-backed chat endpoint (OpenAI-compatible
+// request/response shape) rather than calling Anthropic directly. Function
+// name kept as callClaude — the model is still Claude, just a different pipe.
+function callClaude(falKey, system, user, maxTokens = 2000) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model: MODEL,
       max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content: user }],
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
     });
     const req = https.request(
-      'https://api.anthropic.com/v1/messages',
+      'https://fal.run/openrouter/router/openai/v1/chat/completions',
       {
         method: 'POST',
         headers: {
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
+          Authorization: `Key ${falKey}`,
           'content-type': 'application/json',
           'content-length': Buffer.byteLength(body),
         },
@@ -49,8 +60,8 @@ function callClaude(anthropicKey, system, user, maxTokens = 2000) {
         res.on('end', () => {
           try {
             const resp = JSON.parse(raw);
-            if (resp.error) return reject(new Error(resp.error.message || 'Anthropic API error'));
-            const text = (resp.content || []).map((b) => b.text || '').join('');
+            if (resp.error) return reject(new Error(resp.error.message || 'fal.ai API error'));
+            const text = (resp.choices || []).map((c) => (c.message && c.message.content) || '').join('');
             resolve(text);
           } catch (e) {
             reject(e);
@@ -69,16 +80,16 @@ function extractJsonObject(text) {
 }
 
 /**
- * @param {object} deps - { anthropicKey, db } — db is lib/db.js's exported
- *   object (listSiblingProjects, getProject), anthropicKey is the string key
- *   (from ./_anthropic-key in a trusted server context).
+ * @param {object} deps - { falKey, db } — db is lib/db.js's exported
+ *   object (listSiblingProjects, getProject), falKey is the string key
+ *   (from ./_fal-key in a trusted server context).
  * @param {object} params - { project, kind, direction }
  *   project: the full project row (from db.getProject), including .clients
  *   kind: 'tags' | 'scenes' | 'copy'
  *   direction: optional owner steering text
  */
 async function aiDraft(deps, params) {
-  const { anthropicKey, db } = deps;
+  const { falKey, db } = deps;
   const { project, kind, direction: rawDirection } = params;
   const direction = (rawDirection || '').trim();
 
@@ -110,7 +121,7 @@ async function aiDraft(deps, params) {
       (cur ? `Existing tags for this project (refine/extend; keep the Owner's weights unless clearly wrong):\n${cur}\n\n` : '') +
       (direction ? `Owner direction: ${direction}\n\n` : '') +
       'Respond with the JSON object only.';
-    const text = await callClaude(anthropicKey, system, user);
+    const text = await callClaude(falKey, system, user);
     const json = JSON.parse(extractJsonObject(text));
     return { ok: true, tags: json };
   }
@@ -138,7 +149,7 @@ async function aiDraft(deps, params) {
       'Write the Scenes list only, as a numbered list of short phrases, count = ' +
       batchSize +
       '. No heading, no other text, no product/style detail restated.';
-    const text = await callClaude(anthropicKey, system, user);
+    const text = await callClaude(falKey, system, user);
     return { ok: true, text };
   }
 
@@ -154,7 +165,7 @@ async function aiDraft(deps, params) {
       `${briefLine}\n\nBrief tags:\n${tags}\n\nCampaign description:\n${(project.description || '').slice(0, 2000)}\n\n` +
       (direction ? `Owner direction for this round: ${direction}\n` : '') +
       'Write 5 copy options.';
-    const text = await callClaude(anthropicKey, system, user);
+    const text = await callClaude(falKey, system, user);
     const json = JSON.parse(extractJsonObject(text));
     return { ok: true, options: json.options };
   }

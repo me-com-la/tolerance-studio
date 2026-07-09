@@ -20,12 +20,6 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
-  --st-brief:#8a6d3b; --st-brief-wash:#f6efdf;
-  --st-generating:#1a4fa0; --st-generating-wash:#e8f0fe;
-  --st-checking:#7a4fa0; --st-checking-wash:#f1e8fb;
-  --st-compose:#b45309; --st-compose-wash:#fff3e0;
-  --st-review:#1f6f6b; --st-review-wash:#e2f1ef;
-  --st-delivered:#2e7d32; --st-delivered-wash:#e8f5e9;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -40,11 +34,6 @@ a{color:inherit}
 .wrap{max-width:88rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem}
 h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
-.subnav{background:#fff;border-bottom:1px solid var(--line)}
-.subnav-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;gap:.4rem}
-.tier-tab{padding:.85rem 1.1rem;font-size:.86rem;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
-.tier-tab:hover{color:var(--ink)}
-.tier-tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 .page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
@@ -52,8 +41,6 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
 .toolbar{display:flex;gap:.6rem;margin-bottom:1.6rem;flex-wrap:wrap;align-items:center}
 .search{flex:1;min-width:200px;max-width:22rem;padding:.6rem .9rem;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:.88rem;background:#fff}
-.filter-pill{font-size:.8rem;padding:.45rem .9rem;border-radius:100px;background:var(--chip);border:1px solid transparent;cursor:pointer;color:var(--ink);font-family:inherit}
-.filter-pill.active{background:var(--ink);color:#fff}
 
 .client-group{margin-bottom:2.4rem}
 .client-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
@@ -74,14 +61,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .proj-del:hover{color:#a33;background:var(--accent-wash);border-color:#a33}
 .proj-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
 .proj-date{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
-.status-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.7rem;font-weight:600;padding:.28rem .65rem;border-radius:100px;text-transform:uppercase;letter-spacing:.03em}
-.status-pill .sw{width:6px;height:6px;border-radius:50%}
-.s-brief{color:var(--st-brief);background:var(--st-brief-wash)}.s-brief .sw{background:var(--st-brief)}
-.s-generating{color:var(--st-generating);background:var(--st-generating-wash)}.s-generating .sw{background:var(--st-generating)}
-.s-checking{color:var(--st-checking);background:var(--st-checking-wash)}.s-checking .sw{background:var(--st-checking)}
-.s-compose{color:var(--st-compose);background:var(--st-compose-wash)}.s-compose .sw{background:var(--st-compose)}
-.s-review{color:var(--st-review);background:var(--st-review-wash)}.s-review .sw{background:var(--st-review)}
-.s-delivered{color:var(--st-delivered);background:var(--st-delivered-wash)}.s-delivered .sw{background:var(--st-delivered)}
+.proj-counts{display:inline-flex;align-items:center;gap:.8rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
 
 .new-card{border:1.5px dashed var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;font-weight:500;min-height:120px;background:transparent}
 .new-card:hover{color:var(--ink);border-color:var(--ink)}
@@ -113,11 +93,6 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
-<div class="subnav"><div class="subnav-in">
-  <a href="../my-images.html" class="tier-tab">Files</a>
-  <a href="2-project-list.html" class="tier-tab active">Standard</a>
-  <a href="../pro/2-project-list.html" class="tier-tab">Pro</a>
-</div></div>
 
 <div class="wrap">
   <div class="page-head">
@@ -130,13 +105,6 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
   <div class="toolbar">
     <input class="search" id="search" placeholder="Search projects or clients…" oninput="render()">
-    <button class="filter-pill active" data-status="">All</button>
-    <button class="filter-pill" data-status="brief">Brief / Tags</button>
-    <button class="filter-pill" data-status="generating">Generating</button>
-    <button class="filter-pill" data-status="checking">Checking</button>
-    <button class="filter-pill" data-status="compose">Compose</button>
-    <button class="filter-pill" data-status="review">Review</button>
-    <button class="filter-pill" data-status="delivered">Delivered</button>
   </div>
 
   <div id="groups"></div>
@@ -188,13 +156,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 </div>
 
 <script>
-// Status pill vocabulary matches projects.status exactly (see 001_init.sql's
-// check constraint): brief | generating | checking | compose | review | delivered.
-const STATUS_LABEL = {
-  brief: 'Brief / Tags', generating: 'Generating', checking: 'Checking',
-  compose: 'Compose', review: 'Review', delivered: 'Delivered',
-};
-let allProjects = [], activeStatus = '';
+let allProjects = [];
 // Signed URLs for each project's reference_image, resolved once when the
 // list loads (not per-render — render() fires on every search keystroke,
 // see the search input's oninput below, so it has to stay synchronous).
@@ -206,21 +168,27 @@ async function resolveThumbnails(projs){
   }));
 }
 
-document.querySelectorAll('.filter-pill').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeStatus = btn.dataset.status;
-    render();
-  });
-});
+// Per-project render counts (total images + favorites), shown on each card in
+// place of the old status pill. One query for all listed projects, tallied
+// client-side; RLS already scopes `renders` to this user's rows.
+const counts = {};
+async function resolveCounts(projs){
+  const ids = projs.map(p => p.id);
+  for (const id of ids) counts[id] = { total: 0, favorites: 0 };
+  if (!ids.length) return;
+  const { data, error } = await sb.from('renders').select('project_id, is_favorite').in('project_id', ids);
+  if (error) return;
+  for (const r of data) {
+    const c = counts[r.project_id]; if (!c) continue;
+    c.total++; if (r.is_favorite) c.favorites++;
+  }
+}
 
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 
 function render(){
   const q = (document.getElementById('search').value || '').toLowerCase();
   const filtered = allProjects.filter(p => {
-    if (activeStatus && p.status !== activeStatus) return false;
     if (!q) return true;
     const clientName = (p.clients && p.clients.name) || '';
     return p.name.toLowerCase().includes(q) || clientName.toLowerCase().includes(q);
@@ -234,7 +202,6 @@ function render(){
   groups.innerHTML = Object.keys(byClient).sort().map(cname => {
     const projs = byClient[cname];
     const cards = projs.map(p => {
-      const status = p.status || 'brief';
       const thumbUrl = thumbCache[p.id];
       const thumb = thumbUrl
         ? `<div class="proj-thumb"><img src="${esc(thumbUrl)}" loading="lazy"></div>`
@@ -248,7 +215,7 @@ function render(){
         </div>
         <div class="proj-meta">
           <span class="proj-date">started ${esc(p.started_on)}</span>
-          <span class="status-pill s-${status}"><span class="sw"></span>${esc(STATUS_LABEL[status] || status)}</span>
+          <span class="proj-counts"><span>${(counts[p.id]||{}).total||0} image${((counts[p.id]||{}).total||0)===1?'':'s'}</span><span>${(counts[p.id]||{}).favorites||0} ♥</span></span>
         </div>
       </a>`;
     }).join('');
@@ -368,8 +335,13 @@ async function submitNewProject(){
     document.getElementById('page-sub').textContent = 'Failed to load: ' + e.message;
     return;
   }
-  await resolveThumbnails(allProjects);
+  await Promise.all([resolveThumbnails(allProjects), resolveCounts(allProjects)]);
   render();
+
+  // Files page's "New Standard/Pro Project" card CTAs link here with
+  // ?new=1 to jump straight into project creation instead of landing on
+  // an empty list first.
+  if (new URLSearchParams(location.search).get('new') === '1') openNewProject();
 })();
 </script>
 <script src="../assets/app-switcher.js"></script>

@@ -28,15 +28,19 @@ a{color:inherit;text-decoration:none}
 .brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:-.01em}
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
 .avatar{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
-.subnav{background:#fff;border-bottom:1px solid var(--line)}
-.subnav-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;gap:.4rem}
-.tier-tab{padding:.85rem 1.1rem;font-size:.86rem;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
-.tier-tab:hover{color:var(--ink)}
-.tier-tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 
 .wrap{max-width:88rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
 h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
-.page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem;margin-bottom:1.8rem}
+.page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
+
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1.2rem;margin-bottom:1.8rem}
+.pipeline-cards{display:flex;gap:.9rem;flex-wrap:wrap}
+.pipeline-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;min-width:11.5rem;display:flex;flex-direction:column;gap:.5rem}
+.pipeline-card .pc-label{font-family:var(--font-display);font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.pipeline-card .pc-count{font-family:var(--font-mono);font-size:1.5rem;font-weight:600;line-height:1}
+.pipeline-card .pc-count-label{font-size:.72rem;color:var(--muted);font-weight:400;margin-left:.3rem}
+.pipeline-card .pc-cta{align-self:flex-start;font-size:.76rem;font-weight:600;padding:.4rem .8rem;border-radius:8px;border:1px solid var(--line-2);background:transparent;color:var(--ink);text-decoration:none}
+.pipeline-card .pc-cta:hover{background:var(--chip)}
 
 .tabs{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem}
 .tab{padding:.8rem 1.1rem;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none}
@@ -82,15 +86,26 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   <a class="brand" href="my-images.html" style="text-decoration:none" title="Files"><img src="images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Files</a>
   <div class="who"><span id="who-email">…</span><div class="avatar" id="who-avatar">·</div></div>
 </div></div>
-<div class="subnav"><div class="subnav-in">
-  <a href="my-images.html" class="tier-tab active">Files</a>
-  <a href="app/2-project-list.html" class="tier-tab">Standard</a>
-  <a href="pro/2-project-list.html" class="tier-tab">Pro</a>
-</div></div>
 
 <div class="wrap">
-  <h1>Files</h1>
-  <p class="page-sub" id="page-sub">Loading…</p>
+  <div class="page-head">
+    <div>
+      <h1 id="greeting">Welcome back</h1>
+      <p class="page-sub" id="page-sub">Loading…</p>
+    </div>
+    <div class="pipeline-cards">
+      <div class="pipeline-card">
+        <span class="pc-label">Standard</span>
+        <span class="pc-count" id="pc-count-standard">0<span class="pc-count-label">generations</span></span>
+        <a class="pc-cta" href="app/2-project-list.html?new=1">＋ New Standard Project</a>
+      </div>
+      <div class="pipeline-card">
+        <span class="pc-label">Pro</span>
+        <span class="pc-count" id="pc-count-pro">0<span class="pc-count-label">generations</span></span>
+        <a class="pc-cta" href="pro/2-project-list.html?new=1">＋ New Pro Project</a>
+      </div>
+    </div>
+  </div>
 
   <div class="tabs">
     <button class="tab active" id="tab-generations" onclick="switchTab('generations')">Generations<span id="count-generations"></span></button>
@@ -148,7 +163,7 @@ function cardHtml(r){
   const isPro = r.projects?.pipeline === 'pro';
   return `<div class="card">
     <div class="imgwrap">
-      <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
+      <img class="lb-thumb" src="${esc(url)}" loading="lazy" onclick="openLightbox(this)">
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRender(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       ${isPro ? '<span class="pro-tag">Pro</span>' : ''}
@@ -163,6 +178,14 @@ function renderGrids(){
   document.getElementById('count-generations').textContent = ` (${allRenders.length})`;
   document.getElementById('count-favorites').textContent = ` (${favorites.length})`;
   document.getElementById('page-sub').textContent = `${allRenders.length} generation${allRenders.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'}`;
+
+  // Per-pipeline totals for the Standard/Pro cards — same rows this page
+  // already loaded (projects.pipeline is embedded per render, used above for
+  // the Pro badge), just tallied by pipeline instead of shown per-card.
+  const standardCount = allRenders.filter(r => r.projects?.pipeline !== 'pro').length;
+  const proCount = allRenders.filter(r => r.projects?.pipeline === 'pro').length;
+  document.getElementById('pc-count-standard').innerHTML = `${standardCount}<span class="pc-count-label">generation${standardCount===1?'':'s'}</span>`;
+  document.getElementById('pc-count-pro').innerHTML = `${proCount}<span class="pc-count-label">generation${proCount===1?'':'s'}</span>`;
 }
 
 async function toggleFavorite(event, id){
@@ -198,6 +221,11 @@ function switchTab(name){
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { location.href = 'login.html?next=my-images.html'; return; }
+
+  // Same email-prefix-as-name convention as assets/app-switcher.js's account
+  // dropdown — no separate display-name field exists on the user yet.
+  const email = session.user && session.user.email;
+  if (email) document.getElementById('greeting').textContent = `Welcome back, ${email.split('@')[0]}`;
 
   try {
     allRenders = await loadAllRenders();

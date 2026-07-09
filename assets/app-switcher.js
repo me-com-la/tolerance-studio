@@ -82,4 +82,83 @@
     await window.sb.auth.signOut();
     location.href = prefix + 'index.html';
   });
+
+  // ---- Universal top chrome (2026-07-09) --------------------------------
+  // Replaces the old per-page breadcrumbs with one shared treatment so every
+  // in-app page matches: (1) brand is text-only ("Standard"/"Pro", no logo),
+  // (2) a real main nav (Files / Standard / Pro) where the crumbs used to be,
+  // (3) the project name shown in its own band above the step rail, fed from
+  // the #crumb-proj value each page's init() already writes. Done here, once,
+  // rather than in 16 page files (shared-linkage rule, project CLAUDE.md).
+  var chromeCss =
+    // Main nav = persistent red-underline tabs (promoted from the old
+    // per-page .subnav tier-tabs, now removed). The crumbs container stretches
+    // to the full topbar height so the active tab's accent underline sits on
+    // the topbar's bottom edge, exactly like the subnav did.
+    '.topbar .crumbs{display:flex;align-self:stretch;align-items:stretch;gap:.1rem}' +
+    '.ts-mainnav{display:inline-flex;align-items:center;padding:0 .95rem;font-size:.9rem;font-weight:600;color:#5d5b57;text-decoration:none;border-bottom:2.5px solid transparent;font-family:"IBM Plex Sans",system-ui,sans-serif}' +
+    '.ts-mainnav:hover{color:#111014}' +
+    '.ts-mainnav.on{color:#111014;border-bottom-color:#d8502d}' +
+    '.ts-projhead{background:#fff;border-bottom:1px solid rgba(17,16,20,.12)}' +
+    '.ts-projhead-in{max-width:88rem;margin:0 auto;padding:1.1rem 1.6rem}' +
+    '.ts-projhead-in .ts-proj-name{font-family:"Barlow Condensed",sans-serif;font-size:1.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em;color:#111014;line-height:1.1}';
+  var st2 = document.createElement('style'); st2.textContent = chromeCss; document.head.appendChild(st2);
+
+  // (1) Brand: drop the logo image, collapse the label to "TS", and always
+  // point it at the Files page (not "whichever app you're in" — the Files
+  // page is the one shared home base across Standard/Pro/Files itself).
+  var brand = document.querySelector('.topbar .brand');
+  if (brand) {
+    var bimg = brand.querySelector('img');
+    if (bimg) bimg.remove();
+    brand.textContent = 'TS';
+    brand.setAttribute('href', prefix + 'my-images.html');
+  }
+
+  // (2) Crumbs -> main nav. Preserve any #crumb-proj / #crumb-client the page
+  // JS still writes to (kept hidden) so nothing null-errors. Pages without a
+  // crumbs container (e.g. the project list) get one created after the brand.
+  var nav = document.querySelector('.topbar .crumbs');
+  if (!nav) {
+    var tin = document.querySelector('.topbar-in');
+    if (tin && brand) { nav = document.createElement('div'); nav.className = 'crumbs'; brand.insertAdjacentElement('afterend', nav); }
+  }
+  if (nav) {
+    var keep = [];
+    ['#crumb-proj', '#crumb-client'].forEach(function (sel) { var el = nav.querySelector(sel); if (el) keep.push(el); });
+    nav.innerHTML =
+      '<a class="ts-mainnav' + (isFiles ? ' on' : '') + '" href="' + prefix + 'my-images.html">Files</a>' +
+      '<a class="ts-mainnav' + (!isFiles && !isPro ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Standard</a>' +
+      '<a class="ts-mainnav' + (!isFiles && isPro ? ' on' : '') + '" href="' + prefix + 'pro/2-project-list.html">Pro</a>';
+    if (keep.length) {
+      var hold = document.createElement('span'); hold.style.display = 'none';
+      keep.forEach(function (el) { hold.appendChild(el); });
+      nav.appendChild(hold);
+    }
+  }
+
+  // (3) Project-name band above the step rail. Skip if the page already has
+  // its own project header (project view) or its only rail is the hidden
+  // owner rail (review page keeps its hero title).
+  var stepRail = document.querySelector('.rail-wrap:not(#owner-rail)');
+  var existingHead = document.querySelector('.projhead');
+  var projNameEl = null;
+  if (existingHead) {
+    projNameEl = existingHead.querySelector('#proj-name, .proj-name');
+  } else if (stepRail) {
+    var band = document.createElement('div');
+    band.className = 'ts-projhead';
+    band.innerHTML = '<div class="ts-projhead-in"><div class="ts-proj-name" id="proj-name">…</div></div>';
+    stepRail.parentNode.insertBefore(band, stepRail);
+    projNameEl = band.querySelector('#proj-name');
+  }
+  if (projNameEl) {
+    var src = document.getElementById('crumb-proj');
+    var sync = function () {
+      var t = src && src.textContent ? src.textContent.trim() : '';
+      if (t && t !== '…') projNameEl.textContent = t;
+    };
+    sync();
+    if (src) new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
+  }
 })();

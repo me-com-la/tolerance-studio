@@ -47,6 +47,10 @@ a{color:inherit;text-decoration:none}
 h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
 .sub{color:var(--muted);font-size:.9rem;margin-bottom:1.4rem;max-width:70ch;line-height:1.6}
 .sub b{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.9}
+.btn-primary{background:var(--ink);color:#fff}
+.savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
 
 .tally-bar{display:flex;gap:1.6rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.3rem;margin-bottom:1.6rem}
 .tally-item{display:flex;flex-direction:column}
@@ -69,7 +73,6 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .del-btn:hover{background:#a33}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
 .card .body{padding:.8rem .9rem 1rem;display:flex;flex-direction:column;gap:.5rem}
-.card .fname{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);word-break:break-all}
 .verdict-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;padding:.25rem .6rem;border-radius:100px;width:fit-content}
 .v-checker-pass{color:var(--ok);background:var(--ok-wash)}
 .v-checker-fail{color:var(--bad);background:var(--bad-wash)}
@@ -84,7 +87,6 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .override-badge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;padding:.3rem .6rem;border-radius:8px}
 .override-badge.approved{color:var(--ok);background:var(--ok-wash)}
 .override-badge.rejected{color:var(--bad);background:var(--bad-wash)}
-.sticky-note{font-size:.7rem;color:var(--muted);font-style:italic}
 .ov-btn.run{color:var(--ink);font-weight:700}.ov-btn.run:hover{background:var(--accent-wash);border-color:var(--accent)}
 .check-status{font-size:.72rem;color:var(--muted)}
 .check-status.busy{font-style:italic}
@@ -130,8 +132,7 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 </div></div>
 
 <div class="wrap">
-  <h1>Checker</h1>
-  <p class="sub">Stage 1 + 2 vision check against the weighted brief tags. <b>Your approve/reject call is final</b> — it sticks even if the checker reruns later (e.g. after a redo elsewhere in this batch).</p>
+  <p class="sub">AI Vision check complete. Approved image will be available for Compose on the next step.</p>
 
   <div class="tally-bar">
     <div class="tally-item"><span class="tally-num" id="tally-approved">0</span><span class="tally-label">approved</span></div>
@@ -145,6 +146,10 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 
   <div class="section-h"><h2>Not approved</h2><span class="count" id="rejected-count"></span></div>
   <div class="grid" id="rejected-grid"></div>
+
+  <div class="savebar">
+    <button class="btn btn-primary" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)">Continue to Compose →</button>
+  </div>
 </div>
 
 <div id="lightbox" onclick="if(event.target===this)closeLightbox()">
@@ -231,12 +236,20 @@ async function resolveSignedUrls(rs){
 // else sort by checker's hard-fail rule).
 function effectiveVerdict(r){ return r.human_override || r.verdict; }
 
-// checker.js asks Gemini for exactly this on every run ("overall_notes: one
-// or two lines") — a plain-language summary, not a score or a per-item list
-// (2026-07-09 Owner call: the % score badge was tried and dropped too, "not
-// a list with scores like we had before" — one sentence is the target).
+// checker.js asks Gemini for a plain-language summary ("overall_notes: one
+// or two lines") alongside the per-item list and a single 0-100 score.
 function checkSummary(r){
   return r.checker && r.checker.overall_notes ? r.checker.overall_notes.trim() : '';
+}
+
+// Score badge (re-added 2026-07-09, Owner call): one number only, no
+// per-item breakdown in the card — r.checker.score is a single 0-100
+// fidelity read written by checker.js/generate.js's runCheckerInline.
+function scoreBadge(r){
+  const score = r.checker && typeof r.checker.score === 'number' ? r.checker.score : null;
+  if (score === null) return '';
+  const cls = score >= 80 ? 'v-checker-pass' : score >= 50 ? 'v-checker-review' : 'v-checker-fail';
+  return `<span class="verdict-pill ${cls}">Check score: ${score}</span>`;
 }
 
 function cardHtml(r){
@@ -253,9 +266,6 @@ function cardHtml(r){
       <button class="ov-btn approve${verdict === 'approved' ? ' active' : ''}" onclick="setVerdict('${r.id}','approved')">✓ Approved</button>
       <button class="ov-btn reject${verdict === 'rejected' ? ' active' : ''}" onclick="setVerdict('${r.id}','rejected')">✗ Not approved</button>
     </div>`;
-  if (r.human_override) {
-    overrideBlock += `<span class="sticky-note">owner call — stays put unless you move it, a checker rerun won't change this</span>`;
-  }
   if (!r.checker) {
     overrideBlock += `<div class="override-row"><button class="ov-btn run" onclick="runChecker('${r.id}')">▶ Run checker</button></div>
       <span class="check-status" id="check-status-${r.id}"></span>`;
@@ -268,16 +278,15 @@ function cardHtml(r){
       <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
     </div>
     <div class="body">
-      <div class="fname">${esc(r.filename)}</div>
       ${r.checker
-        ? (summary ? `<p class="check-summary">${esc(summary)}</p>` : '<p class="check-summary">Checked — no summary returned.</p>')
+        ? `${scoreBadge(r)}${summary ? `<p class="check-summary">${esc(summary)}</p>` : '<p class="check-summary">Checked — no summary returned.</p>'}`
         : '<span class="verdict-pill v-checker-review">◐ not checked yet</span>'}
       ${overrideBlock}
       <div class="edit-row">
         <input type="text" id="edit-instr-${r.id}" placeholder="e.g. change the bowl color to blue">
         <button onclick="editRender('${r.id}')">✎ Edit</button>
       </div>
-      <span class="edit-hint" id="edit-status-${r.id}">Same shot, one targeted change — saves as a new render alongside this one.</span>
+      <span class="edit-hint" id="edit-status-${r.id}"></span>
     </div>
   </div>`;
 }

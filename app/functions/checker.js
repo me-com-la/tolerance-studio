@@ -8,11 +8,20 @@
 // (PIL equivalent) not yet chosen for the JS side.
 //
 // Stage 2 (vision compare against a spec) IS ported: sends the source photo
-// + candidate render to Claude vision, same instructions/schema as
+// + candidate render to a vision model, same instructions/schema shape as
 // check_stage2.py, and writes the verdict onto the renders row —
 // WITHOUT ever overwriting a row that has human_override set. This mirrors
 // run_checker.py's sorting loop, which skips anything in the `overridden`
 // bucket.
+//
+// Provider history: Claude (direct) -> Gemini (2026-07-09) -> fal.ai
+// (2026-07-09, later same day, Owner rule: one provider — fal already pays
+// for Bria image gen on Pro, and Standard's text/vision calls consolidated
+// onto it too). Routes through fal's OpenRouter-backed chat endpoint
+// (OpenAI-compatible, images as data-URI image_url parts), model Claude
+// Haiku 4.5 — vision-capable, priced for high-volume verdict calls. Gemini
+// stays ONLY for Standard's actual image generation (functions/generate.js),
+// not for this QA-read step.
 //
 // GUESS FLAGGED: 001_init.sql's projects table has no `spec` / `spec.json`
 // column — spec-checker's per-SKU spec.json (code_checks, vision_checks,
@@ -24,42 +33,39 @@
 // blocking a real checker run.
 //
 // TODAY: plain Node/CommonJS module for a trusted server context (same
-// reasons as ai-draft.js — needs the Anthropic key and raw image bytes).
+// reasons as ai-draft.js — needs the fal.ai key and raw image bytes).
 // Edge Function migration note: swap key source, swap the image byte read
 // (currently expects base64 already decoded/passed in, so this part barely
 // changes), wrap in Deno.serve().
 
 const https = require('https');
 
-const MODEL = process.env.CHECKER_MODEL || 'claude-sonnet-5';
-const API = 'https://api.anthropic.com/v1/messages';
+const MODEL = process.env.CHECKER_MODEL || 'anthropic/claude-haiku-4.5'; // matches deployed supabase/functions/checker/index.ts
+const API = 'https://fal.run/openrouter/router/openai/v1/chat/completions';
 
-function callClaudeVision(anthropicKey, sourceImage, candidateImage, instructions) {
+function callFalVision(falKey, sourceImage, candidateImage, instructions) {
   // sourceImage / candidateImage: { mediaType: 'image/jpeg', base64: '...' }
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model: MODEL,
       max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'IMAGE 1 — real product (ground truth):' },
-            { type: 'image', source: { type: 'base64', media_type: sourceImage.mediaType, data: sourceImage.base64 } },
-            { type: 'text', text: 'IMAGE 2 — AI-generated candidate:' },
-            { type: 'image', source: { type: 'base64', media_type: candidateImage.mediaType, data: candidateImage.base64 } },
-            { type: 'text', text: instructions },
-          ],
-        },
-      ],
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'IMAGE 1 — real product (ground truth):' },
+          { type: 'image_url', image_url: { url: `data:${sourceImage.mediaType};base64,${sourceImage.base64}` } },
+          { type: 'text', text: 'IMAGE 2 — AI-generated candidate:' },
+          { type: 'image_url', image_url: { url: `data:${candidateImage.mediaType};base64,${candidateImage.base64}` } },
+          { type: 'text', text: instructions },
+        ],
+      }],
     });
     const req = https.request(
       API,
       {
         method: 'POST',
         headers: {
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
+          Authorization: `Key ${falKey}`,
           'content-type': 'application/json',
           'content-length': Buffer.byteLength(body),
         },
@@ -70,9 +76,10 @@ function callClaudeVision(anthropicKey, sourceImage, candidateImage, instruction
         res.on('end', () => {
           try {
             const resp = JSON.parse(raw);
-            if (resp.error) return reject(new Error(resp.error.message || 'Anthropic API error'));
-            const text = (resp.content || []).map((b) => b.text || '').join('');
-            resolve(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+            if (resp.error) return reject(new Error(resp.error.message || 'fal.ai API error'));
+            const text = (resp.choices || []).map((c) => (c.message && c.message.content) || '').join('');
+            if (!text) return reject(new Error('fal returned no text output'));
+            resolve(text);
           } catch (e) {
             reject(e);
           }
@@ -93,14 +100,14 @@ function callClaudeVision(anthropicKey, sourceImage, candidateImage, instruction
  *   any severity:flag item failing          -> HUMAN_REVIEW
  *   else                                    -> PASS
  *
- * @param {object} deps - { anthropicKey }
+ * @param {object} deps - { falKey }
  * @param {object} params - { spec, sourceImage, candidateImage }
  *   spec: parsed spec.json shape { sku, variant, vision_checks:[{id,item,when_visible,severity}], rules:{confidence_below} }
  *   sourceImage / candidateImage: { mediaType, base64 } — caller resizes/encodes,
  *     same as check_stage2.py's b64() helper (downscale to 1568px, JPEG q90).
  */
 async function checkStage2(deps, { spec, sourceImage, candidateImage }) {
-  const { anthropicKey } = deps;
+  const { falKey } = deps;
   const checks = spec.vision_checks;
   const instructions = `You are a spec-accuracy QA inspector for AI-generated product imagery.
 IMAGE 1 is the REAL product (ground truth). IMAGE 2 is an AI-generated candidate.
@@ -115,10 +122,13 @@ Checklist (JSON): ${JSON.stringify(checks)}
 
 Respond with ONLY a JSON object:
 {"items": [{"id": "...", "verdict": "pass|fail|n/a", "confidence": 0-100,
-"reason": "one line"}], "overall_notes": "one or two lines"}`;
+"reason": "one line"}], "overall_notes": "one or two lines",
+"score": 0-100 — a single overall fidelity score for how closely IMAGE 2
+matches IMAGE 1 against this checklist (100 = perfect match, 0 = completely
+wrong product)}`;
 
-  const text = await callClaudeVision(anthropicKey, sourceImage, candidateImage, instructions);
-  const result = JSON.parse(text);
+  const text = await callFalVision(falKey, sourceImage, candidateImage, instructions);
+  const result = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
 
   const sev = {};
   for (const c of checks) sev[c.id] = c.severity;
@@ -146,6 +156,7 @@ Respond with ONLY a JSON object:
     stage2_verdict: verdict,
     items: result.items,
     overall_notes: result.overall_notes || '',
+    score: typeof result.score === 'number' ? Math.max(0, Math.min(100, Math.round(result.score))) : null,
   };
 }
 
@@ -163,7 +174,7 @@ function toRenderVerdict(stage2Result) {
  * same guard as run_checker.py's `overridden` bucket and server.py's
  * /checker-verdict comment.
  *
- * @param {object} deps - { anthropicKey, db } — db is lib/db.js's exported object
+ * @param {object} deps - { falKey, db } — db is lib/db.js's exported object
  * @param {object} params - { renderId, spec, sourceImage, candidateImage }
  */
 async function runCheckerForRender(deps, params) {

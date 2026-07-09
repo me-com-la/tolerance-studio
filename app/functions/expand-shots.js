@@ -56,12 +56,12 @@ function parseScenes(scenesText) {
 }
 
 /**
- * @param {object} deps - { anthropicKey, db }
+ * @param {object} deps - { falKey, db }
  * @param {object} params - { project } — full project row from db.getProject
  * @returns {Promise<{ok:boolean, shots?:object, error?:string}>}
  */
 async function expandShots(deps, params) {
-  const { anthropicKey, db } = deps;
+  const { falKey, db } = deps;
   const { project } = params;
 
   const scenes = parseScenes(project.scenes);
@@ -86,7 +86,7 @@ async function expandShots(deps, params) {
     `Scenes (one shot per line, expand in this exact order):\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n` +
     'Respond with the JSON object only.';
 
-  const text = await callClaude(anthropicKey, system, user);
+  const text = await callClaude(falKey, system, user);
   const parsed = JSON.parse(extractJsonObject(text));
 
   const shots = {
