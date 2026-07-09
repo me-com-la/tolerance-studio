@@ -8,9 +8,14 @@
 // campaigns). This fork tests the opposite approach the Owner asked to
 // revisit: NEVER let a generative model touch the product's pixels.
 //
-//   1. Generate ONLY the background/scene from the shot prompt — no product
-//      reference image goes into this call at all, so there's nothing for
-//      the model to get wrong about the product (it doesn't know it exists).
+//   1. Generate ONLY the background/scene from the shot prompt. The product
+//      cutout is attached to this call too, but ONLY as a lighting reference
+//      (2026-07-09) — the prompt explicitly tells Gemini not to depict the
+//      product from it, just to match its light direction/quality/color
+//      temp, so the pasted-on cutout in step 2 doesn't end up lit
+//      differently than the background around it. The model still never
+//      draws the product itself — there's nothing for it to get wrong about
+//      the product's geometry, embossing, or pattern, only its lighting.
 //   2. Composite the project's real product CUTOUT (a pre-made
 //      transparent-background PNG of the actual photographed product — same
 //      artifact as clients/<Client>/products/<Product>/originals/*-cutout.png)
@@ -50,16 +55,63 @@ const CONCURRENCY = parseInt(process.env.GENERATE_CONCURRENCY || '4', 10);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-image';
 const GENERATION_MODEL = process.env.GENERATION_MODEL || 'gemini'; // 'gemini' | 'seedream' (not yet wired)
 
-function backgroundPrompt(shots, item) {
+// Converts a real-world height (inches) into a familiar-object comparison —
+// added 2026-07-09 after the frame-percentage placement fix alone still left
+// rooms scaled wrong: item.placement.scale controls how big the pasted
+// cutout ends up in the FINAL COMPOSITE, but backgroundPrompt() previously
+// gave Gemini zero grounding on the product's real-world size when painting
+// the room/furniture around it, so a 6in object and a 6ft object got scenes
+// scaled identically off scene-phrase words alone. Raw inches in a prompt
+// don't reliably move image-model output (this is exactly what the old
+// dimensions-in-inches field tried and failed at) — a comparison to a
+// common, visually-familiar object does, because the model has strong
+// priors for what a "wine bottle" or "dining table" looks like next to a
+// room. Bucket boundaries are deliberately coarse; precision doesn't matter
+// here, only landing in the right order of magnitude.
+function sizeComparisonPhrase(heightIn) {
+  if (!heightIn || heightIn <= 0) return null;
+  if (heightIn < 4) return 'tiny, about the size of a votive candle or a golf ball';
+  if (heightIn < 8) return 'small, about the size of a coffee mug';
+  if (heightIn < 13) return 'about the height of a wine bottle';
+  if (heightIn < 20) return 'about knee-height on an adult, like a large houseplant pot';
+  if (heightIn < 30) return 'about the height of a side table or a large dog standing';
+  if (heightIn < 40) return 'about waist-height on an adult, like a dining table';
+  if (heightIn < 55) return 'about chest-height on an adult, like a bar cart or a tall bookshelf shelf';
+  if (heightIn < 72) return 'about the height of an adult person';
+  return 'taller than an adult person, like a wardrobe or a doorframe';
+}
+
+function backgroundPrompt(shots, item, hasLightingReference) {
   // Deliberately drops product_lock — that section of the old prompt exists
   // to keep a generative model faithful to product details we are no longer
   // asking it to draw at all. style_lock (scene/lighting/mood language) and
   // the per-shot scene description are the only parts relevant to a
   // product-free background plate.
-  const parts = [shots.style_lock, item.prompt, 'Do not include any product, object, or packaging in the frame — background/scene only.']
-    .map((s) => (s || '').trim())
-    .filter(Boolean);
-  return parts.join('\n\n');
+  const parts = [shots.style_lock, item.prompt];
+  const sizePhrase = sizeComparisonPhrase(item.placement?.realHeightIn);
+  if (sizePhrase) {
+    parts.push(
+      `The product about to be placed into this scene is ${sizePhrase} in real life. Scale the room, furniture, `
+      + 'windows, doorways, and any people in the background consistently with an object of that real-world size — '
+      + 'do not paint the space as if it were sized for a much larger or much smaller object.',
+    );
+  }
+  if (hasLightingReference) {
+    // The product cutout is attached as a second image part purely as a
+    // lighting reference (see generateBackgroundImage) — light direction,
+    // hardness/softness, and color temperature are what must carry over, not
+    // the product itself. Naming it explicitly stops Gemini from treating the
+    // attached image as "the subject to include" or "the style to copy
+    // wholesale" the way reference-image prompts normally work.
+    parts.push(
+      'A second image is attached below the scene description — it is the real product photo, attached ONLY as a '
+      + 'lighting reference. Match its light direction, hardness/softness, and color temperature in the background '
+      + 'you generate. Do not depict the product, object, or packaging from that reference image, and do not copy '
+      + 'its composition or background — light quality only.',
+    );
+  }
+  parts.push('Do not include any product, object, or packaging in the frame — background/scene only.');
+  return parts.map((s) => (s || '').trim()).filter(Boolean).join('\n\n');
 }
 
 function httpsJson(url, headers, body) {
@@ -83,13 +135,34 @@ function httpsJson(url, headers, body) {
   });
 }
 
-/** Generates a product-free background plate via Gemini. 2K cap, same as the main app (Owner rule, raised from 1K 2026-07-08). */
-async function generateBackgroundImage(geminiKey, { prompt, aspectRatio }) {
+/**
+ * Generates a product-free background plate via Gemini. 2K cap, same as the
+ * main app (Owner rule, raised from 1K 2026-07-08).
+ *
+ * lightingReference (optional): { bytes, mimeType } of the project's product
+ * cutout, attached as a second content part purely so Gemini can match the
+ * background's light direction/quality/color temp to how the real product
+ * was actually lit — otherwise the AI background and the pasted-on real
+ * cutout can disagree on light direction with nothing to catch it (the
+ * compositing step is a dumb paste, it does no lighting math itself). The
+ * prompt text (see backgroundPrompt) is what tells Gemini to treat the image
+ * as a lighting reference only, not something to depict or copy wholesale.
+ */
+async function generateBackgroundImage(geminiKey, { prompt, aspectRatio, lightingReference }) {
   if (GENERATION_MODEL !== 'gemini') {
     throw new Error(`GENERATION_MODEL=${GENERATION_MODEL} not wired yet — only 'gemini' is implemented (ask the Owner for the Seedream endpoint/key before adding it)`);
   }
+  const promptParts = [{ text: prompt }];
+  if (lightingReference && lightingReference.bytes) {
+    promptParts.push({
+      inlineData: {
+        mimeType: lightingReference.mimeType || 'image/png',
+        data: lightingReference.bytes.toString('base64'),
+      },
+    });
+  }
   const body = {
-    contents: [{ parts: [{ text: prompt }] }],
+    contents: [{ parts: promptParts }],
     generationConfig: {
       responseModalities: ['IMAGE'],
       imageConfig: { aspectRatio: aspectRatio || '1:1', imageSize: '2K' },
@@ -236,8 +309,12 @@ async function generateProjectRenders(deps, params) {
   }
 
   const outcomes = await mapWithConcurrency(shots.items, CONCURRENCY, async (item) => {
-    const prompt = backgroundPrompt(shots, item);
-    const background = await generateBackgroundImage(geminiKey, { prompt, aspectRatio });
+    const prompt = backgroundPrompt(shots, item, true);
+    const background = await generateBackgroundImage(geminiKey, {
+      prompt,
+      aspectRatio,
+      lightingReference: { bytes: cutoutBuf.bytes, mimeType: cutoutBuf.mimeType || 'image/png' },
+    });
     const { bytes, mimeType } = await compositeProductOntoBackground(background.bytes, cutoutBuf.bytes, item.placement);
 
     const filename = /\.[a-z0-9]+$/i.test(item.file) ? item.file : `${item.file}.png`;

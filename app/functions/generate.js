@@ -68,7 +68,7 @@ const https = require('https');
 const CONCURRENCY = parseInt(process.env.GENERATE_CONCURRENCY || '4', 10);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-image';
 const MAX_REFERENCE_IMAGES = 3;
-const CHECKER_MODEL = process.env.CHECKER_MODEL || 'claude-sonnet-5';
+const CHECKER_MODEL = process.env.CHECKER_MODEL || 'gemini-3.5-flash'; // matches deployed supabase/functions/generate/index.ts
 
 function fullPrompt(shots, item) {
   const parts = [shots.product_lock, shots.style_lock, item.prompt].map((s) => (s || '').trim()).filter(Boolean);
@@ -167,31 +167,34 @@ function buildSpecFromTags(project) {
   };
 }
 
-async function callClaudeVision(anthropicKey, sourceImage, candidateImage, instructions) {
+// Checker moved off Claude onto Gemini 2.5 Flash-Lite (2026-07-09, Owner
+// call, same switch as functions/checker.js — see that file's header for
+// the reasoning). Reuses the same geminiKey generation already needs, so
+// this inline auto-check no longer needs an Anthropic key at all.
+async function callGeminiVision(geminiKey, sourceImage, candidateImage, instructions) {
   const { json: resp } = await httpsJson(
-    'https://api.anthropic.com/v1/messages',
-    { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+    `https://generativelanguage.googleapis.com/v1beta/models/${CHECKER_MODEL}:generateContent`,
+    { 'x-goog-api-key': geminiKey },
     {
-      model: CHECKER_MODEL,
-      max_tokens: 2000,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: 'IMAGE 1 — real product (ground truth):' },
-          { type: 'image', source: { type: 'base64', media_type: sourceImage.mediaType, data: sourceImage.base64 } },
-          { type: 'text', text: 'IMAGE 2 — AI-generated candidate:' },
-          { type: 'image', source: { type: 'base64', media_type: candidateImage.mediaType, data: candidateImage.base64 } },
-          { type: 'text', text: instructions },
+      contents: [{
+        parts: [
+          { text: 'IMAGE 1 — real product (ground truth):' },
+          { inline_data: { mime_type: sourceImage.mediaType, data: sourceImage.base64 } },
+          { text: 'IMAGE 2 — AI-generated candidate:' },
+          { inline_data: { mime_type: candidateImage.mediaType, data: candidateImage.base64 } },
+          { text: instructions },
         ],
       }],
+      generationConfig: { responseMimeType: 'application/json' },
     },
   );
-  if (resp.error) throw new Error(resp.error.message || 'Anthropic API error');
-  const text = (resp.content || []).map((b) => b.text || '').join('');
+  if (resp.error) throw new Error(resp.error.message || 'Gemini API error');
+  const text = (resp.candidates || []).flatMap((c) => c.content?.parts || []).map((p) => p.text || '').join('');
+  if (!text) throw new Error('Gemini returned no text output');
   return text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
 }
 
-async function runCheckerInline(anthropicKey, spec, sourceImage, candidateImage) {
+async function runCheckerInline(geminiKey, spec, sourceImage, candidateImage) {
   const checks = spec.vision_checks;
   const instructions = `You are a spec-accuracy QA inspector for AI-generated product imagery.
 IMAGE 1 is the REAL product (ground truth). IMAGE 2 is an AI-generated candidate.
@@ -206,9 +209,12 @@ Checklist (JSON): ${JSON.stringify(checks)}
 
 Respond with ONLY a JSON object:
 {"items": [{"id": "...", "verdict": "pass|fail|n/a", "confidence": 0-100,
-"reason": "one line"}], "overall_notes": "one or two lines"}`;
+"reason": "one line"}], "overall_notes": "one or two lines",
+"score": 0-100 — a single overall fidelity score for how closely IMAGE 2
+matches IMAGE 1 against this checklist (100 = perfect match, 0 = completely
+wrong product)}`;
 
-  const text = await callClaudeVision(anthropicKey, sourceImage, candidateImage, instructions);
+  const text = await callGeminiVision(geminiKey, sourceImage, candidateImage, instructions);
   const result = JSON.parse(text);
 
   const sev = {};
@@ -229,6 +235,7 @@ Respond with ONLY a JSON object:
   const checkerResult = {
     spec: `${spec.sku}/${spec.variant}`, model: CHECKER_MODEL, stage2_verdict: stage2Verdict,
     items: result.items, overall_notes: result.overall_notes || '',
+    score: typeof result.score === 'number' ? Math.max(0, Math.min(100, Math.round(result.score))) : null,
   };
   const verdict = stage2Verdict === 'REJECT' ? 'rejected' : 'approved';
   return { checker: checkerResult, verdict };
@@ -239,12 +246,13 @@ Respond with ONLY a JSON object:
  * result into Supabase storage, auto-checks it, and upserts a `renders` row
  * per shot.
  *
- * @param {object} deps - { geminiKey, anthropicKey, db }
+ * @param {object} deps - { geminiKey, db } — checker now reuses geminiKey too
+ *   (see functions/checker.js header, 2026-07-09 switch off Anthropic)
  * @param {object} params - { project } — full project row from db.getProject
  * @returns {Promise<{ok:boolean, generated:number, checked:number, failed:Array}>}
  */
 async function generateProjectRenders(deps, params) {
-  const { geminiKey, anthropicKey, db } = deps;
+  const { geminiKey, db } = deps;
   const { project } = params;
 
   const shots = project.shots;
@@ -287,7 +295,7 @@ async function generateProjectRenders(deps, params) {
   // Reference photo used by the CHECKER specifically — one fixed image so
   // every shot in the batch is judged against the same ground truth.
   let checkerReferenceImage = null;
-  if (anthropicKey && project.reference_image) {
+  if (geminiKey && project.reference_image) {
     try {
       const buf = await db.downloadFile(project.reference_image);
       checkerReferenceImage = { mediaType: buf.mimeType, base64: buf.bytes.toString('base64') };
@@ -305,12 +313,12 @@ async function generateProjectRenders(deps, params) {
     const path = db.storagePath(clientSlug, project.id, 'renders', filename);
     await db.uploadFile(path, bytes, mimeType);
 
-    let checkNote = 'not checked (no reference photo or Anthropic key set)';
+    let checkNote = 'not checked (no reference photo or Gemini key set)';
     let checkerFields = {};
-    if (checkerReferenceImage && anthropicKey) {
+    if (checkerReferenceImage && geminiKey) {
       try {
         const candidateImage = { mediaType: mimeType, base64: bytes.toString('base64') };
-        const { checker, verdict } = await runCheckerInline(anthropicKey, spec, checkerReferenceImage, candidateImage);
+        const { checker, verdict } = await runCheckerInline(geminiKey, spec, checkerReferenceImage, candidateImage);
         checkerFields = { checker, verdict };
         checkNote = `checked: ${checker.stage2_verdict}`;
       } catch (checkErr) {
