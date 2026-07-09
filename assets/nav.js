@@ -76,12 +76,7 @@
   var signedIn = false;
   try { signedIn = !!localStorage.getItem("sb-mqgfosfadmmiqlvuvbcy-auth-token"); } catch (e) {}
   var authLinks = signedIn
-    ? [
-        { href: "my-images.html", label: "Files" },
-        { href: "app/2-project-list.html", label: "Standard" },
-        { href: "pro/2-project-list.html", label: "Pro" },
-        { href: "account.html", label: "Account" }
-      ]
+    ? [{ href: "account.html", label: "Account" }]
     : [{ href: "login.html", label: "Log in" }, { href: "signup.html", label: "Sign up" }];
   var groupAuth = authLinks.map(link).join("");
 
