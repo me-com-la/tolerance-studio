@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Images | Tolerance Studio</title>
+<meta name="description" content="Every image Tolerance Studio has generated for your account, plus the ones you've saved.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/auth.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app/lib/supabase.js"></script>
+<script src="app/lib/lightbox.js"></script>
+<style>
+.tabs{display:flex;gap:.4rem;border-bottom:1px solid rgba(17,16,20,.12);margin:0 auto 1.6rem;max-width:88rem}
+.tab{padding:.8rem 1.1rem;font-size:.9rem;font-weight:600;color:#6b6966;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none}
+.tab.active{color:#111014;border-bottom-color:#d8502d}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;max-width:88rem;margin:0 auto}
+.grid[hidden]{display:none}
+.card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(17,16,20,.06),0 0 0 1px rgba(17,16,20,.08);display:flex;flex-direction:column}
+.card .imgwrap{aspect-ratio:4/3;background:#eee;overflow:hidden}
+.card img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+.card .body{padding:.6rem .8rem .75rem;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:#6b6966;word-break:break-all}
+.empty{color:#6b6966;font-size:.88rem;padding:1rem 0;max-width:88rem;margin:0 auto}
+
+/* ---------- lightbox (reused as-is from app/lib/lightbox.js) ---------- */
+#lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
+#lightbox .lb-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#lightbox img{max-width:90vw;max-height:88vh;object-fit:contain;cursor:zoom-in;transition:transform .08s ease-out;touch-action:none}
+#lightbox img.zoomed{cursor:grab;transition:none}
+#lightbox img.panning{cursor:grabbing}
+#lightbox .lb-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:none;width:2.6rem;height:2.6rem;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#lightbox .lb-btn:hover{background:rgba(255,255,255,.24)}
+#lightbox .lb-prev{left:1rem}
+#lightbox .lb-next{right:1rem}
+#lightbox .lb-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.12);color:#fff;border:none;width:2.2rem;height:2.2rem;border-radius:50%;font-size:1.1rem;cursor:pointer}
+#lightbox .lb-close:hover{background:rgba(255,255,255,.24)}
+#lightbox .lb-counter{position:absolute;top:1.1rem;left:1rem;color:#eee;font-size:.8rem;background:rgba(255,255,255,.12);border-radius:6px;padding:.25rem .55rem}
+#lightbox .lb-open-orig{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);color:#eee;font-size:.75rem;background:rgba(255,255,255,.12);border-radius:6px;padding:.3rem .7rem;text-decoration:none}
+#lightbox .lb-open-orig:hover{background:rgba(255,255,255,.24)}
+#lightbox .lb-hint{position:absolute;bottom:1rem;right:1rem;color:#999;font-size:.68rem}
+</style>
+</head>
+<body>
+
+<header class="hero auth-hero">
+  <div class="wrap">
+    <span class="hero-label">Your account</span>
+    <h1>My Images.</h1>
+    <p>Everything generated for your account, and everything you've saved with text on it.</p>
+  </div>
+</header>
+
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" id="tab-generations" onclick="switchTab('generations')">Generations<span id="count-generations"></span></button>
+      <button class="tab" id="tab-saved" onclick="switchTab('saved')">Saved<span id="count-saved"></span></button>
+    </div>
+    <p class="empty" id="status">Loading…</p>
+    <div class="grid" id="grid-generations"></div>
+    <div class="grid" id="grid-saved" hidden></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Tolerance Studio &middot; product imagery studio</div>
+    <div class="footer-links">
+      <a href="account.html">Account</a>
+      <a href="contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<div id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <div class="lb-stage" onclick="if(event.target===this)closeLightbox()">
+    <button class="lb-btn lb-prev" onclick="lbNext(-1)">‹</button>
+    <img id="lb-img">
+    <button class="lb-btn lb-next" onclick="lbNext(1)">›</button>
+  </div>
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <div class="lb-counter" id="lb-counter"></div>
+  <a class="lb-open-orig" id="lb-open-orig" target="_blank" rel="noopener">⤢ open original</a>
+  <div class="lb-hint">click image to zoom · scroll to zoom · drag to pan · ← → to navigate · esc to close</div>
+</div>
+
+<script>
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+// No client/project filter here on purpose — RLS (member_all_renders policy,
+// migrations/002_beta_members.sql) already scopes `renders` to whatever this
+// signed-in user owns, across every project and both Standard/Pro pipelines.
+async function loadRenders(stage){
+  let q = sb.from('renders').select('storage_path, filename, stage').order('created_at', { ascending: false });
+  if (stage) q = q.eq('stage', stage);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data;
+}
+
+async function resolveSignedUrls(rows){
+  const urls = {};
+  await Promise.all(rows.map(async r => {
+    if (!r.storage_path || urls[r.storage_path]) return;
+    try {
+      const { data, error } = await sb.storage.from('projects').createSignedUrl(r.storage_path, 3600);
+      urls[r.storage_path] = error ? '' : data.signedUrl;
+    } catch (e) { urls[r.storage_path] = ''; }
+  }));
+  return urls;
+}
+
+function cardHtml(r, urls){
+  return `<div class="card">
+    <div class="imgwrap"><img class="lb-thumb" src="${esc(urls[r.storage_path] || '')}" onclick="openLightbox(this)"></div>
+    <div class="body">${esc(r.filename)}</div>
+  </div>`;
+}
+
+function switchTab(name){
+  document.getElementById('tab-generations').classList.toggle('active', name === 'generations');
+  document.getElementById('tab-saved').classList.toggle('active', name === 'saved');
+  document.getElementById('grid-generations').hidden = name !== 'generations';
+  document.getElementById('grid-saved').hidden = name !== 'saved';
+}
+
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = 'login.html?next=my-images.html'; return; }
+
+  try {
+    const [generations, saved] = await Promise.all([loadRenders(), loadRenders('composed')]);
+    const urls = await resolveSignedUrls(generations.concat(saved));
+
+    document.getElementById('grid-generations').innerHTML = generations.map(r => cardHtml(r, urls)).join('') || '<p class="empty">No generations yet.</p>';
+    document.getElementById('grid-saved').innerHTML = saved.map(r => cardHtml(r, urls)).join('') || '<p class="empty">Nothing saved yet.</p>';
+    document.getElementById('count-generations').textContent = ` (${generations.length})`;
+    document.getElementById('count-saved').textContent = ` (${saved.length})`;
+    document.getElementById('status').style.display = 'none';
+  } catch (e) {
+    document.getElementById('status').textContent = 'Could not load images: ' + (e.message || e);
+  }
+})();
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>
