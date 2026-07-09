@@ -66,7 +66,16 @@ async function callLocalService(name, body) {
     throw new Error(`can't reach the pixel-lock compositing service at ${PIXEL_LOCK_SERVICE} — check the Cloud Run service is up`);
   }
   const json = await res.json();
-  if (!res.ok || json.ok === false) throw new Error(json.error || `${name} failed (HTTP ${res.status})`);
+  if (!res.ok || json.ok === false) {
+    // json.match (score/drift/scale/guard from the LAST attempt) is real
+    // diagnostic signal on a drift-guard refusal — attach it to the thrown
+    // Error rather than dropping it, so callers can show *how* it failed
+    // (borderline vs way off), not just that it failed. See
+    // tools/pixel-lock/cloudrun/main.py's snap_back() for what these mean.
+    const err = new Error(json.error || `${name} failed (HTTP ${res.status})`);
+    if (json.match) err.match = json.match;
+    throw err;
+  }
   return json;
 }
 

@@ -386,7 +386,14 @@ async function generateAndCheck(){
         await db.uploadFile(path, base64ToBlob(result.composite_b64, 'image/png'));
         await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render' });
       } catch (e) {
-        failed.push(`${item.file}: ${e.message || String(e)}`);
+        // e.match (set in callLocalService, lib/functions.js) is the LAST
+        // attempt's score/drift/scale from the drift guard — shown so a
+        // refusal reads as "how close" (tune the guard) vs "way off" (the
+        // scene/prompt itself is the problem), instead of a bare error string.
+        const matchInfo = e.match
+          ? ` [last attempt: score=${e.match.score ?? '?'} drift=${e.match.drift ?? '?'}px scale=${e.match.scale ?? '?'}]`
+          : '';
+        failed.push(`${item.file}: ${e.message || String(e)}${matchInfo}`);
       }
     }
     await db.saveStatus(projectId, 'checking');
