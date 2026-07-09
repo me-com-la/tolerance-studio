@@ -124,14 +124,6 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
     <span class="hint">how many images this campaign generates — one per scene below</span>
   </div>
 
-  <div class="settings-strip">
-    <label for="relight-strength">Relight strength</label>
-    <input type="range" id="relight-strength" min="0" max="1" step="0.05" value="1"
-           oninput="document.getElementById('relight-strength-val').textContent = Math.round(this.value*100)+'%'">
-    <span class="hint" id="relight-strength-val">100%</span>
-    <span class="hint">nudges the pasted-in product's brightness/shadow to match each generated scene — same real pixels, no shape change. 0% = off.</span>
-  </div>
-
   <div class="section-h">AI scenes <span class="sec-hint">re-drafting replaces only this section, topping up to the batch size</span></div>
   <div class="claude-panel">
     <div class="ai-bar" style="margin-bottom:1rem">
@@ -344,8 +336,7 @@ function pixelLockPrompt(project, shots, item){
 }
 
 async function compositeOneShot(cutoutB64, prompt){
-  const relightStrength = parseFloat(document.getElementById('relight-strength').value);
-  return callLocalService('composite', { cutout_b64: cutoutB64, prompt, relight_strength: relightStrength });
+  return callLocalService('composite', { cutout_b64: cutoutB64, prompt });
 }
 
 async function generateAndCheck(){

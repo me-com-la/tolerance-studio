@@ -57,6 +57,8 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .del-btn{top:.4rem;left:.4rem}
 .del-btn:hover{background:#a33}
 
+.pro-tag{position:absolute;bottom:.4rem;left:.4rem;background:rgba(17,16,20,.68);color:#fff;font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:.18rem .45rem;border-radius:5px;pointer-events:none}
+
 /* ---------- lightbox (reused as-is from app/lib/lightbox.js) ---------- */
 #lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
 #lightbox .lb-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -121,8 +123,11 @@ let signedUrls = {};
 // migrations/002_beta_members.sql) already scopes `renders` to whatever this
 // signed-in user owns, across every project and both Standard/Pro pipelines.
 async function loadAllRenders(){
+  // projects(pipeline) is an embedded resource via the renders.project_id FK
+  // (see app/migrations/003_project_pipeline.sql) — lets each card show which
+  // app actually generated it, since this page mixes Standard and Pro renders.
   const { data, error } = await sb.from('renders')
-    .select('id, storage_path, filename, stage, is_favorite')
+    .select('id, storage_path, filename, stage, is_favorite, projects(pipeline)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -140,11 +145,13 @@ async function resolveSignedUrls(rows){
 
 function cardHtml(r){
   const url = signedUrls[r.storage_path] || '';
+  const isPro = r.projects?.pipeline === 'pro';
   return `<div class="card">
     <div class="imgwrap">
       <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRender(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
+      ${isPro ? '<span class="pro-tag">Pro</span>' : ''}
     </div>
   </div>`;
 }

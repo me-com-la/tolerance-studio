@@ -74,12 +74,13 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .v-checker-pass{color:var(--ok);background:var(--ok-wash)}
 .v-checker-fail{color:var(--bad);background:var(--bad-wash)}
 .v-checker-review{color:var(--warn);background:var(--warn-wash)}
-.notes{font-size:.76rem;color:var(--muted);line-height:1.5;background:#faf9f7;border-radius:8px;padding:.5rem .6rem}
-.notes .fail{color:var(--bad)}
+.check-summary{font-size:.8rem;color:var(--muted);line-height:1.5;background:#faf9f7;border-radius:8px;padding:.5rem .6rem}
 .override-row{display:flex;gap:.5rem;margin-top:.2rem}
 .ov-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;font-size:.78rem;font-weight:600;padding:.5rem;border-radius:8px;border:1px solid var(--line-2);background:#fff;cursor:pointer;font-family:inherit}
 .ov-btn.approve{color:var(--ok)}.ov-btn.approve:hover{background:var(--ok-wash);border-color:var(--ok)}
 .ov-btn.reject{color:var(--bad)}.ov-btn.reject:hover{background:var(--bad-wash);border-color:var(--bad)}
+.ov-btn.approve.active{background:var(--ok);border-color:var(--ok);color:#fff}
+.ov-btn.reject.active{background:var(--bad);border-color:var(--bad);color:#fff}
 .override-badge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;padding:.3rem .6rem;border-radius:8px}
 .override-badge.approved{color:var(--ok);background:var(--ok-wash)}
 .override-badge.rejected{color:var(--bad);background:var(--bad-wash)}
@@ -230,46 +231,34 @@ async function resolveSignedUrls(rs){
 // else sort by checker's hard-fail rule).
 function effectiveVerdict(r){ return r.human_override || r.verdict; }
 
-function notesHtml(r){
-  const c = r.checker;
-  if (!c || !c.items) return '';
-  const fails = c.items.filter(it => it.verdict === 'fail');
-  if (fails.length) return fails.map(it => `<span class="fail">✗ ${esc(it.id)}:</span> ${esc(it.reason||'')}`).join('<br>');
-  const low = c.items.filter(it => it.verdict === 'pass' && it.confidence < 80);
-  if (low.length) return 'check: ' + low.map(it => `${esc(it.id)} (${it.confidence})`).join(', ');
-  return '';
+// checker.js asks Gemini for exactly this on every run ("overall_notes: one
+// or two lines") — a plain-language summary, not a score or a per-item list
+// (2026-07-09 Owner call: the % score badge was tried and dropped too, "not
+// a list with scores like we had before" — one sentence is the target).
+function checkSummary(r){
+  return r.checker && r.checker.overall_notes ? r.checker.overall_notes.trim() : '';
 }
 
 function cardHtml(r){
   const url = signedUrlCache[r.storage_path] || '';
   const verdict = effectiveVerdict(r);
-  const pending = !r.checker && !r.human_override;
-  const isReview = r.checker && r.checker.stage2_verdict === 'HUMAN_REVIEW' && !r.human_override;
-  const pillClass = pending ? 'v-checker-review' : r.human_override ? '' : (verdict === 'rejected' ? 'v-checker-fail' : (isReview ? 'v-checker-review' : 'v-checker-pass'));
-  const pillLabel = pending ? '◐ not checked yet' : verdict === 'rejected' ? '✗ rejected' : (isReview ? '◐ human review' : '✓ pass');
+  const summary = checkSummary(r);
 
-  let overrideBlock;
-  if (!r.checker && !r.human_override) {
-    // No automated verdict yet — nothing to override, just run it.
-    overrideBlock = `<div class="override-row"><button class="ov-btn run" onclick="runChecker('${r.id}')">▶ Run checker</button></div>
+  // Owner call, 2026-07-09: every card always offers BOTH directions (not
+  // just "move to the other bucket"), and doesn't wait on "Run checker"
+  // first — a manual approve/reject call is valid with or without an
+  // automated read. The active one is highlighted so the card's own status
+  // is legible without needing separate badge text.
+  let overrideBlock = `<div class="override-row">
+      <button class="ov-btn approve${verdict === 'approved' ? ' active' : ''}" onclick="setVerdict('${r.id}','approved')">✓ Approved</button>
+      <button class="ov-btn reject${verdict === 'rejected' ? ' active' : ''}" onclick="setVerdict('${r.id}','rejected')">✗ Not approved</button>
+    </div>`;
+  if (r.human_override) {
+    overrideBlock += `<span class="sticky-note">owner call — stays put unless you move it, a checker rerun won't change this</span>`;
+  }
+  if (!r.checker) {
+    overrideBlock += `<div class="override-row"><button class="ov-btn run" onclick="runChecker('${r.id}')">▶ Run checker</button></div>
       <span class="check-status" id="check-status-${r.id}"></span>`;
-  } else if (r.human_override) {
-    // Sticky against checker reruns, not against the Owner changing their
-    // own mind — always offer the move-to-the-other-bucket action here too.
-    const flip = r.human_override === 'approved' ? 'rejected' : 'approved';
-    const flipLabel = flip === 'approved' ? '✓ move to approved' : '✗ move to not approved';
-    const flipClass = flip === 'approved' ? 'approve' : 'reject';
-    overrideBlock = `<div class="override-row"><span class="override-badge ${r.human_override}">${r.human_override === 'approved' ? '✓ owner approved' : '✗ owner rejected'}</span></div>
-      <div class="override-row"><button class="ov-btn ${flipClass}" onclick="setVerdict('${r.id}','${flip}')">${flipLabel}</button></div>
-      <span class="sticky-note">stays put unless you move it — a checker rerun won't change this</span>`;
-  } else if (verdict === 'rejected') {
-    // Sitting in Not Approved — the only useful move is up, into Approved.
-    overrideBlock = `<div class="override-row"><button class="ov-btn approve" onclick="setVerdict('${r.id}','approved')">✓ move to approved</button></div>`;
-  } else {
-    // Sitting in Approved already — an "approve" button here would be
-    // redundant (Owner call, 2026-07-06: which list a card sits in already
-    // says its status; the only useful action is moving it to the other one).
-    overrideBlock = `<div class="override-row"><button class="ov-btn reject" onclick="setVerdict('${r.id}','rejected')">✗ move to not approved</button></div>`;
   }
 
   return `<div class="card">
@@ -280,8 +269,9 @@ function cardHtml(r){
     </div>
     <div class="body">
       <div class="fname">${esc(r.filename)}</div>
-      ${!r.human_override ? `<span class="verdict-pill ${pillClass}">${pillLabel}</span>` : ''}
-      <div class="notes">${notesHtml(r)}</div>
+      ${r.checker
+        ? (summary ? `<p class="check-summary">${esc(summary)}</p>` : '<p class="check-summary">Checked — no summary returned.</p>')
+        : '<span class="verdict-pill v-checker-review">◐ not checked yet</span>'}
       ${overrideBlock}
       <div class="edit-row">
         <input type="text" id="edit-instr-${r.id}" placeholder="e.g. change the bowl color to blue">

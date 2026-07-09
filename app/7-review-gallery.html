@@ -293,11 +293,13 @@ async function init(){
       `${project.product || ''} — ${project.description || ''}`.replace(/^ — /, '');
     if (isOwner) wireEmailLinkButton(project, clientName);
     renders = await db.listRenders(projectId);
-    // Client-facing view: composed images only (8-compose.html's
-    // upsertRender sets stage:'composed'). Approved-but-not-yet-composed
-    // renders from the Check stage don't belong here — Review is the
-    // client-facing gallery of finished, composed work.
-    renders = renders.filter(r => r.stage === 'composed');
+    // Client-facing view (2026-07-09): composed images (8-compose.html's
+    // upsertRender sets stage:'composed') PLUS anything approved at the
+    // Check stage that never went through Compose — Compose now has a
+    // "Skip this step" button, so an approved render can reach Review
+    // without ever becoming stage:'composed'. Excluding those used to mean
+    // a skipped project's approved work just vanished from the client's view.
+    renders = renders.filter(r => r.stage === 'composed' || (r.human_override || r.verdict) === 'approved');
     await render();
   } catch (e) {
     // RLS denies (not signed in as this client, or project not at review/delivered

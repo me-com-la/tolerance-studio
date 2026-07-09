@@ -158,8 +158,13 @@ img.lb-thumb{cursor:pointer}
 </div></div>
 
 <div class="wrap">
-  <h1>Compose</h1>
-  <p class="sub">Pick an approved image, write the copy, choose a size. The gradient scrim and typesetting below are real — rendered live in your browser from the actual rules in <code>compose.py</code>, not a preview mockup.</p>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <div>
+      <h1>Compose</h1>
+      <p class="sub">Pick an approved image, write the copy, choose a size. The gradient scrim and typesetting below are real — rendered live in your browser from the actual rules in <code>compose.py</code>, not a preview mockup.</p>
+    </div>
+    <button class="btn btn-ghost" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)" title="Skip typesetting — your approved Check-stage images still show up in Review">Skip this step →</button>
+  </div>
 
   <div class="section-h">Approved renders <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="select-count"></span></div>
   <div class="select-strip" id="select-strip"><span class="select-empty">loading…</span></div>
