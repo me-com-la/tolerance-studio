@@ -13,7 +13,13 @@
   var who = document.querySelector('.topbar .who');
   if (!who) return;
 
+  // my-images.html (Files) lives at the repo root, one level up from every
+  // app/ and pro/ page — so link targets need a prefix that depends on
+  // where this script is actually running, not a fixed "../" like before.
+  var inSubfolder = location.pathname.indexOf('/app/') !== -1 || location.pathname.indexOf('/pro/') !== -1;
+  var prefix = inSubfolder ? '../' : '';
   var isPro = location.pathname.indexOf('/pro/') !== -1;
+  var isFiles = !inSubfolder;
   var css =
     '.ts-switch{position:relative;display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none}' +
     '.ts-switch .caret{font-size:.55rem;opacity:.55;transition:transform .15s}' +
@@ -39,11 +45,12 @@
   who.insertAdjacentHTML('beforeend',
     '<span class="caret">▾</span>' +
     '<div class="ts-switch-menu">' +
-      '<a href="../app/2-project-list.html" class="' + (isPro ? '' : 'on') + '">Standard</a>' +
-      '<a href="../pro/2-project-list.html" class="' + (isPro ? 'on' : '') + '">Pro</a>' +
-      '<a href="../full-service.html">Full Service <span class="soon">Coming soon</span></a>' +
+      '<a href="' + prefix + 'my-images.html" class="' + (isFiles ? 'on' : '') + '">Files</a>' +
+      '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isPro ? 'on' : '') + '">Standard</a>' +
+      '<a href="' + prefix + 'pro/2-project-list.html" class="' + (!isFiles && isPro ? 'on' : '') + '">Pro</a>' +
+      '<a href="' + prefix + 'full-service.html">Full Service <span class="soon">Coming soon</span></a>' +
       '<hr>' +
-      '<a href="../account.html">Account</a>' +
+      '<a href="' + prefix + 'account.html">Account</a>' +
       '<a href="#" id="ts-switch-logout">Log out</a>' +
     '</div>');
 
@@ -73,6 +80,6 @@
   if (lo) lo.addEventListener('click', async function (e) {
     e.preventDefault();
     await window.sb.auth.signOut();
-    location.href = '../index.html';
+    location.href = prefix + 'index.html';
   });
 })();

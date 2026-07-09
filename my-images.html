@@ -192,10 +192,6 @@ function switchTab(name){
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { location.href = 'login.html?next=my-images.html'; return; }
 
-  const email = session.user.email || '';
-  document.getElementById('who-email').textContent = email;
-  document.getElementById('who-avatar').textContent = email.charAt(0).toUpperCase() || '·';
-
   try {
     allRenders = await loadAllRenders();
     await resolveSignedUrls(allRenders);
@@ -205,5 +201,6 @@ function switchTab(name){
   }
 })();
 </script>
+<script src="assets/app-switcher.js"></script>
 </body>
 </html>
