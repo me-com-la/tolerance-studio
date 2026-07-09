@@ -42,13 +42,20 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .tab{padding:.8rem 1.1rem;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none}
 .tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.5rem}
 .grid[hidden]{display:none}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
-.card .imgwrap{aspect-ratio:4/3;background:#eee;overflow:hidden}
+.card{border-radius:10px;overflow:hidden}
+.card .imgwrap{position:relative;aspect-ratio:4/3;background:#eee;overflow:hidden}
 .card img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
-.card .body{padding:.6rem .8rem .75rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);word-break:break-all}
 .empty{color:var(--muted);font-size:.88rem;padding:1rem 0}
+
+.fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(17,16,20,.5);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
+.card:hover .fav-btn,.card:hover .del-btn{opacity:1}
+.fav-btn{top:.4rem;right:.4rem}
+.fav-btn:hover{background:rgba(17,16,20,.72)}
+.fav-btn.active{opacity:1;color:var(--accent)}
+.del-btn{top:.4rem;left:.4rem}
+.del-btn:hover{background:#a33}
 
 /* ---------- lightbox (reused as-is from app/lib/lightbox.js) ---------- */
 #lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
@@ -74,9 +81,9 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   <div class="who"><span id="who-email">…</span><div class="avatar" id="who-avatar">·</div></div>
 </div></div>
 <div class="subnav"><div class="subnav-in">
+  <a href="my-images.html" class="tier-tab active">Files</a>
   <a href="app/2-project-list.html" class="tier-tab">Standard</a>
   <a href="pro/2-project-list.html" class="tier-tab">Pro</a>
-  <a href="my-images.html" class="tier-tab active">Files</a>
 </div></div>
 
 <div class="wrap">
@@ -85,11 +92,11 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
   <div class="tabs">
     <button class="tab active" id="tab-generations" onclick="switchTab('generations')">Generations<span id="count-generations"></span></button>
-    <button class="tab" id="tab-saved" onclick="switchTab('saved')">Saved<span id="count-saved"></span></button>
+    <button class="tab" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
   </div>
 
   <div class="grid" id="grid-generations"></div>
-  <div class="grid" id="grid-saved" hidden></div>
+  <div class="grid" id="grid-favorites" hidden></div>
 </div>
 
 <div id="lightbox" onclick="if(event.target===this)closeLightbox()">
@@ -107,41 +114,78 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 <script>
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 
+let allRenders = [];
+let signedUrls = {};
+
 // No client/project filter here on purpose — RLS (member_all_renders policy,
 // migrations/002_beta_members.sql) already scopes `renders` to whatever this
 // signed-in user owns, across every project and both Standard/Pro pipelines.
-async function loadRenders(stage){
-  let q = sb.from('renders').select('storage_path, filename, stage').order('created_at', { ascending: false });
-  if (stage) q = q.eq('stage', stage);
-  const { data, error } = await q;
+async function loadAllRenders(){
+  const { data, error } = await sb.from('renders')
+    .select('id, storage_path, filename, stage, is_favorite')
+    .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
 }
 
 async function resolveSignedUrls(rows){
-  const urls = {};
   await Promise.all(rows.map(async r => {
-    if (!r.storage_path || urls[r.storage_path]) return;
+    if (!r.storage_path || signedUrls[r.storage_path]) return;
     try {
       const { data, error } = await sb.storage.from('projects').createSignedUrl(r.storage_path, 3600);
-      urls[r.storage_path] = error ? '' : data.signedUrl;
-    } catch (e) { urls[r.storage_path] = ''; }
+      signedUrls[r.storage_path] = error ? '' : data.signedUrl;
+    } catch (e) { signedUrls[r.storage_path] = ''; }
   }));
-  return urls;
 }
 
-function cardHtml(r, urls){
+function cardHtml(r){
+  const url = signedUrls[r.storage_path] || '';
   return `<div class="card">
-    <div class="imgwrap"><img class="lb-thumb" src="${esc(urls[r.storage_path] || '')}" onclick="openLightbox(this)"></div>
-    <div class="body">${esc(r.filename)}</div>
+    <div class="imgwrap">
+      <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
+      <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
+      <button class="del-btn" title="Delete" onclick="deleteRender(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
+    </div>
   </div>`;
+}
+
+function renderGrids(){
+  const favorites = allRenders.filter(r => r.is_favorite);
+  document.getElementById('grid-generations').innerHTML = allRenders.map(cardHtml).join('') || '<p class="empty">No generations yet.</p>';
+  document.getElementById('grid-favorites').innerHTML = favorites.map(cardHtml).join('') || '<p class="empty">No favorites yet.</p>';
+  document.getElementById('count-generations').textContent = ` (${allRenders.length})`;
+  document.getElementById('count-favorites').textContent = ` (${favorites.length})`;
+  document.getElementById('page-sub').textContent = `${allRenders.length} generation${allRenders.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'}`;
+}
+
+async function toggleFavorite(event, id){
+  event.stopPropagation();
+  const r = allRenders.find(x => x.id === id);
+  if (!r) return;
+  const next = !r.is_favorite;
+  r.is_favorite = next;
+  renderGrids();
+  const { error } = await sb.from('renders').update({ is_favorite: next }).eq('id', id);
+  if (error) { r.is_favorite = !next; renderGrids(); alert('Could not update favorite: ' + error.message); }
+}
+
+async function deleteRender(event, id, storagePath){
+  event.stopPropagation();
+  if (!confirm('Delete this image? This cannot be undone.')) return;
+  try {
+    if (storagePath) await sb.storage.from('projects').remove([storagePath]);
+    const { error } = await sb.from('renders').delete().eq('id', id);
+    if (error) throw error;
+    allRenders = allRenders.filter(r => r.id !== id);
+    renderGrids();
+  } catch (e) { alert('Delete failed: ' + (e.message || e)); }
 }
 
 function switchTab(name){
   document.getElementById('tab-generations').classList.toggle('active', name === 'generations');
-  document.getElementById('tab-saved').classList.toggle('active', name === 'saved');
+  document.getElementById('tab-favorites').classList.toggle('active', name === 'favorites');
   document.getElementById('grid-generations').hidden = name !== 'generations';
-  document.getElementById('grid-saved').hidden = name !== 'saved';
+  document.getElementById('grid-favorites').hidden = name !== 'favorites';
 }
 
 (async function init(){
@@ -153,14 +197,9 @@ function switchTab(name){
   document.getElementById('who-avatar').textContent = email.charAt(0).toUpperCase() || '·';
 
   try {
-    const [generations, saved] = await Promise.all([loadRenders(), loadRenders('composed')]);
-    const urls = await resolveSignedUrls(generations.concat(saved));
-
-    document.getElementById('grid-generations').innerHTML = generations.map(r => cardHtml(r, urls)).join('') || '<p class="empty">No generations yet.</p>';
-    document.getElementById('grid-saved').innerHTML = saved.map(r => cardHtml(r, urls)).join('') || '<p class="empty">Nothing saved yet.</p>';
-    document.getElementById('count-generations').textContent = ` (${generations.length})`;
-    document.getElementById('count-saved').textContent = ` (${saved.length})`;
-    document.getElementById('page-sub').textContent = `${generations.length} generation${generations.length===1?'':'s'} · ${saved.length} saved`;
+    allRenders = await loadAllRenders();
+    await resolveSignedUrls(allRenders);
+    renderGrids();
   } catch (e) {
     document.getElementById('page-sub').textContent = 'Could not load images: ' + (e.message || e);
   }

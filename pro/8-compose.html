@@ -112,13 +112,18 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-top:1rem}
 .render-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.render-card .imgwrap{aspect-ratio:1/1;background:#eee;overflow:hidden}
+.render-card .imgwrap{aspect-ratio:1/1;background:#eee;overflow:hidden;position:relative}
 .render-card img{width:100%;height:100%;object-fit:cover;cursor:pointer}
 .render-card .body{padding:.6rem .7rem;display:flex;flex-direction:column;gap:.4rem}
 .render-card .fn{font-size:.68rem;color:var(--muted);font-family:var(--font-mono);word-break:break-all}
 .render-card .plat{font-size:.68rem;background:var(--chip);padding:.15rem .5rem;border-radius:100px;width:fit-content}
-.render-card .rm{align-self:flex-end;font-size:.7rem;color:var(--muted);cursor:pointer}
-.render-card .rm:hover{color:#a33}
+.fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(17,16,20,.5);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
+.imgwrap:hover .fav-btn,.imgwrap:hover .del-btn{opacity:1}
+.fav-btn{top:.4rem;right:.4rem}
+.fav-btn:hover{background:rgba(17,16,20,.72)}
+.fav-btn.active{opacity:1;color:var(--accent)}
+.del-btn{top:.4rem;left:.4rem}
+.del-btn:hover{background:#a33}
 
 /* ---------- lightbox: ported as-is from tools/control.html ---------- */
 #lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
@@ -203,7 +208,7 @@ img.lb-thumb{cursor:pointer}
           <input type="text" id="cmp-cta" placeholder="button text, optional" oninput="renderPreview()">
         </div>
         <div class="ai-status" id="save-status"></div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveComposed()">Save composed image</button>
+        <button class="btn btn-primary" style="width:100%" onclick="saveComposed()">Render Image</button>
       </div>
     </div>
 
@@ -571,17 +576,31 @@ async function loadRendered(){
   const urls = await Promise.all(composed.map(r => resolveUrl(r.storage_path)));
   document.getElementById('rendered-grid').innerHTML = composed.map((r,i) => `
     <div class="render-card">
-      <div class="imgwrap"><img class="lb-thumb" src="${esc(urls[i])}" onclick="openLightbox(this)"></div>
+      <div class="imgwrap">
+        <img class="lb-thumb" src="${esc(urls[i])}" onclick="openLightbox(this)">
+        <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
+        <button class="del-btn" title="Delete" onclick="removeComposed(event,'${r.id}')">🗑</button>
+      </div>
       <div class="body">
         <span class="fn">${esc(r.filename)}</span>
-        <span class="rm" onclick="removeComposed('${r.id}')">remove</span>
       </div>
     </div>`).join('');
 }
-async function removeComposed(renderId){
+async function toggleFavorite(event, renderId){
+  event.stopPropagation();
   const r = renders.find(x => x.id === renderId);
   if (!r) return;
-  if (!confirm('Remove this composed image?')) return;
+  const next = !r.is_favorite;
+  r.is_favorite = next;
+  await loadRendered();
+  const { error } = await sb.from('renders').update({ is_favorite: next }).eq('id', renderId);
+  if (error) { r.is_favorite = !next; await loadRendered(); alert('Could not update favorite: ' + error.message); }
+}
+async function removeComposed(event, renderId){
+  event.stopPropagation();
+  const r = renders.find(x => x.id === renderId);
+  if (!r) return;
+  if (!confirm('Delete this image? This cannot be undone.')) return;
   await db.removeFiles([r.storage_path]);
   await sb.from('renders').delete().eq('id', renderId);
   renders = await db.listRenders(projectId);

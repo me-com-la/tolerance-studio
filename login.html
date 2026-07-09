@@ -51,7 +51,7 @@
 function nextUrl(){
   var n = new URLSearchParams(location.search).get('next');
   // relative paths only — never bounce to another origin
-  return (n && !/^([a-z]+:)?\/\//i.test(n)) ? n : 'account.html';
+  return (n && !/^([a-z]+:)?\/\//i.test(n)) ? n : 'my-images.html';
 }
 (async function(){
   var s = await sb.auth.getSession();

@@ -63,6 +63,13 @@ h1{font-family:var(--font-display);font-size:1.7rem;font-weight:700;text-transfo
 .card img{width:100%;height:100%;object-fit:cover;display:block}
 .select-badge{position:absolute;top:.5rem;right:.5rem;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.85);border:1.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--muted)}
 .card.selected .select-badge{background:var(--accent);border-color:var(--accent);color:#fff}
+.fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(17,16,20,.5);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
+.imgwrap:hover .fav-btn,.imgwrap:hover .del-btn{opacity:1}
+.fav-btn{bottom:.4rem;right:.4rem}
+.fav-btn:hover{background:rgba(17,16,20,.72)}
+.fav-btn.active{opacity:1;color:var(--accent)}
+.del-btn{top:.4rem;left:.4rem}
+.del-btn:hover{background:#a33}
 .card .body{padding:.7rem .9rem .8rem}
 .card .fname{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);word-break:break-all}
 .empty{color:var(--muted);font-size:.9rem}
@@ -163,6 +170,8 @@ function cardHtml(r, selectedCount){
     <div class="imgwrap">
       <img class="lb-thumb" src="${esc(url)}" onclick="event.stopPropagation();openLightbox(this)">
       <span class="select-badge">${selected ? '✓' : ''}</span>
+      <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
+      <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
     </div>
     <div class="body"><div class="fname">${esc(r.filename)}</div></div>
   </div>`;
@@ -186,6 +195,29 @@ async function toggleSelect(renderId){
   await db.setSelected(renderId, !isSelected(r));
   renders = await loadRenders();
   await render();
+}
+
+async function toggleFavorite(event, renderId){
+  event.stopPropagation();
+  const r = renders.find(x => x.id === renderId);
+  if (!r) return;
+  const next = !r.is_favorite;
+  r.is_favorite = next;
+  await render();
+  const { error } = await sb.from('renders').update({ is_favorite: next }).eq('id', renderId);
+  if (error) { r.is_favorite = !next; await render(); alert('Could not update favorite: ' + error.message); }
+}
+
+async function deleteRenderInline(event, renderId, storagePath){
+  event.stopPropagation();
+  if (!confirm('Delete this image? This cannot be undone.')) return;
+  try {
+    if (storagePath) await db.removeFiles([storagePath]);
+    const { error } = await sb.from('renders').delete().eq('id', renderId);
+    if (error) throw error;
+    renders = await loadRenders();
+    await render();
+  } catch (e) { alert('Delete failed: ' + (e.message || e)); }
 }
 
 async function init(){

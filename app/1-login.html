@@ -80,7 +80,7 @@ body{
 // RLS, see app/migrations/001_init.sql). If already signed in, skip through.
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
-  if (session) location.href = '2-project-list.html';
+  if (session) location.href = '../my-images.html';
 })();
 async function doSignIn(){
   const email = document.getElementById('email').value.trim();
@@ -93,7 +93,7 @@ async function doSignIn(){
   const { error } = await sb.auth.signInWithPassword({ email, password: pw });
   btn.disabled = false;
   if (error){ status.textContent = error.message; return; }
-  location.href = '2-project-list.html';
+  location.href = '../my-images.html';
 }
 </script>
 </body>
