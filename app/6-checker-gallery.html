@@ -22,6 +22,7 @@
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
   --ok:#2e7d32; --ok-wash:#e8f5e9; --bad:#a33; --bad-wash:#fbe9e7; --warn:#b45309; --warn-wash:#fff3e0;
+  --thumb:230px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -65,9 +66,12 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .section-h h2{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase}
 .section-h .count{font-size:.82rem;color:var(--muted)}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
-.card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative}
+.card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.size-toggle{display:inline-flex;gap:.3rem;margin-left:auto}
+.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
+.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
 .imgwrap:hover .fav-btn,.imgwrap:hover .del-btn{opacity:1}
 .fav-btn{top:.4rem;right:.4rem}
@@ -75,7 +79,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .fav-btn.active{opacity:1;color:var(--accent)}
 .del-btn{top:.4rem;left:.4rem}
 .del-btn:hover{background:#a33}
-.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block}
 .card .body{padding:.8rem .9rem 1rem;display:flex;flex-direction:column;gap:.5rem}
 .verdict-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;padding:.25rem .6rem;border-radius:100px;width:fit-content}
 .v-checker-pass{color:var(--ok);background:var(--ok-wash)}
@@ -96,8 +100,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .check-status.busy{font-style:italic}
 .check-status.err{color:var(--bad);font-style:normal}
 .edit-row{display:flex;gap:.4rem;margin-top:.3rem}
-.edit-row input{flex:1;min-width:0;padding:.4rem .55rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.76rem}
-.edit-row button{font-size:.76rem;font-weight:600;padding:.4rem .7rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;white-space:nowrap}
+.edit-row input{flex:1;min-width:0;padding:.4rem .55rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.76rem;background:var(--card);color:var(--ink)}
+.edit-row button{font-size:.76rem;font-weight:600;padding:.4rem .7rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;white-space:nowrap;color:var(--ink)}
 .edit-row button:hover{background:var(--accent-wash);border-color:var(--accent)}
 .edit-hint{font-size:.68rem;color:var(--muted)}
 /* ---------- lightbox: zoom + prev/next over whichever .grid the click came from ---------- */
@@ -143,6 +147,11 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     <div class="tally-item"><span class="tally-num" id="tally-rejected">0</span><span class="tally-label">not approved</span></div>
     <div class="tally-item"><span class="tally-num" id="tally-flagged">0</span><span class="tally-label">human-review flagged</span></div>
     <div class="tally-item"><span class="tally-num" id="tally-overrides">0</span><span class="tally-label">owner overrides so far</span></div>
+    <div class="size-toggle" id="size-toggle">
+      <button data-size="150" onclick="setThumbSize(150,this)">S</button>
+      <button data-size="230" class="active" onclick="setThumbSize(230,this)">M</button>
+      <button data-size="340" onclick="setThumbSize(340,this)">L</button>
+    </div>
   </div>
 
   <div class="section-h"><h2>Approved</h2><span class="count" id="approved-count"></span></div>
@@ -170,6 +179,11 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 <script>
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function setThumbSize(px, btn){
+  document.documentElement.style.setProperty('--thumb', px + 'px');
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
 const projectId = qs('project');
 let renders = [];
 let project = null;

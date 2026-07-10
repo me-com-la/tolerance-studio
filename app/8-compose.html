@@ -22,6 +22,7 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --thumb:180px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -85,7 +86,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .opt-card .eyebrow{color:var(--accent-ink);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
 .opt-card .headline{font-weight:700;margin:.15rem 0}
 .opt-card .body{color:var(--muted);line-height:1.4;margin-bottom:.4rem}
-.opt-card button{font-size:.72rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit}
+.opt-card button{font-size:.72rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;color:var(--ink)}
 .opt-card button:hover{background:var(--chip)}
 
 .field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
@@ -93,7 +94,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .field input[type=text],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--card);color:var(--ink);width:100%}
 .field textarea{resize:vertical;min-height:3.6rem}
 .platform-row{display:flex;gap:.5rem;flex-wrap:wrap}
-.platform-btn{flex:1;min-width:110px;padding:.6rem .5rem;border-radius:10px;border:1.5px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;font-size:.78rem;text-align:center;line-height:1.4}
+.platform-btn{flex:1;min-width:110px;padding:.6rem .5rem;border-radius:10px;border:1.5px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;font-size:.78rem;text-align:center;line-height:1.4;color:var(--ink)}
 .platform-btn.active{border-color:var(--accent);background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
 .platform-btn b{display:block;font-size:.85rem}
 
@@ -115,10 +116,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .preview-note .ic{font-size:1rem;line-height:1}
 .preview-empty{color:var(--muted);font-size:.85rem;padding:3rem 1rem;text-align:center}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-top:1rem}
-.render-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.render-card .imgwrap{aspect-ratio:1/1;background:var(--chip);overflow:hidden;position:relative}
-.render-card img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1rem;margin-top:1rem}
+.render-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+.render-card .imgwrap{aspect-ratio:1/1;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.render-card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;cursor:pointer;display:block}
+.size-toggle{display:inline-flex;gap:.3rem;margin-left:.6rem}
+.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
+.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .render-card .body{padding:.6rem .7rem;display:flex;flex-direction:column;gap:.4rem}
 .render-card .fn{font-size:.68rem;color:var(--muted);font-family:var(--font-mono);word-break:break-all}
 .render-card .plat{font-size:.68rem;background:var(--chip);padding:.15rem .5rem;border-radius:100px;width:fit-content}
@@ -224,7 +228,13 @@ img.lb-thumb{cursor:pointer}
     </div>
   </div>
 
-  <div class="section-h">Rendered <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span></div>
+  <div class="section-h">Rendered <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span>
+    <span class="size-toggle" id="size-toggle">
+      <button data-size="120" onclick="setThumbSize(120,this)">S</button>
+      <button data-size="180" class="active" onclick="setThumbSize(180,this)">M</button>
+      <button data-size="260" onclick="setThumbSize(260,this)">L</button>
+    </span>
+  </div>
   <div class="grid" id="rendered-grid"></div>
 
   <div class="savebar">
@@ -248,6 +258,11 @@ img.lb-thumb{cursor:pointer}
 <script>
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function setThumbSize(px, btn){
+  document.documentElement.style.setProperty('--thumb', px + 'px');
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
 const projectId = qs('project');
 let project = null, renders = [];
 let selectedRenderId = null, selectedImg = null; // selectedImg = HTMLImageElement, loaded once per pick

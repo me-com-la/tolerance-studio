@@ -21,6 +21,7 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --thumb:230px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -53,13 +54,16 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .btn-primary:disabled{background:var(--chip);color:var(--muted);cursor:not-allowed}
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1rem}
 .card{background:var(--card);border:2px solid transparent;border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:border-color .12s}
 .card:hover{border-color:var(--line-2)}
 .card.selected{border-color:var(--accent)}
 .card.disabled{cursor:not-allowed;opacity:.5}
-.card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative}
-.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block}
+.size-toggle{display:inline-flex;gap:.3rem;margin-left:.8rem}
+.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
+.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .select-badge{position:absolute;top:.5rem;right:.5rem;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.85);border:1.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--muted)}
 .card.selected .select-badge{background:var(--accent);border-color:var(--accent);color:#fff}
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
@@ -107,7 +111,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 </div></div>
 
 <div class="wrap">
-  <p class="sub">Select up to three images for Compose for the next step. (<b><span id="tally-selected">0</span>/3</b> selected)</p>
+  <p class="sub">Select up to three images for Compose for the next step. (<b><span id="tally-selected">0</span>/3</b> selected)
+    <span class="size-toggle" id="size-toggle">
+      <button data-size="150" onclick="setThumbSize(150,this)">S</button>
+      <button data-size="230" class="active" onclick="setThumbSize(230,this)">M</button>
+      <button data-size="340" onclick="setThumbSize(340,this)">L</button>
+    </span>
+  </p>
 
   <div class="grid" id="grid"></div>
 
@@ -130,6 +140,11 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 <script>
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function setThumbSize(px, btn){
+  document.documentElement.style.setProperty('--thumb', px + 'px');
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
 const projectId = qs('project');
 const MAX_SELECTED = 3;
 let renders = [];

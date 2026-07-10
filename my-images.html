@@ -19,6 +19,7 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --thumb:190px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -46,11 +47,14 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .tab{padding:.8rem 1.1rem;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none}
 .tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:.5rem}
+.size-toggle{display:inline-flex;gap:.3rem;margin-left:auto}
+.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
+.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .grid[hidden]{display:none}
 .card{border-radius:10px;overflow:hidden}
-.card .imgwrap{position:relative;aspect-ratio:4/3;background:var(--chip);overflow:hidden}
-.card img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+.card .imgwrap{position:relative;background:var(--chip);overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+.card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;cursor:pointer}
 .empty{color:var(--muted);font-size:.88rem;padding:1rem 0}
 
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
@@ -62,6 +66,8 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .del-btn:hover{background:#a33}
 
 .pro-tag{position:absolute;bottom:.4rem;left:.4rem;background:rgba(0,0,0,.68);color:#fff;font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:.18rem .45rem;border-radius:5px;pointer-events:none}
+.proj-link{position:absolute;bottom:.4rem;right:.4rem;max-width:calc(100% - .8rem);background:rgba(0,0,0,.68);color:#fff;font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.02em;padding:.18rem .5rem;border-radius:5px;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.proj-link:hover{background:var(--accent)}
 
 /* ---------- lightbox (reused as-is from app/lib/lightbox.js) ---------- */
 #lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
@@ -110,6 +116,11 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   <div class="tabs">
     <button class="tab active" id="tab-generations" onclick="switchTab('generations')">Generations<span id="count-generations"></span></button>
     <button class="tab" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
+    <span class="size-toggle" id="size-toggle">
+      <button data-size="130" onclick="setThumbSize(130,this)">S</button>
+      <button data-size="190" class="active" onclick="setThumbSize(190,this)">M</button>
+      <button data-size="280" onclick="setThumbSize(280,this)">L</button>
+    </span>
   </div>
 
   <div class="grid" id="grid-generations"></div>
@@ -130,6 +141,11 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
 <script>
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function setThumbSize(px, btn){
+  document.documentElement.style.setProperty('--thumb', px + 'px');
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
 
 let allRenders = [];
 let signedUrls = {};
@@ -142,7 +158,7 @@ async function loadAllRenders(){
   // (see app/migrations/003_project_pipeline.sql) — lets each card show which
   // app actually generated it, since this page mixes Standard and Pro renders.
   const { data, error } = await sb.from('renders')
-    .select('id, storage_path, filename, stage, is_favorite, projects(pipeline)')
+    .select('id, storage_path, filename, stage, is_favorite, project_id, projects(pipeline, name)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -161,12 +177,15 @@ async function resolveSignedUrls(rows){
 function cardHtml(r){
   const url = signedUrls[r.storage_path] || '';
   const isPro = r.projects?.pipeline === 'pro';
+  const projHref = r.project_id ? `${isPro ? 'pro' : 'app'}/3-project-view.html?project=${esc(r.project_id)}` : '';
+  const projName = r.projects?.name || 'Open project';
   return `<div class="card">
     <div class="imgwrap">
       <img class="lb-thumb" src="${esc(url)}" loading="lazy" onclick="openLightbox(this)">
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRender(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       ${isPro ? '<span class="pro-tag">Pro</span>' : ''}
+      ${projHref ? `<a class="proj-link" href="${esc(projHref)}" title="Open ${esc(projName)}'s overview" onclick="event.stopPropagation()">📁 ${esc(projName)}</a>` : ''}
     </div>
   </div>`;
 }

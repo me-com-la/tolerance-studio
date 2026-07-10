@@ -20,6 +20,7 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --thumb:260px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -56,11 +57,14 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 .del-btn:hover{background:#a33;color:#fff}
 
 .wrap{max-width:88rem;margin:0 auto;padding:0 1.6rem 4rem}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.2rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1.2rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
 .card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative}
-.card img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;cursor:zoom-in}
+.size-toggle{display:inline-flex;gap:.3rem;margin-left:.8rem}
+.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
+.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .fav-btn{position:absolute;top:.6rem;right:.6rem;width:2.1rem;height:2.1rem;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .fav-btn.on{color:var(--accent)}
 .card .body{padding:.9rem 1rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
@@ -110,6 +114,11 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 
 <div class="toolbar">
   <span class="count" id="img-count"></span>
+  <span class="size-toggle" id="size-toggle">
+    <button data-size="180" onclick="setThumbSize(180,this)">S</button>
+    <button data-size="260" class="active" onclick="setThumbSize(260,this)">M</button>
+    <button data-size="380" onclick="setThumbSize(380,this)">L</button>
+  </span>
 </div>
 
 <div class="wrap">
@@ -138,6 +147,11 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function setThumbSize(px, btn){
+  document.documentElement.style.setProperty('--thumb', px + 'px');
+  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
 const projectId = qs('project');
 
 // Bucket is private, so getPublicUrl() 403s — every image needs a signed URL
