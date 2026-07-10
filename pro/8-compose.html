@@ -9,7 +9,6 @@
 <script src="lib/db.js"></script>
 <script src="lib/functions.js"></script>
 <script src="lib/lightbox.js"></script>
-<script src="lib/subject-detect.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -36,6 +35,10 @@ a{color:inherit;text-decoration:none}
 .crumbs .cur{color:var(--ink);font-weight:600}
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
 .avatar{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
+.overview-bar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:16}
+.overview-bar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;gap:1rem;height:44px}
+.overview-tab{font-family:var(--font-display);font-size:.92rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);border-bottom:3px solid transparent;padding:.55rem 0;cursor:pointer;text-decoration:none}
+.overview-tab:hover{color:var(--ink)}
 .rail-wrap{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
 .rail{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
 .rail-step{display:flex;align-items:center;justify-content:center;flex:1;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
@@ -66,8 +69,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .ai-bar{display:flex;align-items:center;gap:.7rem;background:var(--card);border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1rem;flex-wrap:wrap}
 .ai-bar .lbl{font-weight:600;font-size:.9rem}
 .ai-bar .desc{font-size:.8rem;color:var(--muted);flex:1;min-width:180px}
-.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
-.btn:hover{opacity:.9}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
@@ -82,7 +85,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .opt-card .eyebrow{color:var(--accent-ink);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
 .opt-card .headline{font-weight:700;margin:.15rem 0}
 .opt-card .body{color:var(--muted);line-height:1.4;margin-bottom:.4rem}
-.opt-card button{font-size:.72rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line-2);background:var(--chip);cursor:pointer;font-family:inherit;color:var(--ink)}
+.opt-card button{font-size:.72rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;color:var(--ink)}
 .opt-card button:hover{background:var(--chip)}
 
 .field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
@@ -94,20 +97,17 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .platform-btn.active{border-color:var(--accent);background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
 .platform-btn b{display:block;font-size:.85rem}
 
-/* 3x3 text-placement picker — which of the 9 zones the copy anchors to,
-   so the owner can dodge the product instead of it always sitting bottom-
-   center (compose.py's original fixed default, see renderPreview() below) */
-.placement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;width:132px;aspect-ratio:3/2}
-.placement-cell{border:1.5px solid var(--line-2);border-radius:6px;cursor:pointer;background:var(--card);display:flex;align-items:center;justify-content:center;padding:0}
-.placement-cell:hover{border-color:var(--line-2);background:var(--chip)}
-.placement-cell.active{border-color:var(--accent);background:var(--accent-wash)}
-.placement-cell .dot{width:7px;height:7px;border-radius:50%;background:var(--line-2)}
-.placement-cell.active .dot{background:var(--accent)}
+/* text-size slider — one knob scales words + CTA together */
+.field input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;padding:.4rem 0;border:none;background:transparent}
+/* paint chip — floats over the preview when the photo drag opens a gap */
+.paint-chip{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:600;font-size:.8rem;border-radius:100px;padding:.55rem 1.1rem;cursor:pointer;display:none;white-space:nowrap;z-index:2}
+.paint-chip:hover{opacity:.92}
+.paint-chip:disabled{opacity:.7;cursor:wait}
 
 /* preview */
 .preview-wrap{position:sticky;top:140px}
-.preview-canvas-wrap{background:var(--chip);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;min-height:200px}
-.preview-canvas-wrap canvas{max-width:100%;display:block}
+.preview-canvas-wrap{position:relative;background:var(--chip);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;min-height:200px}
+.preview-canvas-wrap canvas{max-width:100%;max-height:72vh;display:block;cursor:grab;touch-action:none}
 .preview-note{display:flex;gap:.5rem;align-items:flex-start;background:var(--accent-wash);color:var(--accent-ink);border-radius:10px;padding:.6rem .8rem;margin-top:.8rem;font-size:.76rem;line-height:1.5}
 .preview-note .ic{font-size:1rem;line-height:1}
 .preview-empty{color:var(--muted);font-size:.85rem;padding:3rem 1rem;text-align:center}
@@ -125,7 +125,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
 .imgwrap:hover .fav-btn,.imgwrap:hover .del-btn{opacity:1}
 .fav-btn{top:.4rem;right:.4rem}
-.fav-btn:hover{background:rgba(255,255,255,.3)}
+.fav-btn:hover{background:rgba(255,255,255,.25)}
 .fav-btn.active{opacity:1;color:var(--accent)}
 .del-btn{top:.4rem;left:.4rem}
 .del-btn:hover{background:#a33}
@@ -163,7 +163,7 @@ img.lb-thumb{cursor:pointer}
 </div></div>
 
 <div class="wrap">
-  <p class="sub">Pick an approved image, write the copy, choose a size. The gradient scrim and typesetting below are real — rendered live in your browser from the actual rules in <code>compose.py</code>, not a preview mockup.</p>
+  <p class="sub">Pick an approved image, write the copy, choose a size — then lay it out right on the preview: drag the photo, the words, and the button where you want them. Push the photo past an edge and the space that opens can be painted with more photo (a real AI extension, a few seconds and about 2¢).</p>
 
   <div class="section-h">Approved renders <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="select-count"></span></div>
   <div class="select-strip" id="select-strip"><span class="select-empty">loading…</span></div>
@@ -180,12 +180,16 @@ img.lb-thumb{cursor:pointer}
 
       <div class="card" style="margin-top:1rem">
         <div class="field">
-          <label>Size</label>
+          <label>Size <button type="button" class="btn btn-ghost" id="start-over-btn" style="margin-left:.6rem;padding:.3rem .65rem;font-size:.7rem" onclick="startOver()">↺ Start over</button></label>
           <div class="platform-row" id="platform-row"></div>
         </div>
         <div class="field">
-          <label>Text position</label>
-          <div class="placement-grid" id="placement-grid"></div>
+          <label for="cmp-pzoom">Photo size <span id="pzoom-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
+          <input type="range" id="cmp-pzoom" min="60" max="180" step="5" value="100" oninput="setPhotoZoom(this.value)">
+        </div>
+        <div class="field">
+          <label for="cmp-tscale">Text size <span id="tscale-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
+          <input type="range" id="cmp-tscale" min="70" max="140" step="5" value="100" oninput="setTextScale(this.value)">
         </div>
         <div class="field">
           <label for="cmp-font">Font</label>
@@ -221,6 +225,8 @@ img.lb-thumb{cursor:pointer}
       <div class="preview-canvas-wrap" id="preview-canvas-wrap">
         <p class="preview-empty">Pick an approved render above to start.</p>
       </div>
+      <div class="preview-note"><span class="ic">✋</span><span>Drag the <b>photo</b> to place it — push it past an edge to open space you can paint. Drag the <b>words</b> or the <b>button</b> to any zone.</span></div>
+      <div class="ai-status" id="compose-hint" style="margin-top:.5rem"></div>
     </div>
   </div>
 
@@ -262,31 +268,48 @@ function setThumbSize(px, btn){
 const projectId = qs('project');
 let project = null, renders = [];
 let selectedRenderId = null, selectedImg = null; // selectedImg = HTMLImageElement, loaded once per pick
-let selectedBBox = null; // subject bbox for selectedImg, computed once per pick (see SubjectDetect)
 const signedUrlCache = {};
 
-// Real fixed type scale per size — copy.py's TYPE_SPECS verbatim (no
-// per-session judgment calls, per the Owner's global rule 2026-07-06 in
-// that file: two different sizes rendering the same copy at different
-// scales was a real bug in an earlier campaign).
+// ---- three draggable layers on one canvas ----
+// The preview is direct manipulation now: drag the PHOTO to place it (push
+// past an edge and a paintable gap opens — the outpaint edge function fills
+// it via the Klein 4B LoRA), drag the WORDS (eyebrow+headline+body, one
+// block) to a 3×3 zone, drag the CTA pill to its own zone or leave it
+// riding under the words. Everything still renders INTO the canvas, so
+// saveComposed()'s toBlob path is unchanged. This replaced both the 3×3
+// dot grid (which re-cropped the photo as a side effect of moving text —
+// the exact confusion the Owner flagged) and the first-cut Text left/right
+// extend toggle.
+let ox = 0, oy = 0;            // photo pan, canvas px
+let extDir = null;             // null, or 'left'|'right'|'top'|'bottom' once painted
+let extendedImg = null;        // the outpainted image (a data-URI Image, never taints)
+let extendEdgeColor = null;    // {r,g,b} sampled from the painted edge, colors the scrim
+let tCol = 'center', tRow = 'bottom';  // words zone (defaults set per platform)
+let cCol = null, cRow = null;  // CTA zone; null = rides along under the words
+let tScale = 1;                // one knob, words + button together — hierarchy stays locked
+let photoZoom = 1;             // pre-paint photo scale knob — zooming out before painting
+                                // opens more gap on every side at once, without a drag
+const MAX_GAP = 0.45;          // how far the photo may overpan, as a fraction of the frame
+const EXTEND_SRC_CAP = 900;    // cap source width before adding green — keeps fal fast/cheap
+// Default words zone per size — matches what each format is usually for.
+const DEFAULT_ZONES = {
+  horizontal: { col: 'right',  row: 'middle' },
+  square:     { col: 'center', row: 'bottom' },
+  vertical:   { col: 'center', row: 'top' },
+};
+
+// Real fixed type scale per size — copy.py's TYPE_SPECS, bumped +4pt across
+// every field on every platform (Owner call, 2026-07-10 — the original
+// scale read a touch small). Still one fixed baseline per platform, no
+// per-session judgment calls (Owner's 2026-07-06 rule: two sizes rendering
+// the same copy at different scales was a real bug in an earlier
+// campaign); the Text size slider (tScale) is the only per-session knob.
 const PLATFORMS = {
-  horizontal: { label: 'Horizontal', dims: '1200×600',  w: 1200, h: 600,  eyebrow: 24, headline: 44, body: 19, cta: 20, span: [0.35, 0.48] },
-  square:     { label: 'Square',     dims: '1080×1080', w: 1080, h: 1080, eyebrow: 28, headline: 56, body: 24, cta: 24, span: [0.55, 0.75] },
-  vertical:   { label: 'Vertical',   dims: '1080×1920', w: 1080, h: 1920, eyebrow: 32, headline: 66, body: 26, cta: 28, span: [0.70, 0.85] },
+  horizontal: { label: 'Horizontal', dims: '1200×600',  w: 1200, h: 600,  eyebrow: 28, headline: 48, body: 23, cta: 24, span: [0.35, 0.48] },
+  square:     { label: 'Square',     dims: '1080×1080', w: 1080, h: 1080, eyebrow: 32, headline: 60, body: 28, cta: 28, span: [0.55, 0.75] },
+  vertical:   { label: 'Vertical',   dims: '1080×1920', w: 1080, h: 1920, eyebrow: 36, headline: 70, body: 30, cta: 32, span: [0.70, 0.85] },
 };
 let activePlatform = 'square';
-
-// 3x3 placement grid — 'top|middle|bottom' - 'left|center|right'. Default
-// matches the original fixed bottom-center behavior so existing muscle
-// memory (and any saved composites) doesn't silently change.
-const PLACEMENTS = ['top-left','top-center','top-right','middle-left','middle-center','middle-right','bottom-left','bottom-center','bottom-right'];
-let activePlacement = 'bottom-center';
-
-function renderPlacementGrid(){
-  document.getElementById('placement-grid').innerHTML = PLACEMENTS.map(key => `
-    <button type="button" class="placement-cell ${key===activePlacement?'active':''}" title="${key.replace('-',' ')}" onclick="pickPlacement('${key}')"><span class="dot"></span></button>`).join('');
-}
-function pickPlacement(key){ activePlacement = key; renderPlacementGrid(); renderPreview(); }
 
 function renderPlatformRow(){
   document.getElementById('platform-row').innerHTML = Object.entries(PLATFORMS).map(([key, p]) => `
@@ -294,7 +317,232 @@ function renderPlatformRow(){
       <b>${esc(p.label)}</b>${p.dims ? esc(p.dims) : ''}
     </button>`).join('');
 }
-function pickPlatform(key){ activePlatform = key; renderPlatformRow(); renderPreview(); }
+function pickPlatform(key){
+  activePlatform = key;
+  renderPlatformRow();
+  resetLayout();   // a paid extension belongs to a frame shape — switching discards it
+  renderPreview();
+}
+
+// Back to the untouched render, default zones, no pan, no zoom. Called on
+// every render pick, platform switch, and "Start over"; tScale deliberately
+// survives (it's a taste setting, not a layout).
+function resetLayout(){
+  ox = 0; oy = 0; photoZoom = 1;
+  extDir = null; extendedImg = null; extendEdgeColor = null;
+  cCol = null; cRow = null;
+  const z = DEFAULT_ZONES[activePlatform];
+  tCol = z.col; tRow = z.row;
+  dragState = null;
+  const pz = document.getElementById('cmp-pzoom'), pzv = document.getElementById('pzoom-val');
+  if (pz){ pz.value = 100; pz.disabled = false; }
+  if (pzv) pzv.textContent = '100%';
+}
+
+function startOver(){ resetLayout(); renderPreview(); }
+
+function setTextScale(v){
+  tScale = v / 100;
+  const lbl = document.getElementById('tscale-val');
+  if (lbl) lbl.textContent = v + '%';
+  renderPreview();
+}
+function setPhotoZoom(v){
+  if (extDir) return; // fixed once painted — Start over to zoom again
+  photoZoom = v / 100;
+  const lbl = document.getElementById('pzoom-val');
+  if (lbl) lbl.textContent = v + '%';
+  renderPreview();
+}
+
+// ---- photo geometry ----
+function baseImage(){ return extendedImg || selectedImg; }
+function coverScale(img, W, H){ return Math.max(W / img.width, H / img.height); }
+function coverSlack(img, s, W, H){ return { x: Math.min(0, W - img.width * s), y: Math.min(0, H - img.height * s) }; }
+// Scale actually on screen right now: zoomed cover pre-paint, or the
+// perpendicular-exact fit once an extension exists (see extendedFit below).
+function displayScale(img, W, H){
+  return extDir ? extendedFit(img, W, H, extDir) : coverScale(img, W, H) * photoZoom;
+}
+// Once a direction is painted, the axis PERPENDICULAR to it (width for a
+// left/right extend, height for a top/bottom extend) fits the frame
+// exactly — the subject's own width/height is never cropped by the paint
+// step. The extended axis itself may overflow (crops only into the fresh
+// paint, never the subject) or fall short (any sliver left over gets
+// filled with the sampled edge color in renderPreview, not a hard edge).
+// A plain cover-fit here was the earlier bug: it forced BOTH axes to fill
+// the frame, and on a tall vertical canvas that meant zooming in far
+// enough to chop 30-40% off both sides of a modestly-sized extension.
+function extendedFit(img, W, H, dir){
+  return (dir === 'left' || dir === 'right') ? H / img.height : W / img.width;
+}
+function clampOffsets(img, s, W, H){
+  const sl = coverSlack(img, s, W, H);
+  // before an extension exists the photo may overpan (that's what opens a
+  // paintable gap); after one it pans only within its own pixels
+  const gx = extDir ? 0 : W * MAX_GAP, gy = extDir ? 0 : H * MAX_GAP;
+  ox = Math.max(sl.x - gx, Math.min(gx, ox));
+  oy = Math.max(sl.y - gy, Math.min(gy, oy));
+}
+function computeGaps(img, s, W, H){
+  const sl = coverSlack(img, s, W, H);
+  return {
+    left:   Math.max(0, ox),
+    right:  Math.max(0, sl.x - ox),
+    top:    Math.max(0, oy),
+    bottom: Math.max(0, sl.y - oy),
+  };
+}
+
+// ---- paint-the-gap (fal outpaint via the deployed edge function) ----
+// Green thickness is the LARGER of two amounts: how far the Owner actually
+// dragged (in source pixels, same proportion), and the minimum the target
+// frame's aspect ratio demands. That second number matters a lot: once
+// painted, the axis perpendicular to the extend direction is force-fit
+// to the frame exactly (extendedFit, see below), which is a FIXED scale
+// that doesn't care how much was dragged — for a portrait target it can
+// be much larger than any modest drag would ask for. Sizing purely off
+// the drag left a real bug: a landscape render extended into a tall
+// vertical frame came back roughly half painted, and the unpainted half
+// showed as a flat fallback-color block next to the actual photo — which
+// reads as "half grey, half black." Requesting the aspect-driven minimum
+// up front means the paint that comes back actually covers the frame the
+// first time.
+function buildGreenCanvas(dir, gap, drawnW, drawnH, targetW, targetH){
+  const srcW = Math.min(selectedImg.width, EXTEND_SRC_CAP);
+  const k = srcW / selectedImg.width;
+  const srcH = Math.round(selectedImg.height * k);
+  let gw = srcW, gh = srcH, ix = 0, iy = 0;
+  if (dir === 'left' || dir === 'right'){
+    const dragGreen = Math.max(40, Math.round(srcW * gap / Math.max(1, drawnW - gap)));
+    const needGreen = Math.max(40, Math.ceil(targetW * srcH / targetH - srcW));
+    const green = Math.min(srcW * 3, Math.max(dragGreen, needGreen));
+    gw = srcW + green;
+    ix = dir === 'left' ? green : 0;
+  } else {
+    const dragGreen = Math.max(40, Math.round(srcH * gap / Math.max(1, drawnH - gap)));
+    const needGreen = Math.max(40, Math.ceil(targetH * srcW / targetW - srcH));
+    const green = Math.min(srcH * 3, Math.max(dragGreen, needGreen));
+    gh = srcH + green;
+    iy = dir === 'top' ? green : 0;
+  }
+  const c = document.createElement('canvas');
+  c.width = gw; c.height = gh;
+  const g = c.getContext('2d');
+  g.fillStyle = '#00ff00';
+  g.fillRect(0, 0, gw, gh);
+  g.drawImage(selectedImg, ix, iy, srcW, srcH);
+  return c.toDataURL('image/png');
+}
+
+// Samples the painted edge to color the scrim so it reads as the
+// extension's own background (adaptive dark/light ink comes with it).
+function sampleEdgeColor(img, dir){
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const strip = dir === 'left' ? g.getImageData(2, 0, 1, img.height).data
+    : dir === 'right' ? g.getImageData(img.width - 3, 0, 1, img.height).data
+    : dir === 'top' ? g.getImageData(0, 2, img.width, 1).data
+    : g.getImageData(0, img.height - 3, img.width, 1).data;
+  let r = 0, gr = 0, b = 0, n = 0;
+  for (let i = 0; i < strip.length; i += 4){ r += strip[i]; gr += strip[i+1]; b += strip[i+2]; n++; }
+  return { r: Math.round(r/n), g: Math.round(gr/n), b: Math.round(b/n) };
+}
+
+// After painting, flush-align the ORIGINAL image's edge (not the new paint)
+// to its matching frame edge — e.g. for a 'left' extend, the paint sits at
+// the composite's left and the original content at its right, so the
+// composite's right edge locks to the frame's right edge. Any crop from
+// extendedFit's overflow then eats into the fresh paint, never the
+// subject; any shortfall leaves a sliver on the SAME (painted) side, which
+// renderPreview fills with the sampled edge color.
+function anchorExtended(){
+  const spec = PLATFORMS[activePlatform];
+  const s = extendedFit(extendedImg, spec.w, spec.h, extDir);
+  const dw = extendedImg.width * s, dh = extendedImg.height * s;
+  if (extDir === 'left'){ ox = spec.w - dw; oy = (spec.h - dh) / 2; }
+  else if (extDir === 'right'){ ox = 0; oy = (spec.h - dh) / 2; }
+  else if (extDir === 'top'){ ox = (spec.w - dw) / 2; oy = spec.h - dh; }
+  else { ox = (spec.w - dw) / 2; oy = 0; } // bottom
+}
+
+async function paintGap(){
+  const chip = document.getElementById('paint-chip');
+  const hintEl = document.getElementById('compose-hint');
+  const dir = chip && chip.dataset.dir;
+  if (!dir || !selectedImg || extDir) return;
+  const spec = PLATFORMS[activePlatform];
+  const s = displayScale(selectedImg, spec.w, spec.h);
+  const gp = computeGaps(selectedImg, s, spec.w, spec.h);
+  if (gp[dir] < 4) return;
+  const imageDataUri = buildGreenCanvas(dir, gp[dir], selectedImg.width * s, selectedImg.height * s, spec.w, spec.h);
+  try {
+    const result = await withBusy(chip, hintEl, 'painting…', () => callFunction('outpaint', { imageDataUri }));
+    await new Promise((resolve, reject) => {
+      const img = new Image();               // data URI → never taints the save canvas
+      img.onload = () => {
+        extendedImg = img;
+        extDir = dir;
+        extendEdgeColor = sampleEdgeColor(img, dir);
+        anchorExtended();
+        resolve();
+      };
+      img.onerror = () => reject(new Error('could not load the painted image'));
+      img.src = `data:${result.mimeType || 'image/png'};base64,${result.imageBase64}`;
+    });
+    renderPreview();
+  } catch (e) { /* withBusy already surfaced the error in the hint line */ }
+}
+
+// ---- drag: photo pans, words and CTA snap to zones ----
+let textBox = null, ctaBox = null;   // canvas-space hit boxes from the last render
+let dragState = null;
+
+function canvasPoint(canvas, e){
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * canvas.width / r.width,
+           y: (e.clientY - r.top) * canvas.height / r.height };
+}
+function inBox(p, box, pad){
+  return box && p.x >= box.x - pad && p.x <= box.x + box.w + pad
+            && p.y >= box.y - pad && p.y <= box.y + box.h + pad;
+}
+function zoneAt(p, W, H){
+  return { col: p.x < W/3 ? 'left' : p.x < 2*W/3 ? 'center' : 'right',
+           row: p.y < H/3 ? 'top'  : p.y < 2*H/3 ? 'middle' : 'bottom' };
+}
+function attachDragHandlers(canvas){
+  canvas.style.touchAction = 'none';
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!selectedImg) return;
+    const p = canvasPoint(canvas, e);
+    if (inBox(p, ctaBox, 14)) dragState = { kind: 'cta' };
+    else if (inBox(p, textBox, 14)) dragState = { kind: 'text' };
+    else dragState = { kind: 'photo', px: p.x, py: p.y, sx: ox, sy: oy };
+    canvas.setPointerCapture(e.pointerId);
+    renderPreview();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragState) return;
+    const p = canvasPoint(canvas, e);
+    if (dragState.kind === 'photo'){
+      ox = dragState.sx + (p.x - dragState.px);
+      oy = dragState.sy + (p.y - dragState.py);
+    } else {
+      // words/CTA snap live to the hovered zone — the layout previews its
+      // final state while you drag, gradient included
+      const z = zoneAt(p, canvas.width, canvas.height);
+      if (dragState.kind === 'text'){ tCol = z.col; tRow = z.row; }
+      else { cCol = z.col; cRow = z.row; }
+    }
+    renderPreview();
+  });
+  const end = () => { if (dragState){ dragState = null; renderPreview(); } };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+}
 
 // ---------- approved renders strip ----------
 async function resolveUrl(path){
@@ -317,16 +565,10 @@ async function renderSelectStrip(){
 }
 function pickRender(renderId, url){
   selectedRenderId = renderId;
-  selectedBBox = null;
+  resetLayout();  // an extension and any pan belong to a specific image — start fresh
   selectedImg = new Image();
   selectedImg.crossOrigin = 'anonymous';
-  selectedImg.onload = () => {
-    // sharpest-region detection (client-side, no network call) — used to
-    // bias the crop away from whichever side the text lands on, see
-    // renderPreview()'s subject-aware crop below
-    selectedBBox = SubjectDetect.findSubjectBBox(selectedImg);
-    renderPreview();
-  };
+  selectedImg.onload = () => renderPreview();
   selectedImg.src = url;
   renderSelectStrip();
 }
@@ -358,12 +600,13 @@ function useCopy(i){
 }
 
 // ---------- real canvas compositing: gradient scrim + typesetting ----------
-// Ports compose.py's rules exactly: cosine-falloff scrim (strength .60,
-// extent .60, mandatory behind text), fixed per-platform type scale, line
-// height = 1.1x point size, word-wrap to the platform's copy-span width.
-// Text anchors to the bottom third — the original tool left placement to
-// the AI's judgment per-image ("layout: AI decides"); this fixed default is
-// a simplification worth a second look, not a hidden decision.
+// Keeps compose.py's typesetting rules: fixed per-platform type scale
+// (multiplied by the single tScale knob — proportions never drift), line
+// height = 1.1x point size, real-glyph-metric field gaps, mandatory scrim
+// behind text. Scrim direction follows the words' zone: side columns get a
+// horizontal fade, center column a vertical one; when the words sit on a
+// painted extension the scrim uses the panel's own sampled color with
+// luminance-picked ink.
 function wrapText(ctx, text, maxWidth){
   if (!text) return [];
   const words = text.split(' ');
@@ -384,6 +627,72 @@ function fontStack(name){
   };
   return map[name] || 'sans-serif';
 }
+// Which scrim color to use: the painted panel's own color when the words
+// sit on the painted side, otherwise the standard dark wash.
+function scrimColor(){
+  if (!extDir || !extendEdgeColor) return null;
+  const onPanel =
+    (extDir === 'left' && tCol === 'left') ||
+    (extDir === 'right' && tCol === 'right') ||
+    (extDir === 'top' && tRow === 'top' && tCol === 'center') ||
+    (extDir === 'bottom' && tRow === 'bottom' && tCol === 'center');
+  return onPanel ? extendEdgeColor : null;
+}
+
+function drawGapHints(ctx, gp, W, H){
+  const rects = [];
+  if (gp.left > 2) rects.push([0, 0, gp.left, H]);
+  if (gp.right > 2) rects.push([W - gp.right, 0, gp.right, H]);
+  if (gp.top > 2) rects.push([0, 0, W, gp.top]);
+  if (gp.bottom > 2) rects.push([0, H - gp.bottom, W, gp.bottom]);
+  for (const [x, y, w, h] of rects){
+    ctx.fillStyle = 'rgba(120,220,120,0.10)';
+    ctx.fillRect(x, y, w, h);
+    ctx.setLineDash([10, 8]);
+    ctx.strokeStyle = 'rgba(160,230,160,0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 5, y + 5, w - 10, h - 10);
+    ctx.setLineDash([]);
+    if (w > 90 && h > 50){
+      ctx.fillStyle = 'rgba(200,240,200,0.85)';
+      ctx.font = `600 ${Math.min(26, h / 3)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('new space', x + w / 2, y + h / 2 + 8);
+    }
+  }
+}
+
+function drawZoneGrid(ctx, W, H){
+  ctx.save();
+  ctx.setLineDash([8, 8]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1.5;
+  for (let i = 1; i < 3; i++){
+    ctx.beginPath(); ctx.moveTo(W * i / 3, 0); ctx.lineTo(W * i / 3, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, H * i / 3); ctx.lineTo(W, H * i / 3); ctx.stroke();
+  }
+  const col = dragState.kind === 'text' ? tCol : (cCol ?? tCol);
+  const row = dragState.kind === 'text' ? tRow : (cRow ?? tRow);
+  const ci = col === 'left' ? 0 : col === 'center' ? 1 : 2;
+  const ri = row === 'top' ? 0 : row === 'middle' ? 1 : 2;
+  ctx.fillStyle = 'rgba(157,122,255,0.18)';
+  ctx.fillRect(ci * W / 3, ri * H / 3, W / 3, H / 3);
+  ctx.restore();
+}
+
+function updatePaintChip(gp){
+  const chip = document.getElementById('paint-chip');
+  if (!chip) return;
+  if (!gp){ chip.style.display = 'none'; return; }
+  const spec = PLATFORMS[activePlatform];
+  const [dir, size] = Object.entries(gp).sort((a, b) => b[1] - a[1])[0];
+  if (size < Math.min(spec.w, spec.h) * 0.06){ chip.style.display = 'none'; return; }
+  chip.style.display = 'block';
+  chip.dataset.dir = dir;
+  chip.textContent = '✦ Paint more photo ' +
+    ({ left: 'on the left', right: 'on the right', top: 'up top', bottom: 'down below' })[dir];
+}
+
 function renderPreview(){
   const wrapEl = document.getElementById('preview-canvas-wrap');
   if (!selectedImg){ wrapEl.innerHTML = '<p class="preview-empty">Pick an approved render above to start.</p>'; return; }
@@ -392,71 +701,98 @@ function renderPreview(){
   const W = spec.w, H = spec.h;
 
   let canvas = wrapEl.querySelector('canvas');
-  if (!canvas){ canvas = document.createElement('canvas'); wrapEl.innerHTML=''; wrapEl.appendChild(canvas); }
+  if (!canvas){
+    wrapEl.innerHTML = '';
+    canvas = document.createElement('canvas');
+    wrapEl.appendChild(canvas);
+    attachDragHandlers(canvas);
+    const chip = document.createElement('button');
+    chip.className = 'paint-chip';
+    chip.id = 'paint-chip';
+    chip.onclick = paintGap;
+    wrapEl.appendChild(chip);
+  }
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  const [vZone, hZone] = activePlacement.split('-');
+  // photo layer — extended image once painted, otherwise the raw render,
+  // panned by the Owner's own drag (ox/oy) and sized by the zoom slider,
+  // never by hidden subject logic
+  const img = baseImage();
+  const s = displayScale(img, W, H);
+  clampOffsets(img, s, W, H);
+  ctx.fillStyle = '#141118';
+  ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
 
-  // Cover-crop the EXISTING merged render into W×H — same image, same
-  // pixels, nothing regenerated or sent anywhere. When the copy isn't
-  // dead-center on an axis (left/right, and/or top/bottom), bias which part
-  // of that image fills the frame on THAT axis so the product lands on the
-  // opposite side from the text, instead of sitting under it. This only
-  // ever crops/zooms/pans the source (drawImage with different scale+
-  // offset) — it can zoom in a little past a plain cover-crop to make room
-  // (renders are 2K+, so this holds up), but never past subject-detect.js's
-  // cap, and never so far that the product itself gets cut out of frame
-  // (see computeSubjectCrop's subjectFullyVisible fallback).
-  let scale, dx, dy;
-  if (selectedBBox && (hZone !== 'center' || vZone !== 'middle')) {
-    const targetXRatio = hZone === 'left' ? 0.66 : hZone === 'right' ? 0.34 : 0.5;
-    const targetYRatio = vZone === 'top' ? 0.66 : vZone === 'bottom' ? 0.34 : 0.5;
-    const t = SubjectDetect.computeSubjectCrop(selectedImg, W, H, selectedBBox, targetXRatio, targetYRatio, 1.3);
-    scale = t.scale; dx = t.dx; dy = t.dy;
-  } else {
-    scale = Math.max(W / selectedImg.width, H / selectedImg.height);
-    dx = (W - selectedImg.width * scale) / 2;
-    dy = (H - selectedImg.height * scale) / 2;
+  if (extDir && extendEdgeColor){
+    // extendedFit only guarantees the perpendicular axis fills exactly —
+    // if the paint itself came up short on its own axis, fill the sliver
+    // with the sampled edge color instead of leaving a hard dark edge.
+    const dw = img.width * s, dh = img.height * s;
+    const short = (extDir === 'left' || extDir === 'right') ? Math.max(0, W - dw) : Math.max(0, H - dh);
+    if (short > 1){
+      ctx.fillStyle = `rgb(${extendEdgeColor.r},${extendEdgeColor.g},${extendEdgeColor.b})`;
+      if (extDir === 'left') ctx.fillRect(0, 0, short, H);
+      else if (extDir === 'right') ctx.fillRect(W - short, 0, short, H);
+      else if (extDir === 'top') ctx.fillRect(0, 0, W, short);
+      else ctx.fillRect(0, H - short, W, short);
+    }
   }
-  ctx.drawImage(selectedImg, dx, dy, selectedImg.width * scale, selectedImg.height * scale);
+
+  const gp = extDir ? null : computeGaps(img, s, W, H);
+  if (gp) drawGapHints(ctx, gp, W, H);
+  updatePaintChip(gp);
 
   const eyebrow = document.getElementById('cmp-eyebrow').value.trim();
   const headline = document.getElementById('cmp-headline').value.trim();
   const body = document.getElementById('cmp-body').value.trim();
   const cta = document.getElementById('cmp-cta').value.trim();
   const font = document.getElementById('cmp-font').value;
-  if (!headline) return; // nothing to typeset yet
+  textBox = null; ctaBox = null;
+  if (!headline){
+    if (dragState && dragState.kind !== 'photo') drawZoneGrid(ctx, W, H);
+    return; // nothing to typeset yet
+  }
 
-  // Mandatory text scrim — cosine falloff, strength .60 extent .60 — same
-  // math as the original bottom-only version, just mirrored/centered to
-  // sit behind whichever of the 3 vertical zones the copy is anchored to,
-  // so the product elsewhere in frame is never darkened for no reason.
+  // Scrim behind the words — direction follows the zone: side columns fade
+  // horizontally, the center column vertically; panel-colored when the
+  // words sit on a painted extension.
+  const sc = scrimColor();
+  const col = sc ? (a) => `rgba(${sc.r},${sc.g},${sc.b},${a})` : (a) => `rgba(10,9,12,${a})`;
   let grad;
-  if (vZone === 'top') {
-    grad = ctx.createLinearGradient(0, 0, 0, H*0.60);
-    grad.addColorStop(0, 'rgba(10,9,12,0.60)');
-    grad.addColorStop(1, 'rgba(10,9,12,0)');
-  } else if (vZone === 'middle') {
+  if (tCol === 'left'){
+    grad = ctx.createLinearGradient(0, 0, W * 0.62, 0);
+    grad.addColorStop(0, col(sc ? 0.94 : 0.7)); grad.addColorStop(1, col(0));
+  } else if (tCol === 'right'){
+    grad = ctx.createLinearGradient(W, 0, W * 0.38, 0);
+    grad.addColorStop(0, col(sc ? 0.94 : 0.7)); grad.addColorStop(1, col(0));
+  } else if (tRow === 'top'){
+    grad = ctx.createLinearGradient(0, 0, 0, H * 0.60);
+    grad.addColorStop(0, col(sc ? 0.94 : 0.60)); grad.addColorStop(1, col(0));
+  } else if (tRow === 'middle'){
     grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, 'rgba(10,9,12,0)');
-    grad.addColorStop(0.20, 'rgba(10,9,12,0)');
-    grad.addColorStop(0.50, 'rgba(10,9,12,0.60)');
-    grad.addColorStop(0.80, 'rgba(10,9,12,0)');
-    grad.addColorStop(1, 'rgba(10,9,12,0)');
+    grad.addColorStop(0.20, col(0));
+    grad.addColorStop(0.50, col(0.60));
+    grad.addColorStop(0.80, col(0));
   } else {
-    grad = ctx.createLinearGradient(0, H*(1-0.60), 0, H);
-    grad.addColorStop(0, 'rgba(10,9,12,0)');
-    grad.addColorStop(1, 'rgba(10,9,12,0.60)');
+    grad = ctx.createLinearGradient(0, H * 0.40, 0, H);
+    grad.addColorStop(0, col(0));
+    grad.addColorStop(1, col(sc ? 0.94 : 0.65));
   }
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  const marginX = W * 0.09;
-  const maxWidth = W * 0.82;
+  // Ink follows the scrim: dark text on a light painted panel, otherwise
+  // white (luminance split at 150).
+  const ink = (sc && (0.299 * sc.r + 0.587 * sc.g + 0.114 * sc.b) > 150) ? '#141118' : '#fff';
+
+  const marginX = W * 0.07;
+  // Side columns wrap to a panel-width column; the center column may run wide.
+  const maxWidth = tCol === 'center' ? W * 0.82 : W * 0.42;
   let cx, textAlign;
-  if (hZone === 'left') { cx = marginX; textAlign = 'left'; }
-  else if (hZone === 'right') { cx = W - marginX; textAlign = 'right'; }
+  if (tCol === 'left') { cx = marginX; textAlign = 'left'; }
+  else if (tCol === 'right') { cx = W - marginX; textAlign = 'right'; }
   else { cx = W / 2; textAlign = 'center'; }
 
   // Text blocks — eyebrow, then headline lines, then body lines, always in
@@ -471,7 +807,15 @@ function renderPreview(){
   // real glyph metrics (actualBoundingBoxAscent/Descent), not the raw font
   // size, otherwise the gap balloons or shrinks depending on the two fields'
   // relative sizes.
-  const FIELD_GAP = 20;
+  // Fixed spec sizes × the single tScale knob — the Owner's rule survives
+  // because everything scales together; hierarchy never drifts.
+  const sz = {
+    eyebrow: spec.eyebrow * tScale,
+    headline: spec.headline * tScale,
+    body: spec.body * tScale,
+    cta: spec.cta * tScale,
+  };
+  const FIELD_GAP = 20 * tScale;
   function lineMetrics(text, size, bold){
     ctx.font = `${bold ? 700 : 400} ${size}px ${fontStack(font)}`;
     const m = ctx.measureText(text || ' ');
@@ -481,9 +825,9 @@ function renderPreview(){
     };
   }
   const fields = [];
-  if (eyebrow){ fields.push({ lines: [eyebrow], size: spec.eyebrow, bold: true }); }
-  if (headline){ ctx.font = `700 ${spec.headline}px ${fontStack(font)}`; fields.push({ lines: wrapText(ctx, headline, maxWidth), size: spec.headline, bold: true }); }
-  if (body){ ctx.font = `400 ${spec.body}px ${fontStack(font)}`; fields.push({ lines: wrapText(ctx, body, maxWidth), size: spec.body, bold: false }); }
+  if (eyebrow){ fields.push({ lines: [eyebrow], size: sz.eyebrow, bold: true }); }
+  if (headline){ ctx.font = `700 ${sz.headline}px ${fontStack(font)}`; fields.push({ lines: wrapText(ctx, headline, maxWidth), size: sz.headline, bold: true }); }
+  if (body){ ctx.font = `400 ${sz.body}px ${fontStack(font)}`; fields.push({ lines: wrapText(ctx, body, maxWidth), size: sz.body, bold: false }); }
 
   const blocks = [];
   fields.forEach((f) => {
@@ -494,39 +838,49 @@ function renderPreview(){
     });
   });
   // advance = distance from this block's baseline to the next block's
-  // baseline (or, for the last block when a CTA follows, to the button's
-  // top edge — see below).
+  // baseline (or, for the last block when an attached CTA follows, to the
+  // button's top edge — see below).
+  const ctaAttached = cta && (cCol === null || (cCol === tCol && cRow === tRow));
   blocks.forEach((b, i) => {
     const next = blocks[i + 1];
     if (!b.fieldEnd) b.advance = b.size * 1.1;
     else if (next) b.advance = b.descent + FIELD_GAP + next.ascent;
-    else if (cta) b.advance = b.descent + FIELD_GAP;
+    else if (ctaAttached) b.advance = b.descent + FIELD_GAP;
     else b.advance = 0;
   });
 
   const first = blocks[0], last = blocks[blocks.length - 1];
-  const ctaH = cta ? spec.cta * 2.6 : 0; // button height reserves its own space below the text blocks
+  const ctaH = cta ? sz.cta * 2.6 : 0;
   const textStackH = first ? first.ascent + blocks.slice(0, -1).reduce((sum, b) => sum + b.advance, 0) + last.descent : 0;
-  const totalH = textStackH + (cta ? FIELD_GAP + ctaH : 0);
+  const totalH = textStackH + (ctaAttached ? FIELD_GAP + ctaH : 0);
   const marginY = H * 0.07;
 
-  // Each zone picks where the TOP of the stack sits, then adds the first
-  // line's ascent to get its baseline — same pattern for all three, so
-  // "bottom" mirrors "top" (marginY from the near edge) instead of the old
-  // spanLo/spanHi heuristic, which was tuned against a cruder height
-  // estimate from before totalH switched to real glyph metrics and drifted
-  // out of sync once that changed.
+  // The words' zone picks where the TOP of the stack sits, then adds the
+  // first line's ascent to get its baseline.
   let cursorY;
-  if (vZone === 'top') {
+  if (tRow === 'top') {
     cursorY = marginY + (first ? first.ascent : 0);
-  } else if (vZone === 'middle') {
+  } else if (tRow === 'middle') {
     cursorY = H/2 - totalH/2 + (first ? first.ascent : 0);
   } else {
     cursorY = H - marginY - totalH + (first ? first.ascent : 0);
   }
 
+  // Hit box for the drag handler — widest line × the stack's height.
+  let maxLineW = 0;
+  for (const b of blocks){
+    ctx.font = `${b.bold ? 700 : 400} ${b.size}px ${fontStack(font)}`;
+    maxLineW = Math.max(maxLineW, ctx.measureText(b.text).width);
+  }
+  textBox = {
+    x: textAlign === 'left' ? cx : textAlign === 'right' ? cx - maxLineW : cx - maxLineW / 2,
+    y: cursorY - (first ? first.ascent : 0),
+    w: maxLineW,
+    h: textStackH,
+  };
+
   ctx.textAlign = textAlign;
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = ink;
   for (const b of blocks){
     ctx.font = `${b.bold?700:400} ${b.size}px ${fontStack(font)}`;
     ctx.fillText(b.text, cx, cursorY);
@@ -534,15 +888,28 @@ function renderPreview(){
   }
 
   if (cta){
-    ctx.font = `700 ${spec.cta}px ${fontStack(font)}`;
-    const padX = spec.cta * 1.4;
+    ctx.font = `700 ${sz.cta}px ${fontStack(font)}`;
+    const padX = sz.cta * 1.4;
     const btnW = Math.min(ctx.measureText(cta).width + padX*2, maxWidth);
-    const btnH = spec.cta * 2.6;
-    let btnX, ctaCenterX;
-    if (hZone === 'left') { btnX = cx; ctaCenterX = cx + btnW/2; }
-    else if (hZone === 'right') { btnX = cx - btnW; ctaCenterX = cx - btnW/2; }
-    else { btnX = cx - btnW/2; ctaCenterX = cx; }
-    const btnY = cursorY, radius = btnH/2; // cursorY already sits exactly FIELD_GAP below the last text line's descent
+    const btnH = sz.cta * 2.6;
+    let btnX, btnY, ctaCenterX;
+    if (ctaAttached){
+      // riding along under the words — cursorY already sits FIELD_GAP below
+      // the last line's descent
+      if (textAlign === 'left') { btnX = cx; ctaCenterX = cx + btnW/2; }
+      else if (textAlign === 'right') { btnX = cx - btnW; ctaCenterX = cx - btnW/2; }
+      else { btnX = cx - btnW/2; ctaCenterX = cx; }
+      btnY = cursorY;
+    } else {
+      // its own zone — the pill brings its own background, so it needs no
+      // scrim wherever it lands
+      const bx = cCol === 'left' ? marginX : cCol === 'right' ? W - marginX : W / 2;
+      if (cCol === 'left') { btnX = bx; ctaCenterX = bx + btnW/2; }
+      else if (cCol === 'right') { btnX = bx - btnW; ctaCenterX = bx - btnW/2; }
+      else { btnX = bx - btnW/2; ctaCenterX = bx; }
+      btnY = cRow === 'top' ? marginY : cRow === 'middle' ? H/2 - btnH/2 : H - marginY - btnH;
+    }
+    const radius = btnH/2;
     ctx.fillStyle = '#d8502d'; // accent — the app's own brand color, not the sample's yellow
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(btnX, btnY, btnW, btnH, radius);
@@ -556,8 +923,11 @@ function renderPreview(){
     ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
-    ctx.fillText(cta, ctaCenterX, btnY + btnH/2 + spec.cta*0.35);
+    ctx.fillText(cta, ctaCenterX, btnY + btnH/2 + sz.cta*0.35);
+    ctaBox = { x: btnX, y: btnY, w: btnW, h: btnH };
   }
+
+  if (dragState && dragState.kind !== 'photo') drawZoneGrid(ctx, W, H);
 }
 
 // ---------- save composed (stores the canvas PNG, creates a renders row) ----------
@@ -573,8 +943,17 @@ async function saveComposed(){
   try {
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
     const sourceRender = renders.find(r => r.id === selectedRenderId);
+    // Deterministic filename — no timestamp — so this composed asset is
+    // keyed to the SOURCE IMAGE + size + extension side, not to whatever
+    // text happens to be in the fields right now. Re-rendering after a
+    // copy tweak overwrites this same row/file (upsertRender's onConflict
+    // is project_id,filename; uploadFile passes upsert:true) instead of
+    // piling up a new dated file every time the words change — the words
+    // are usually the last thing tweaked, so the image should be what the
+    // save identity tracks.
     const baseName = (sourceRender?.filename || 'composed').replace(/\.[^.]+$/, '');
-    const filename = `${baseName}-${activePlatform}-${Date.now()}.png`;
+    const mode = extDir ? `-ext-${extDir}` : '';
+    const filename = `${baseName}-${activePlatform}${mode}.png`;
     const path = db.storagePath(project.clients.slug, projectId, 'composed', filename);
     await db.uploadFile(path, blob);
     await db.upsertRender(projectId, filename, { storage_path: path, stage: 'composed' });
@@ -636,7 +1015,7 @@ async function init(){
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Compose — ${project.name} | Tolerance Studio`;
   renderPlatformRow();
-  renderPlacementGrid();
+  resetLayout();
   renders = await db.listRenders(projectId);
   await renderSelectStrip();
   await loadRendered();

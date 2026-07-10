@@ -50,7 +50,24 @@
 
 const https = require('https');
 
-const CONCURRENCY = parseInt(process.env.GENERATE_CONCURRENCY || '4', 10);
+// Lowered from 4 -> 2 (2026-07-10): each lane also chains a checker call, so
+// 4 lanes meant up to ~8 concurrent requests against the same fal key, which
+// was tripping fal's rate limit (HTTP 429) on batches of any real size.
+const CONCURRENCY = parseInt(process.env.GENERATE_CONCURRENCY || '2', 10);
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+// fal.ai has no documented rate-limit retry guidance, so this backs off on
+// any 429 the same way most APIs expect: short wait, then longer each retry,
+// with a little jitter so concurrent lanes don't all retry in lockstep.
+const MAX_RETRY_ATTEMPTS = 4;
+async function withRetry429(requestOnce) {
+  let attempt = 0;
+  while (true) {
+    const result = await requestOnce();
+    if (result.status !== 429 || attempt >= MAX_RETRY_ATTEMPTS) return result;
+    attempt++;
+    await sleep(Math.min(1000 * 2 ** attempt, 15000) + Math.floor(Math.random() * 500));
+  }
+}
 // fal's hosted slug for the same Gemini 3.1 Flash Image ("Nano Banana 2")
 // model Standard has always generated with — same model, different pipe.
 const IMAGE_MODEL = process.env.IMAGE_MODEL || 'fal-ai/gemini-3.1-flash-image-preview/edit';
@@ -62,7 +79,7 @@ function fullPrompt(shots, item) {
   return parts.join('\n\n');
 }
 
-function httpsJson(url, headers, body) {
+function httpsJsonOnce(url, headers, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const req = https.request(
@@ -81,6 +98,9 @@ function httpsJson(url, headers, body) {
     req.write(data);
     req.end();
   });
+}
+function httpsJson(url, headers, body) {
+  return withRetry429(() => httpsJsonOnce(url, headers, body));
 }
 
 // Submits a job to fal's async queue and polls it to completion — same
@@ -111,7 +131,7 @@ function falQueueRun(falKey, model, body) {
   });
 }
 
-function httpsGet(url, headers) {
+function httpsGetOnce(url, headers) {
   return new Promise((resolve, reject) => {
     https.get(url, { headers }, (res) => {
       let raw = '';
@@ -122,6 +142,9 @@ function httpsGet(url, headers) {
       });
     }).on('error', reject);
   });
+}
+function httpsGet(url, headers) {
+  return withRetry429(() => httpsGetOnce(url, headers));
 }
 
 /**
