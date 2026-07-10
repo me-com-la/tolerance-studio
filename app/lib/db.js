@@ -145,6 +145,22 @@
     return data;
   }
 
+  // The plain project-header fields — name, product, description, started
+  // date. Deliberately does NOT touch reference_image: that field's rules
+  // (how many reference photos, what they're used for) differ between
+  // Standard's checker-ground-truth flow and Pro's pixel-lock cutout flow,
+  // so it stays owned by each app's own upload step, not this generic form.
+  async function saveProjectDetails(projectId, { name, product, description, startedOn }) {
+    const { data, error } = await client()
+      .from('projects')
+      .update({ name, product: product || null, description: description || null, started_on: startedOn })
+      .eq('id', projectId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
   async function saveReferenceImage(projectId, path) {
     const { data, error } = await client()
       .from('projects')
@@ -338,6 +354,7 @@
     saveShots,
     saveCopyOptions,
     saveStatus,
+    saveProjectDetails,
     saveReferenceImage,
     saveSettings,
     listSiblingProjects,

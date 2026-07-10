@@ -93,6 +93,23 @@ h1{font-family:var(--font-display);font-size:2.4rem;font-weight:700;text-transfo
 .tag-preview-mini b{color:#ef5350}
 .tag-preview-mini b.should{color:#ffa726}
 .tag-preview-mini b.flavor{color:#9a978f}
+
+/* project-details edit panel — click the pencil next to the name to swap
+   the read view for these fields; everything on this row except the image
+   reference is fair game (see saveProjectDetails in lib/db.js) */
+.btn-sm{font-size:.72rem;padding:.35rem .7rem}
+.edit-trigger{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;margin-left:.5rem;vertical-align:2px}
+.edit-trigger:hover{color:var(--ink)}
+.projhead-edit{display:flex;flex-direction:column;gap:.7rem;max-width:32rem}
+.projhead-edit .field{display:flex;flex-direction:column;gap:.3rem}
+.projhead-edit .field label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.projhead-edit input,.projhead-edit textarea{padding:.5rem .7rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--paper);color:var(--ink);width:100%}
+.projhead-edit textarea{resize:vertical;min-height:2.6rem}
+.projhead-edit .row2{display:flex;gap:.7rem}
+.projhead-edit .row2 .field{flex:1}
+.edit-actions{display:flex;align-items:center;gap:.6rem}
+.pd-status{font-size:.8rem;color:var(--muted)}
+.pd-status.err{color:#ef5350}
 </style>
 </head>
 <body>
@@ -103,9 +120,22 @@ h1{font-family:var(--font-display);font-size:2.4rem;font-weight:700;text-transfo
 </div></div>
 
 <div class="projhead"><div class="projhead-in">
-  <div>
-    <h1 id="proj-name">…</h1>
+  <div id="projhead-view">
+    <h1><span id="proj-name">…</span><button type="button" class="edit-trigger" title="Edit project details" onclick="openDetailsEdit()">✎</button></h1>
     <div class="sub" id="proj-sub"></div>
+  </div>
+  <div class="projhead-edit" id="projhead-edit" style="display:none">
+    <div class="field"><label for="pd-name">Project name</label><input type="text" id="pd-name"></div>
+    <div class="row2">
+      <div class="field"><label for="pd-product">Product</label><input type="text" id="pd-product" placeholder="e.g. PAWD Crate"></div>
+      <div class="field"><label for="pd-started">Started</label><input type="date" id="pd-started"></div>
+    </div>
+    <div class="field"><label for="pd-description">Description</label><textarea id="pd-description" placeholder="What's this campaign about — product, mood, key facts."></textarea></div>
+    <div class="edit-actions">
+      <button class="btn btn-primary btn-sm" onclick="saveDetailsEdit()">Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelDetailsEdit()">Cancel</button>
+      <span class="pd-status" id="pd-status"></span>
+    </div>
   </div>
   <span class="status-pill" id="status-pill"><span class="sw"></span><span id="status-label"></span></span>
 </div></div>
@@ -194,18 +224,66 @@ function renderRail(status){
   }).join('');
 }
 
-async function init(){
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { location.href = '1-login.html'; return; }
-  if (!projectId) { document.getElementById('proj-name').textContent = 'No project specified'; return; }
+// Hoisted so the edit-details panel can read/update it after a save,
+// without re-fetching the whole project or re-running init().
+let project = null;
 
-  const project = await db.getProject(projectId);
+function renderProjHead(){
   const clientName = project.clients ? project.clients.name : '';
   document.title = `${project.name} — ${clientName} | Tolerance Studio`;
   document.getElementById('crumb-client').textContent = clientName;
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('proj-name').textContent = project.name;
   document.getElementById('proj-sub').textContent = `${clientName} · ${project.product || ''} · started ${project.started_on}`;
+}
+
+// ---------- edit project details (name/product/description/started_on
+// only — reference_image stays out, see saveProjectDetails in lib/db.js) ----------
+function openDetailsEdit(){
+  document.getElementById('pd-name').value = project.name || '';
+  document.getElementById('pd-product').value = project.product || '';
+  document.getElementById('pd-description').value = project.description || '';
+  document.getElementById('pd-started').value = project.started_on || '';
+  document.getElementById('pd-status').textContent = '';
+  document.getElementById('pd-status').classList.remove('err');
+  document.getElementById('projhead-view').style.display = 'none';
+  document.getElementById('projhead-edit').style.display = 'flex';
+  document.getElementById('pd-name').focus();
+}
+function cancelDetailsEdit(){
+  document.getElementById('projhead-edit').style.display = 'none';
+  document.getElementById('projhead-view').style.display = '';
+}
+async function saveDetailsEdit(){
+  const name = document.getElementById('pd-name').value.trim();
+  const statusEl = document.getElementById('pd-status');
+  if (!name){ statusEl.textContent = 'project name is required'; statusEl.classList.add('err'); return; }
+  const fields = {
+    name,
+    product: document.getElementById('pd-product').value.trim(),
+    description: document.getElementById('pd-description').value.trim(),
+    startedOn: document.getElementById('pd-started').value || project.started_on,
+  };
+  statusEl.textContent = 'saving…'; statusEl.classList.remove('err');
+  try {
+    const updated = await db.saveProjectDetails(projectId, fields);
+    project = { ...project, ...updated };
+    renderProjHead();
+    cancelDetailsEdit();
+  } catch (e) {
+    // Most likely real error here: the (client_id, name, started_on) unique
+    // constraint — another project already has this exact combination.
+    statusEl.textContent = e.message || String(e); statusEl.classList.add('err');
+  }
+}
+
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = '1-login.html'; return; }
+  if (!projectId) { document.getElementById('proj-name').textContent = 'No project specified'; return; }
+
+  project = await db.getProject(projectId);
+  renderProjHead();
   const status = project.status || 'brief';
   document.getElementById('status-pill').className = 'status-pill s-' + status;
   document.getElementById('status-label').textContent = STATUS_LABEL[status] || status;
