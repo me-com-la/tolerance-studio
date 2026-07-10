@@ -62,7 +62,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .brief-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1.6rem}
 .brief-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
 .brief-head h3{font-size:.92rem;font-weight:600}
-.brief-lock{font-size:.7rem;color:var(--muted);background:var(--chip);padding:.2rem .6rem;border-radius:100px}
 .brief-grid{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem;margin-bottom:.8rem}
 .brief-grid dt{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem}
 .brief-grid dd{margin:0}
@@ -73,6 +72,18 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .brief-photo .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.7rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .brief-photo .rm:hover{color:#a33;border-color:#a33}
 .brief-photo-actions{margin-top:.7rem;display:flex;align-items:center;gap:.7rem}
+.brief-lock-inline{font-size:.68rem;color:var(--muted);background:var(--chip);padding:.1rem .5rem;border-radius:100px;margin-left:.4rem;vertical-align:1px}
+.edit-trigger{background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;padding:.25rem .6rem;border:1px solid var(--line-2);border-radius:100px;font-family:inherit}
+.edit-trigger:hover{color:var(--ink);border-color:var(--accent-ink)}
+.brief-edit{display:flex;flex-direction:column;gap:.7rem;max-width:32rem;margin-bottom:.8rem}
+.brief-edit .field{display:flex;flex-direction:column;gap:.3rem}
+.brief-edit .field label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.brief-edit input,.brief-edit textarea{padding:.5rem .7rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--paper);color:var(--ink);width:100%}
+.brief-edit textarea{resize:vertical;min-height:2.6rem}
+.brief-edit .edit-actions{display:flex;align-items:center;gap:.6rem}
+.brief-edit .pd-status{font-size:.8rem;color:var(--muted)}
+.brief-edit .pd-status.err{color:#ef5350}
+.btn-sm{font-size:.72rem;padding:.35rem .7rem}
 
 .legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem}
 .legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
@@ -120,13 +131,23 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
   <p class="sub" id="page-sub">Loading…</p>
 
   <div class="brief-panel">
-    <div class="brief-head"><h3>Project brief</h3><span class="brief-lock">set at creation — locked</span></div>
-    <dl class="brief-grid">
-      <dt>Client</dt><dd id="brief-client">…</dd>
+    <div class="brief-head"><h3>Project brief</h3><button type="button" class="edit-trigger" id="brief-edit-btn" onclick="openBriefEdit()">✎ Edit</button></div>
+    <dl class="brief-grid" id="brief-view">
+      <dt>Client</dt><dd id="brief-client">… <span class="brief-lock-inline">locked</span></dd>
       <dt>Campaign</dt><dd id="brief-campaign">…</dd>
       <dt>Product</dt><dd id="brief-product">…</dd>
       <dt>Description</dt><dd id="brief-description">…</dd>
     </dl>
+    <div class="brief-edit" id="brief-edit" style="display:none">
+      <div class="field"><label for="bd-campaign">Campaign</label><input type="text" id="bd-campaign"></div>
+      <div class="field"><label for="bd-product">Product</label><input type="text" id="bd-product" placeholder="e.g. PAWD Crate"></div>
+      <div class="field"><label for="bd-description">Description</label><textarea id="bd-description" placeholder="What's this campaign about — product, mood, key facts."></textarea></div>
+      <div class="edit-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveBriefEdit()">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelBriefEdit()">Cancel</button>
+        <span class="pd-status" id="bd-status"></span>
+      </div>
+    </div>
     <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
     <div class="brief-photo-actions">
       <button class="btn btn-ghost" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
@@ -214,11 +235,66 @@ async function saveAndContinue(){
   location.href = `5-scenes-editor.html?project=${encodeURIComponent(projectId)}`;
 }
 
-// Fills the read-only brief panel: creation-time facts + the uploaded
-// reference photos (everything under <slug>/<projectId>/assets/ in storage).
-// Up to MAX_REFERENCE_PHOTOS stay editable here (add/remove) even though
-// the rest of the brief is locked — matches generate/index.ts's own cap
-// on how many reference photos it feeds the model (MAX_REFERENCE_IMAGES).
+// Title/crumb/subhead all quote the project name — kept in one place so a
+// rename from the brief panel below updates them immediately, not just on
+// next page load.
+function renderPageMeta(){
+  const clientName = project.clients ? project.clients.name : '';
+  document.title = `Tags — ${project.name} — ${clientName} | Tolerance Studio`;
+  document.getElementById('crumb-proj').textContent = project.name;
+  document.getElementById('page-sub').textContent =
+    `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
+}
+
+// ---------- edit the brief (Campaign/Product/Description only — Client is
+// a real relationship, not a text field, and reference photos have their
+// own add/remove flow below; neither belongs in this generic form) ----------
+function openBriefEdit(){
+  document.getElementById('bd-campaign').value = project.name || '';
+  document.getElementById('bd-product').value = project.product || '';
+  document.getElementById('bd-description').value = project.description || '';
+  document.getElementById('bd-status').textContent = '';
+  document.getElementById('bd-status').classList.remove('err');
+  document.getElementById('brief-view').style.display = 'none';
+  document.getElementById('brief-edit-btn').style.display = 'none';
+  document.getElementById('brief-edit').style.display = 'flex';
+  document.getElementById('bd-campaign').focus();
+}
+function cancelBriefEdit(){
+  document.getElementById('brief-edit').style.display = 'none';
+  document.getElementById('brief-view').style.display = '';
+  document.getElementById('brief-edit-btn').style.display = '';
+}
+async function saveBriefEdit(){
+  const name = document.getElementById('bd-campaign').value.trim();
+  const statusEl = document.getElementById('bd-status');
+  if (!name){ statusEl.textContent = 'campaign name is required'; statusEl.classList.add('err'); return; }
+  const fields = {
+    name,
+    product: document.getElementById('bd-product').value.trim(),
+    description: document.getElementById('bd-description').value.trim(),
+    startedOn: project.started_on, // not shown here — preserved as-is
+  };
+  statusEl.textContent = 'saving…'; statusEl.classList.remove('err');
+  try {
+    const updated = await db.saveProjectDetails(projectId, fields);
+    project = { ...project, ...updated };
+    renderPageMeta();
+    await renderBrief();
+    cancelBriefEdit();
+  } catch (e) {
+    // Most likely real error here: the (client_id, name, started_on) unique
+    // constraint — another project already has this exact campaign name.
+    statusEl.textContent = e.message || String(e); statusEl.classList.add('err');
+  }
+}
+
+// Fills the brief panel: creation-time client + the uploaded reference
+// photos (everything under <slug>/<projectId>/assets/ in storage), plus
+// whatever Campaign/Product/Description currently hold — either from
+// project creation or a later edit above. Up to MAX_REFERENCE_PHOTOS stay
+// editable via add/remove — matches generate/index.ts's own cap on how
+// many reference photos it feeds the model (MAX_REFERENCE_IMAGES).
 const MAX_REFERENCE_PHOTOS = 3;
 async function renderBrief(){
   document.getElementById('brief-client').textContent = (project.clients && project.clients.name) || '—';
@@ -296,12 +372,8 @@ async function init(){
   if (!session) { location.href = '1-login.html'; return; }
   if (!projectId) { document.getElementById('page-sub').textContent = 'No project specified'; return; }
   project = await db.getProject(projectId);
-  const clientName = project.clients ? project.clients.name : '';
-  document.title = `Tags — ${project.name} — ${clientName} | Tolerance Studio`;
-  document.getElementById('crumb-proj').textContent = project.name;
+  renderPageMeta();
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
-  document.getElementById('page-sub').textContent =
-    `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
   tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
   renderTags();
   renderBrief();
