@@ -104,7 +104,10 @@
     '.ts-projhead{background:#fff;border-bottom:1px solid rgba(17,16,20,.12)}' +
     '.ts-projhead-in{max-width:88rem;margin:0 auto;padding:1.1rem 1.6rem}' +
     '.ts-projhead-in .ts-proj-name{font-family:"Barlow Condensed",sans-serif;font-size:1.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em;color:#111014;line-height:1.1}';
+  chromeCss += '.pro-dark .ts-switch-menu{background:#1a1820;border-color:rgba(255,255,255,.1);box-shadow:0 12px 32px rgba(0,0,0,.4)}.pro-dark .ts-switch-menu a{color:#9a978f}.pro-dark .ts-switch-menu a:hover{background:#2a2735;color:#e8e6e1}.pro-dark .ts-switch-menu a.on{color:#c4b0ff;background:rgba(157,122,255,.15)}.pro-dark .ts-switch-menu .soon{color:#6b6966}.pro-dark .ts-switch-menu hr{border-top-color:rgba(255,255,255,.08)}';
+  chromeCss += '.pro-dark .ts-projhead{background:#1a1820;border-bottom-color:rgba(255,255,255,.1)}.pro-dark .ts-projhead-in .ts-proj-name{color:#e8e6e1}.pro-dark .ts-mainnav{color:#9a978f}.pro-dark .ts-mainnav:hover{color:#e8e6e1}.pro-dark .ts-mainnav.on{color:#e8e6e1;border-bottom-color:#9d7aff}';
   var st2 = document.createElement('style'); st2.textContent = chromeCss; document.head.appendChild(st2);
+  document.body.classList.add('pro-dark');
 
   // (1) Brand: drop the logo image, collapse the label to "TS", and always
   // point it at the Files page (not "whichever app you're in" — the Files

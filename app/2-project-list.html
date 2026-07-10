@@ -13,10 +13,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#111014; --paper:#ffffff; --card:#ffffff;
-  --line:rgba(17,16,20,.12); --line-2:rgba(17,16,20,.22);
-  --muted:#5d5b57; --accent:#d8502d; --accent-ink:#7a2a14; --accent-wash:#fbeae3;
-  --chip:#eceae6; --radius:14px;
+  --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
+  --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
+  --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
+  --chip:#2a2735; --radius:14px;
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
@@ -24,23 +24,23 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit}
-.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
 .brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:-.01em}
 .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
-.avatar{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
 
-.wrap{max-width:88rem;margin:0 auto;padding:2.2rem 1.6rem 4rem}
-.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem}
-h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.wrap{max-width:88rem;margin:0 auto;padding:2.8rem 1.6rem 4rem}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2.2rem;flex-wrap:wrap;gap:1rem}
+h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
 .page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
-.btn-primary{background:var(--ink);color:#fff}
+.btn-primary{background:var(--accent);color:#fff}
 
 .toolbar{display:flex;gap:.6rem;margin-bottom:1.6rem;flex-wrap:wrap;align-items:center}
-.search{flex:1;min-width:200px;max-width:22rem;padding:.6rem .9rem;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:.88rem;background:#fff}
+.search{flex:1;min-width:200px;max-width:22rem;padding:.6rem .9rem;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:.88rem;background:var(--card);color:var(--ink)}
 
 .client-group{margin-bottom:2.4rem}
 .client-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
@@ -48,8 +48,8 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .client-count{font-size:.78rem;color:var(--muted);background:var(--chip);padding:.15rem .55rem;border-radius:100px}
 
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
-.proj-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem 1.3rem;cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:.6rem;text-decoration:none;color:inherit}
-.proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(17,16,20,.08)}
+.proj-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem 1.5rem;cursor:pointer;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:.7rem;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.25)}
 .proj-card:hover .proj-del{opacity:1;pointer-events:auto}
 .proj-head{display:flex;align-items:center;gap:.7rem}
 .proj-thumb{width:40px;height:40px;flex:0 0 40px;border-radius:50%;overflow:hidden;background:var(--chip)}
@@ -57,7 +57,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .proj-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1rem;opacity:.5}
 .proj-name{font-weight:600;font-size:1rem}
 .proj-product{font-size:.82rem;color:var(--muted)}
-.proj-del{position:absolute;top:.6rem;right:.6rem;opacity:0;pointer-events:none;transition:opacity .15s;padding:.3rem .6rem;border-radius:8px;border:1px solid var(--line-2);background:#fff;color:var(--muted);font-size:.72rem;font-weight:600;line-height:1;cursor:pointer}
+.proj-del{position:absolute;top:.6rem;right:.6rem;opacity:0;pointer-events:none;transition:opacity .15s;padding:.3rem .6rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.72rem;font-weight:600;line-height:1;cursor:pointer}
 .proj-del:hover{color:#a33;background:var(--accent-wash);border-color:#a33}
 .proj-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
 .proj-date{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
@@ -67,14 +67,14 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .new-card:hover{color:var(--ink);border-color:var(--ink)}
 
 /* ---------- new-project modal ---------- */
-.modal-backdrop{position:fixed;inset:0;background:rgba(17,16,20,.45);display:none;align-items:flex-start;justify-content:center;z-index:100;overflow-y:auto;padding:3rem 1.5rem}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:100;overflow-y:auto;padding:3rem 1.5rem}
 .modal-backdrop.open{display:flex}
-.modal{background:#fff;border-radius:16px;max-width:34rem;width:100%;padding:1.8rem 1.9rem;box-shadow:0 10px 40px rgba(17,16,20,.2)}
+.modal{background:var(--card);border-radius:16px;max-width:34rem;width:100%;padding:1.8rem 1.9rem;box-shadow:0 10px 40px rgba(0,0,0,.4)}
 .modal h2{font-family:var(--font-display);font-size:1.3rem;font-weight:700;text-transform:uppercase;margin-bottom:.2rem}
 .modal .modal-sub{font-size:.82rem;color:var(--muted);margin-bottom:1.3rem;line-height:1.5}
 .field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
 .field label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.field input[type=text],.field input[type=date],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:#fff}
+.field input[type=text],.field input[type=date],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--card);color:var(--ink)}
 .field textarea{resize:vertical;min-height:4rem}
 .field-hint{font-size:.76rem;color:var(--muted)}
 .file-drop{border:1.5px dashed var(--line-2);border-radius:10px;padding:1rem;text-align:center;font-size:.82rem;color:var(--muted);cursor:pointer}
@@ -85,7 +85,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .modal-status{font-size:.8rem;color:var(--muted)}
 .modal-status.busy{font-style:italic}
-.modal-status.err{color:#c62828;font-style:normal}
+.modal-status.err{color:#ef5350;font-style:normal}
 </style>
 </head>
 <body>

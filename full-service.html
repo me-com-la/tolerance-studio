@@ -11,10 +11,18 @@
 <link rel="stylesheet" href="assets/styles.css">
 <link rel="stylesheet" href="assets/auth.css">
 <style>
-.topbar{background:#fff;border-bottom:1px solid rgba(17,16,20,.12);position:sticky;top:0;z-index:20}
+:root{
+  --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
+  --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
+  --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
+  --chip:#2a2735;
+}
+.topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
-.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:#5d5b57}
-.avatar{width:30px;height:30px;border-radius:8px;background:#111014;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
+.acct-card{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.14)}
+.acct-card p{color:var(--muted)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
@@ -38,10 +46,6 @@
 <section class="sec" style="padding-top:0">
   <div class="wrap">
     <div class="acct-grid">
-      <div class="acct-card">
-        <h3>What you get</h3>
-        <p>Any angle, directed. Human review on every image. Campaign copy and CTAs included — you approve, we deliver.</p>
-      </div>
       <div class="acct-card">
         <h3>Want in early?</h3>
         <p>We're onboarding Full Service clients by hand during beta. Tell us about your brand and we'll reach out.</p>

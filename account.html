@@ -11,10 +11,21 @@
 <link rel="stylesheet" href="assets/styles.css">
 <link rel="stylesheet" href="assets/auth.css">
 <style>
-.topbar{background:#fff;border-bottom:1px solid rgba(17,16,20,.12);position:sticky;top:0;z-index:20}
+:root{
+  --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
+  --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
+  --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
+  --chip:#2a2735;
+}
+.topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
-.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:#5d5b57}
-.avatar{width:30px;height:30px;border-radius:8px;background:#111014;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
+.acct-card{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.14)}
+.acct-card p{color:var(--muted)}
+.acct-email{color:var(--muted)}
+.auth-card .field input{color:var(--ink);background:var(--card);border-color:var(--line-2)}
+.auth-status{color:var(--muted)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
@@ -29,31 +40,12 @@
 
 <header class="hero auth-hero">
   <div class="wrap">
-    <span class="hero-label">Your account</span>
-    <h1>Your products.</h1>
-    <p>Everything below is included free while Tolerance Studio is in beta.</p>
+    <h1>Your account</h1>
   </div>
 </header>
 
 <section class="sec" style="padding-top:0">
   <div class="wrap">
-    <div class="acct-meta">
-      <span class="acct-email" id="email">…</span>
-      <button class="btn" id="logout" style="border:1px solid rgba(17,16,20,.2)">Log out</button>
-    </div>
-
-    <div class="acct-grid" id="products" style="margin-bottom:1rem">
-      <p class="auth-status" id="status">Loading…</p>
-    </div>
-
-    <div class="acct-grid" style="margin-bottom:1rem">
-      <div class="acct-card">
-        <h3>My Images</h3>
-        <p>Every image generated for your account, plus everything you've saved with text on it.</p>
-        <a class="btn btn-primary" href="my-images.html">Open My Images &rarr;</a>
-      </div>
-    </div>
-
     <div class="acct-grid">
       <div class="acct-card">
         <h3>Account info</h3>
@@ -74,41 +66,13 @@
 </section>
 
 <script>
-var PRODUCTS = {
-  standard: { name: 'Standard', blurb: 'AI-drawn product shots, spec-checked against your photos.', href: 'app/2-project-list.html' },
-  pro:      { name: 'Pro', blurb: 'Pixel-true product — your actual photo pixels, never redrawn.', href: 'pro/2-project-list.html' }
-};
-function card(key, ent){
-  var p = PRODUCTS[key];
-  return '<div class="acct-card"><span class="beta-pill">' +
-    (ent ? 'Free during beta' : 'No access') + '</span>' +
-    '<h3>' + p.name + '</h3><p>' + p.blurb + '</p>' +
-    (ent ? '<a class="btn btn-primary" href="' + p.href + '">Open ' + p.name + ' &rarr;</a>' : '') +
-    '</div>';
-}
-function fullServiceCard(){
-  return '<div class="acct-card"><span class="beta-pill">Coming soon</span>' +
-    '<h3>Full Service</h3><p>A real creative director builds your campaign for you.</p>' +
-    '<a class="btn" style="border:1px solid rgba(17,16,20,.2)" href="full-service.html">Learn more &rarr;</a></div>';
-}
 (async function(){
   var s = await sb.auth.getSession();
   if (!s.data.session){ location.href = 'login.html?next=account.html'; return; }
   var user = s.data.session.user;
-  document.getElementById('email').textContent = user.email;
   document.getElementById('info-email').textContent = user.email;
   document.getElementById('info-since').textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  var box = document.getElementById('products');
-  var r = await sb.from('entitlements').select('product,status');
-  if (r.error){ box.innerHTML = '<p class="auth-status">Could not load products: ' + r.error.message + '</p>'; return; }
-  var have = {};
-  (r.data || []).forEach(function(e){ have[e.product] = e; });
-  box.innerHTML = card('standard', have.standard) + card('pro', have.pro) + fullServiceCard();
 })();
-document.getElementById('logout').addEventListener('click', async function(){
-  await sb.auth.signOut();
-  location.href = 'index.html';
-});
 async function doChangePw(){
   var st = document.getElementById('pw-status');
   var btn = document.getElementById('pw-btn');
