@@ -10,6 +10,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <script>
+// Redirect signed-in users straight to the app
+try {
+  var _tok = localStorage.getItem('sb-mqgfosfadmmiqlvuvbcy-auth-token');
+  if (_tok && JSON.parse(_tok).access_token) location.replace('my-images.html');
+} catch(e){}
+</script>
+<script>
 // Temporary beta gate (added 2026-07-07, remove for public launch): homepage
 // hides behind a keyword while the Owner tests the live site. Client-side
 // only — keeps casual visitors out, not a security boundary (the apps are
@@ -226,7 +233,7 @@ footer a:hover{color:var(--ink)}
     <span class="hero-label">Your product. Actual pixels. Zero drift.</span>
     <h1>Build a campaign from a single photo</h1>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="#products">See the three products &rarr;</a>
+      <a class="btn btn-primary" href="signup.html">Sign up free &rarr;</a>
       <a class="btn btn-ghost" href="contact.html">Talk to a creative director</a>
     </div>
   </div>
@@ -497,7 +504,6 @@ footer a:hover{color:var(--ink)}
     <div>Tolerance Studio &middot; product imagery studio</div>
     <div class="footer-links">
       <a href="#how-it-works">How it works</a>
-      <a href="#work">Work</a>
       <a href="contact.html">Contact</a>
     </div>
   </div>

@@ -36,7 +36,8 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
 .page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1.2rem;margin-bottom:1.8rem}
 .pipeline-cards{display:flex;gap:.9rem;flex-wrap:wrap}
-.pipeline-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;min-width:11.5rem;display:flex;flex-direction:column;gap:.5rem}
+.pipeline-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;width:13rem;flex-shrink:0;display:flex;flex-direction:column;gap:.5rem}
+@media(max-width:480px){.pipeline-card{width:100%}}
 .pipeline-card .pc-label{font-family:var(--font-display);font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
 .pipeline-card .pc-count{font-family:var(--font-mono);font-size:1.5rem;font-weight:600;line-height:1}
 .pipeline-card .pc-count-label{font-size:.72rem;color:var(--muted);font-weight:400;margin-left:.3rem}

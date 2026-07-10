@@ -44,13 +44,17 @@
   var avatarEl = who.querySelector('.avatar');
   if (nameEl) nameEl.textContent = '…';
 
+  who.insertAdjacentHTML('afterbegin',
+    '<div class="ts-hamburger" aria-hidden="true"><span></span><span></span><span></span></div>');
   who.insertAdjacentHTML('beforeend',
     '<span class="caret">▾</span>' +
     '<div class="ts-switch-menu">' +
+      '<div class="ts-menu-user"><div class="ts-menu-avatar" id="ts-menu-av">O</div><span id="ts-menu-name">…</span></div>' +
+      '<hr>' +
       '<a href="' + prefix + 'my-images.html" class="' + (isFiles ? 'on' : '') + '">Files</a>' +
       '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isPro && !isFullService && !isAccount ? 'on' : '') + '">Standard</a>' +
       '<a href="' + prefix + 'pro/2-project-list.html" class="' + (isPro ? 'on' : '') + '">Pro</a>' +
-      '<a href="' + prefix + 'full-service.html" class="' + (isFullService ? 'on' : '') + '">Full Service <span class="soon">Coming soon</span></a>' +
+      '<a href="' + prefix + 'full-service.html" class="' + (isFullService ? 'on' : '') + '">Service <span class="soon">Coming soon</span></a>' +
       '<hr>' +
       '<a href="' + prefix + 'account.html">Account</a>' +
       '<a href="#" id="ts-switch-logout">Log out</a>' +
@@ -64,6 +68,10 @@
         var name = email.split('@')[0];
         if (nameEl) nameEl.textContent = name;
         if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+        var menuName = document.getElementById('ts-menu-name');
+        var menuAv = document.getElementById('ts-menu-av');
+        if (menuName) menuName.textContent = email;
+        if (menuAv) menuAv.textContent = name.charAt(0).toUpperCase();
       }
     } catch (e) { /* leave placeholder */ }
   })();
@@ -104,6 +112,12 @@
     '.ts-projhead{background:#fff;border-bottom:1px solid rgba(17,16,20,.12)}' +
     '.ts-projhead-in{max-width:88rem;margin:0 auto;padding:1.1rem 1.6rem}' +
     '.ts-projhead-in .ts-proj-name{font-family:"Barlow Condensed",sans-serif;font-size:1.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em;color:#111014;line-height:1.1}';
+  chromeCss += '.ts-hamburger{display:none;flex-direction:column;justify-content:center;gap:4px;width:20px;cursor:pointer}'
+  chromeCss += '.ts-hamburger span{display:block;width:20px;height:2px;background:currentColor;border-radius:2px}';
+  chromeCss += '.ts-menu-user{display:none;align-items:center;gap:.7rem;padding:.5rem .7rem .4rem}'
+  chromeCss += '.ts-menu-avatar{width:28px;height:28px;border-radius:7px;background:var(--accent,#9d7aff);color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:.85rem;flex-shrink:0}'
+  chromeCss += '.ts-menu-user span{font-size:.85rem;color:#5d5b57;font-family:"IBM Plex Sans",system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+  chromeCss += '@media(max-width:480px){.topbar-in{padding:0 .75rem}.topbar .crumbs{display:none}.ts-hamburger{display:flex}.ts-switch>span:not(.caret),.ts-switch>.avatar{display:none}.ts-switch .caret{display:none}.ts-menu-user{display:flex}}';
   chromeCss += '.pro-dark .ts-switch-menu{background:#1a1820;border-color:rgba(255,255,255,.1);box-shadow:0 12px 32px rgba(0,0,0,.4)}.pro-dark .ts-switch-menu a{color:#9a978f}.pro-dark .ts-switch-menu a:hover{background:#2a2735;color:#e8e6e1}.pro-dark .ts-switch-menu a.on{color:#c4b0ff;background:rgba(157,122,255,.15)}.pro-dark .ts-switch-menu .soon{color:#6b6966}.pro-dark .ts-switch-menu hr{border-top-color:rgba(255,255,255,.08)}';
   chromeCss += '.pro-dark .ts-projhead{background:#1a1820;border-bottom-color:rgba(255,255,255,.1)}.pro-dark .ts-projhead-in .ts-proj-name{color:#e8e6e1}.pro-dark .ts-mainnav{color:#9a978f}.pro-dark .ts-mainnav:hover{color:#e8e6e1}.pro-dark .ts-mainnav.on{color:#e8e6e1;border-bottom-color:#9d7aff}';
   var st2 = document.createElement('style'); st2.textContent = chromeCss; document.head.appendChild(st2);
@@ -114,10 +128,12 @@
   // page is the one shared home base across Standard/Pro/Files itself).
   var brand = document.querySelector('.topbar .brand');
   if (brand) {
-    var bimg = brand.querySelector('img');
-    if (bimg) bimg.remove();
-    brand.textContent = 'TS';
+    brand.innerHTML = '<picture><source srcset="' + prefix + 'images/ts-logo-white-sm.png" media="(max-width:480px)"><img src="' + prefix + 'images/ts-logo_white.png" alt="Tolerance Studio" style="height:15px;width:auto;display:block;"></picture><span style="font-family:\'IBM Plex Mono\',monospace;font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);border:1px solid var(--accent-ink);border-radius:4px;padding:.1rem .35rem;opacity:.85">Beta</span>';
     brand.setAttribute('href', prefix + 'my-images.html');
+    brand.style.display = 'flex';
+    brand.style.alignItems = 'center';
+    brand.style.gap = '.5rem';
+    brand.style.textDecoration = 'none';
   }
 
   // (2) Crumbs -> main nav. Preserve any #crumb-proj / #crumb-client the page
@@ -135,7 +151,7 @@
       '<a class="ts-mainnav' + (isFiles ? ' on' : '') + '" href="' + prefix + 'my-images.html">Files</a>' +
       '<a class="ts-mainnav' + (!isFiles && !isPro && !isFullService && !isAccount ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Standard</a>' +
       '<a class="ts-mainnav' + (isPro ? ' on' : '') + '" href="' + prefix + 'pro/2-project-list.html">Pro</a>' +
-      '<a class="ts-mainnav' + (isFullService ? ' on' : '') + '" href="' + prefix + 'full-service.html">Full Service</a>';
+      '<a class="ts-mainnav' + (isFullService ? ' on' : '') + '" href="' + prefix + 'full-service.html">Service</a>';
     if (keep.length) {
       var hold = document.createElement('span'); hold.style.display = 'none';
       keep.forEach(function (el) { hold.appendChild(el); });

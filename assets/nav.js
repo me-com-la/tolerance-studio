@@ -2,8 +2,7 @@
 (function () {
   // Marketing site links — stay inline
   var consumer = [
-    { href: "index.html", label: "Home" },
-    { href: "contact.html", label: "Contact" }
+    { href: "index.html", label: "Home" }
   ];
 
   // Dropdown categories — each collapses into its own menu, in this order.
@@ -77,12 +76,12 @@
   try { signedIn = !!localStorage.getItem("sb-mqgfosfadmmiqlvuvbcy-auth-token"); } catch (e) {}
   var authLinks = signedIn
     ? [{ href: "account.html", label: "Account" }]
-    : [{ href: "login.html", label: "Log in" }, { href: "signup.html", label: "Sign up" }];
+    : [{ href: "login.html", label: "Log in" }];
   var groupAuth = authLinks.map(link).join("");
 
   var html =
     '<nav class="nav"><div class="wrap">' +
-      '<a class="brand" href="index.html"><img src="images/ts-logo.png" alt="Tolerance Studio" style="height:17px;width:auto;display:block;"><span class="brand-tag">Beta</span></a>' +
+      '<a class="brand" href="index.html"><picture><source srcset="images/ts-logo-sm.png" media="(max-width:480px)"><img src="images/ts-logo.png" alt="Tolerance Studio" style="height:17px;width:auto;display:block;"></picture><span class="brand-tag">Beta</span></a>' +
       '<button id="navtoggle" aria-label="Menu" class="navtoggle"><span></span><span></span><span></span></button>' +
       '<div class="nav-links" id="navlinks">' +
         '<span class="nav-group">' + groupC + '</span>' +
