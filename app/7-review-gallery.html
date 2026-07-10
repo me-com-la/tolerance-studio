@@ -28,15 +28,7 @@ a{color:inherit;text-decoration:none}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
 .brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase}
 .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
-.client-badge{font-size:.78rem;color:var(--muted)}
-
-/* Owner-only step nav — same rail as 4/5/6/8-*.html. Hidden by default and
-   only ever shown after a client-side owners-table check confirms the
-   viewer is signed in as the Owner (see checkOwner() below); the client's
-   real review link is this exact same page/URL, just without an Owner
-   session, so it never gets this nav — that's the entire access control,
-   no separate "client view" template to keep in sync. */
-.rail-wrap{background:#fff;border-bottom:1px solid var(--line)}
+.rail-wrap{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
 .rail{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
 .rail-step{display:flex;align-items:center;justify-content:center;flex:1;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
 .rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
@@ -96,10 +88,17 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 <body>
 <div class="topbar"><div class="topbar-in">
   <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
-  <div class="client-badge" id="client-badge">Loading…</div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Review</span></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
-<div class="rail-wrap" id="owner-rail" style="display:none"><div class="rail" id="owner-rail-steps"></div></div>
+<div class="rail-wrap"><div class="rail">
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step done" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Scenes</div>
+  <div class="rail-step done" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Check</div>
+  <div class="rail-step done" onclick="location.href='8-compose.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Compose</div>
+  <div class="rail-step active"><span class="n">5</span>Review</div>
+</div></div>
 
 <div class="hero">
   <h1 id="proj-title">…</h1>
@@ -118,7 +117,6 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
   </div>
 </div>
 
-<p class="footnote">Questions on any image? Reply to the delivery email — your studio contact sees comments and favorites here.</p>
 
 <div id="lightbox" onclick="if(event.target===this)closeLightbox()">
   <div class="lb-stage" onclick="if(event.target===this)closeLightbox()">
@@ -132,28 +130,11 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
   <div class="lb-hint">click image to zoom · scroll to zoom · drag to pan · ← → to navigate · esc to close</div>
 </div>
 <script>
-// This screen is reachable only via a per-project review link
-// (?project=<id>), enforced by RLS: the client_read_projects /
-// client_read_renders policies in 001_init.sql only return rows where
-// status/stage is 'review' or 'delivered' AND the signed-in user is in
-// client_users for that project's client. No separate client-login UI is
-// built yet (see design-notes.md "Things intentionally left out") — this
-// page assumes the visitor is already an authenticated Supabase Auth user
-// tied to client_users; if not signed in, RLS returns zero rows rather than
-// erroring, so this gracefully shows "no images" instead of leaking data.
-//
-// TODO (see app/README.md): favorites (♥) and comments have no column home
-// in 001_init.sql (renders has no `favorite`/`comment` fields). Stored in
-// localStorage for now, keyed by render id — NOT synced to the studio side,
-// NOT visible to the Owner. Flagged to Owner: needs either new columns or a
-// separate client_feedback table before this is real.
+// Review gallery — shows composed + approved images for a project.
 
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 const projectId = qs('project');
-const FEEDBACK_KEY = 'ts-client-feedback-' + projectId;
-function loadFeedback(){ try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '{}'); } catch(e){ return {}; } }
-function saveFeedback(fb){ try { localStorage.setItem(FEEDBACK_KEY, JSON.stringify(fb)); } catch(e){} }
 
 // Bucket is private, so getPublicUrl() 403s — every image needs a signed URL
 // from the authenticated client. Cached per path across re-renders.
@@ -194,18 +175,14 @@ async function reportImageDims(img, renderId){
   }
 }
 
-function toggleFav(renderId){
-  const fb = loadFeedback();
-  fb[renderId] = fb[renderId] || {};
-  fb[renderId].fav = !fb[renderId].fav;
-  saveFeedback(fb);
+async function toggleFav(renderId){
+  const r = renders.find(x => x.id === renderId);
+  if (!r) return;
+  const next = !r.is_favorite;
+  r.is_favorite = next;
   render();
-}
-function saveComment(renderId, text){
-  const fb = loadFeedback();
-  fb[renderId] = fb[renderId] || {};
-  fb[renderId].comment = text;
-  saveFeedback(fb);
+  const { error } = await sb.from('renders').update({ is_favorite: next }).eq('id', renderId);
+  if (error) { r.is_favorite = !next; render(); }
 }
 
 // Delete a delivered image — same pattern as the Check/Select galleries.
@@ -226,51 +203,21 @@ async function deleteRenderInline(event, renderId, storagePath){
 let renders = [];
 async function render(){
   await resolveSignedUrls(renders);
-  const fb = loadFeedback();
   document.getElementById('img-count').textContent = `${renders.length} image${renders.length===1?'':'s'}`;
   document.getElementById('grid').innerHTML = renders.map(r => {
     const url = signedUrlCache[r.storage_path] || '';
-    const f = fb[r.id] || {};
     return `<div class="card">
       <div class="imgwrap">
         <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)" onload="reportImageDims(this,'${r.id}')">
-        <button class="fav-btn ${f.fav?'on':''}" onclick="toggleFav('${r.id}')">${f.fav?'♥':'♡'}</button>
+        <button class="fav-btn ${r.is_favorite?'on':''}" onclick="toggleFav('${r.id}')">${r.is_favorite?'♥':'♡'}</button>
         <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       </div>
       <div class="body">
         <span class="fname">${esc(r.filename)}</span>
         <span class="imgsize" id="imgsize-${r.id}"></span>
-        <textarea class="comment" placeholder="Add a note (optional)…" onchange="saveComment('${r.id}', this.value)">${esc(f.comment||'')}</textarea>
       </div>
     </div>`;
   }).join('') || '<p style="color:var(--muted)">No images ready for review yet.</p>';
-}
-
-// True only when the current browser session is signed in as the Owner
-// (checked against the owners table, same rule as the is_owner() RLS
-// function server-side) — not when it's a real client review visit. This
-// is the whole access control for the step-back nav: no session (the
-// client's actual link) or a session that isn't in `owners` both fall
-// through to false, same as everyone who isn't the Owner should.
-async function checkOwner(){
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return false;
-  const { data } = await sb.from('owners').select('user_id').eq('user_id', session.user.id).maybeSingle();
-  return !!data;
-}
-function renderOwnerRail(){
-  const steps = [
-    ['4-tags-editor.html', 'Brief / Tags'],
-    ['5-scenes-editor.html', 'Scenes'],
-    ['6-checker-gallery.html', 'Check'],
-    ['8-compose.html', 'Compose'],
-  ];
-  const links = steps.map(([href, label]) =>
-    `<div class="rail-step done" onclick="location.href='${href}?project='+encodeURIComponent(projectId)"><span class="n">✓</span>${esc(label)}</div>`
-  ).join('');
-  document.getElementById('owner-rail-steps').innerHTML =
-    links + `<div class="rail-step active"><span class="n">5</span>Review</div>`;
-  document.getElementById('owner-rail').style.display = '';
 }
 
 async function downloadZip(){
@@ -299,15 +246,13 @@ function wireEmailLinkButton(project, clientName){
 
 async function init(){
   if (!projectId) { document.getElementById('proj-title').textContent = 'No project specified'; return; }
-  const isOwner = await checkOwner();
-  if (isOwner) renderOwnerRail();
   try {
     const project = await db.getProject(projectId);
-    const clientName = project.clients ? project.clients.name : '';
-    document.title = `${project.name} — ${clientName} review | Tolerance Studio`;
-    document.getElementById('client-badge').textContent = `${clientName} — review link`;
+    document.title = `${project.name} — Review | Tolerance Studio`;
     document.getElementById('proj-title').textContent = project.name;
-    if (isOwner) wireEmailLinkButton(project, clientName);
+    var crumbProj = document.getElementById('crumb-proj');
+    if (crumbProj) crumbProj.textContent = project.name;
+    wireEmailLinkButton(project, project.clients ? project.clients.name : '');
     renders = await db.listRenders(projectId);
     // Client-facing view (2026-07-09): composed images (8-compose.html's
     // upsertRender sets stage:'composed') PLUS anything approved at the

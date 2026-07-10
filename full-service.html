@@ -10,8 +10,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <link rel="stylesheet" href="assets/auth.css">
+<style>
+.topbar{background:#fff;border-bottom:1px solid rgba(17,16,20,.12);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:#5d5b57}
+.avatar{width:30px;height:30px;border-radius:8px;background:#111014;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app/lib/supabase.js"></script>
 </head>
 <body>
+
+<div class="topbar"><div class="topbar-in">
+  <a class="brand" href="my-images.html" style="text-decoration:none" title="Files"><img src="images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Full Service</a>
+  <div class="crumbs"></div>
+  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
+</div></div>
 
 <header class="hero auth-hero">
   <div class="wrap">
@@ -37,16 +51,7 @@
   </div>
 </section>
 
-<footer>
-  <div class="wrap">
-    <div>Tolerance Studio &middot; product imagery studio</div>
-    <div class="footer-links">
-      <a href="index.html#products">Products</a>
-      <a href="contact.html">Contact</a>
-    </div>
-  </div>
-</footer>
 
-<script src="assets/nav.js"></script>
+<script src="assets/app-switcher.js"></script>
 </body>
 </html>

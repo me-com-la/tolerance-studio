@@ -19,7 +19,9 @@
   var inSubfolder = location.pathname.indexOf('/app/') !== -1 || location.pathname.indexOf('/pro/') !== -1;
   var prefix = inSubfolder ? '../' : '';
   var isPro = location.pathname.indexOf('/pro/') !== -1;
-  var isFiles = !inSubfolder;
+  var isFullService = location.pathname.indexOf('full-service') !== -1;
+  var isAccount = location.pathname.indexOf('account') !== -1;
+  var isFiles = !inSubfolder && !isFullService && !isAccount;
   var css =
     '.ts-switch{position:relative;display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none}' +
     '.ts-switch .caret{font-size:.55rem;opacity:.55;transition:transform .15s}' +
@@ -46,9 +48,9 @@
     '<span class="caret">▾</span>' +
     '<div class="ts-switch-menu">' +
       '<a href="' + prefix + 'my-images.html" class="' + (isFiles ? 'on' : '') + '">Files</a>' +
-      '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isPro ? 'on' : '') + '">Standard</a>' +
-      '<a href="' + prefix + 'pro/2-project-list.html" class="' + (!isFiles && isPro ? 'on' : '') + '">Pro</a>' +
-      '<a href="' + prefix + 'full-service.html">Full Service <span class="soon">Coming soon</span></a>' +
+      '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isPro && !isFullService && !isAccount ? 'on' : '') + '">Standard</a>' +
+      '<a href="' + prefix + 'pro/2-project-list.html" class="' + (isPro ? 'on' : '') + '">Pro</a>' +
+      '<a href="' + prefix + 'full-service.html" class="' + (isFullService ? 'on' : '') + '">Full Service <span class="soon">Coming soon</span></a>' +
       '<hr>' +
       '<a href="' + prefix + 'account.html">Account</a>' +
       '<a href="#" id="ts-switch-logout">Log out</a>' +
@@ -128,8 +130,9 @@
     ['#crumb-proj', '#crumb-client'].forEach(function (sel) { var el = nav.querySelector(sel); if (el) keep.push(el); });
     nav.innerHTML =
       '<a class="ts-mainnav' + (isFiles ? ' on' : '') + '" href="' + prefix + 'my-images.html">Files</a>' +
-      '<a class="ts-mainnav' + (!isFiles && !isPro ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Standard</a>' +
-      '<a class="ts-mainnav' + (!isFiles && isPro ? ' on' : '') + '" href="' + prefix + 'pro/2-project-list.html">Pro</a>';
+      '<a class="ts-mainnav' + (!isFiles && !isPro && !isFullService && !isAccount ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Standard</a>' +
+      '<a class="ts-mainnav' + (isPro ? ' on' : '') + '" href="' + prefix + 'pro/2-project-list.html">Pro</a>' +
+      '<a class="ts-mainnav' + (isFullService ? ' on' : '') + '" href="' + prefix + 'full-service.html">Full Service</a>';
     if (keep.length) {
       var hold = document.createElement('span'); hold.style.display = 'none';
       keep.forEach(function (el) { hold.appendChild(el); });
@@ -138,9 +141,8 @@
   }
 
   // (3) Project-name band above the step rail. Skip if the page already has
-  // its own project header (project view) or its only rail is the hidden
-  // owner rail (review page keeps its hero title).
-  var stepRail = document.querySelector('.rail-wrap:not(#owner-rail)');
+  // its own project header (project view).
+  var stepRail = document.querySelector('.rail-wrap');
   var existingHead = document.querySelector('.projhead');
   var projNameEl = null;
   if (existingHead) {
