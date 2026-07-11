@@ -7,25 +7,57 @@
 <meta name="description" content="Your Tolerance Studio account — products, access, and settings.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
-<link rel="stylesheet" href="assets/auth.css">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Self-contained, no assets/styles.css or assets/auth.css (Owner call,
+     2026-07-11): those are the marketing site's light-mode stylesheets —
+     borrowing their .hero/.acct-card classes here is why this page used
+     to look like a different app from 2-project-list.html. Every rule
+     below is copied from that page's own inline <style> block instead, so
+     account/full-service and the rest of the in-app pages share one
+     visual language, not two. -->
 <style>
 :root{
   --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
   --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
   --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
-  --chip:#2a2735;
+  --chip:#2a2735; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
 }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
 .topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:-.01em}
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
-.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
-.acct-card{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.14)}
-.acct-card p{color:var(--muted)}
-.acct-email{color:var(--muted)}
-.auth-card .field input{color:var(--ink);background:var(--card);border-color:var(--line-2)}
-.auth-status{color:var(--muted)}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
+
+/* ---- page-head, matched to 2-project-list.html exactly: left-aligned,
+   large uppercase display name, muted subtitle underneath ---- */
+.wrap{max-width:88rem;margin:0 auto;padding:2.8rem 1.6rem 4rem}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2.2rem;flex-wrap:wrap;gap:1rem}
+h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem;max-width:44rem}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#fff}
+
+/* ---- cards, matched to .proj-card's surface/radius/shadow language ---- */
+.acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:640px){.acct-grid{grid-template-columns:1fr}}
+.acct-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem 1.5rem;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.acct-card h3{font-family:var(--font-display);font-size:1.2rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em;margin-bottom:.5rem}
+.acct-card p{color:var(--muted);font-size:.88rem;margin-bottom:.6rem}
+.acct-card p:last-child{margin-bottom:0}
+.acct-email{color:var(--ink);font-weight:600}
+
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
+.field label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.field input{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--paper);color:var(--ink)}
+.auth-status{font-size:.82rem;color:var(--muted)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
@@ -38,32 +70,31 @@
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
-<header class="hero auth-hero">
-  <div class="wrap">
-    <h1>Your account</h1>
-  </div>
-</header>
-
-<section class="sec" style="padding-top:0">
-  <div class="wrap">
-    <div class="acct-grid">
-      <div class="acct-card">
-        <h3>Account info</h3>
-        <p style="margin-bottom:.4rem">Signed in as <span class="acct-email" id="info-email">…</span></p>
-        <p style="margin-bottom:0">Member since <span id="info-since">…</span></p>
-      </div>
-      <div class="acct-card">
-        <h3>Change password</h3>
-        <form onsubmit="doChangePw(); return false" style="display:flex;flex-direction:column;gap:.7rem">
-          <div class="field"><label for="newpw">New password</label>
-            <input id="newpw" type="password" placeholder="8+ characters" required minlength="8" autocomplete="new-password"></div>
-          <button class="btn btn-primary auth-btn" id="pw-btn" type="submit">Update password</button>
-          <p class="auth-status" id="pw-status" role="status"></p>
-        </form>
-      </div>
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Account</h1>
+      <p class="page-sub">Manage your sign-in and account details.</p>
     </div>
   </div>
-</section>
+
+  <div class="acct-grid">
+    <div class="acct-card">
+      <h3>Account info</h3>
+      <p>Signed in as <span class="acct-email" id="info-email">…</span></p>
+      <p>Member since <span id="info-since">…</span></p>
+    </div>
+    <div class="acct-card">
+      <h3>Change password</h3>
+      <form onsubmit="doChangePw(); return false" style="display:flex;flex-direction:column;gap:.7rem">
+        <div class="field"><label for="newpw">New password</label>
+          <input id="newpw" type="password" placeholder="8+ characters" required minlength="8" autocomplete="new-password"></div>
+        <button class="btn btn-primary" id="pw-btn" type="submit">Update password</button>
+        <p class="auth-status" id="pw-status" role="status"></p>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script>
 (async function(){

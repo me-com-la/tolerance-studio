@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign up | Tolerance Studio</title>
-<meta name="description" content="Create a free Tolerance Studio account — full access to Standard and Pro during beta.">
+<meta name="description" content="Create a free Tolerance Studio account — full access to both render modes during beta.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
   <div class="wrap">
     <span class="hero-label">Free during beta</span>
     <h1>Create your account.</h1>
-    <p>Full access to Standard and Pro while we're in beta. No card, no catch.</p>
+    <p>Full access to both render modes — Scene and Exact — while we're in beta. No card, no catch.</p>
   </div>
 </header>
 
@@ -50,7 +50,7 @@
 <script>
 (async function(){ // already signed in? straight to account
   var s = await sb.auth.getSession();
-  if (s.data.session) location.href = 'my-images.html';
+  if (s.data.session) location.href = 'app/2-project-list.html';
 })();
 async function doSignUp(){
   var status = document.getElementById('status');
@@ -60,7 +60,7 @@ async function doSignUp(){
   btn.disabled = true; status.textContent = 'creating account…';
   var r = await sb.auth.signUp({ email: email, password: password });
   if (r.error){ btn.disabled = false; status.textContent = r.error.message; return false; }
-  if (r.data.session){ location.href = 'my-images.html'; }
+  if (r.data.session){ location.href = 'app/2-project-list.html'; }
   else { status.textContent = 'Check your email to confirm your account, then log in.'; btn.disabled = false; }
   return false;
 }

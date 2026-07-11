@@ -14,7 +14,11 @@
 //      "grid" (or the whole document if none), so prev/next stays scoped to
 //      whichever gallery grid the click came from — same rule as control.html.
 //   3. Each <img class="lb-thumb"> must have its real, already-resolved src
-//      set (signed URL) before the user clicks it.
+//      set (signed URL) before the user clicks it — OR carry the URL in a
+//      data-full attribute instead (lbShow reads data-full first, falling
+//      back to .src). data-full lets a gallery defer the thumbnail's own
+//      fetch (real viewport-gated lazy loading, e.g. my-images.html) while
+//      keeping Next/Prev instant and correct for images never scrolled to.
 
 let lbList = [], lbIdx = 0, lbScale = 1, lbX = 0, lbY = 0, lbDrag = null;
 
@@ -33,7 +37,7 @@ function closeLightbox() {
 function lbShow() {
   const el = lbList[lbIdx];
   if (!el) return;
-  const full = el.src;
+  const full = el.dataset.full || el.src;
   const img = document.getElementById('lb-img');
   img.src = full;
   document.getElementById('lb-open-orig').href = full;

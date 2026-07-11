@@ -52,7 +52,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 .btn-primary{background:var(--accent);color:#fff}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
-.del-btn{position:absolute;top:.6rem;left:.6rem;width:2.1rem;height:2.1rem;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.95rem;box-shadow:0 1px 4px rgba(0,0,0,.3);opacity:0;transition:opacity .15s}
+.del-btn{position:absolute;top:.6rem;left:.6rem;width:2.1rem;height:2.1rem;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.95rem;box-shadow:0 1px 4px rgba(0,0,0,.3);opacity:0;transition:opacity .15s;color:#fff}
 .imgwrap:hover .del-btn{opacity:1}
 .del-btn:hover{background:#a33;color:#fff}
 
@@ -65,7 +65,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 .size-toggle{display:inline-flex;gap:.3rem;margin-left:.8rem}
 .size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
 .size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
-.fav-btn{position:absolute;top:.6rem;right:.6rem;width:2.1rem;height:2.1rem;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.fav-btn{position:absolute;top:.6rem;right:.6rem;width:2.1rem;height:2.1rem;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;box-shadow:0 1px 4px rgba(0,0,0,.3);color:#fff}
 .fav-btn.on{color:var(--accent)}
 .card .body{padding:.9rem 1rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
 .fname{font-size:.78rem;color:var(--muted)}
@@ -95,16 +95,16 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
   <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Review</span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
 <div class="rail-wrap"><div class="rail">
-  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Brief &amp; Specs</div>
   <div class="rail-step done" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Scenes</div>
   <div class="rail-step done" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Check</div>
-  <div class="rail-step done" onclick="location.href='8-compose.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Compose</div>
+  <div class="rail-step done" onclick="location.href='8-compose.html?project='+encodeURIComponent(qs('project'))"><span class="n">✓</span>Size and Text</div>
   <div class="rail-step active"><span class="n">5</span>Review</div>
 </div></div>
 
@@ -125,6 +125,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
   <div class="grid" id="grid"></div>
 
   <div class="savebar">
+    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
     <a class="btn btn-ghost" id="email-link-btn" style="display:none">✉ Email</a>
     <button class="btn btn-primary" onclick="downloadZip()">⬇ Download all as zip</button>
   </div>

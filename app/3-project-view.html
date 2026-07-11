@@ -110,12 +110,15 @@ h1{font-family:var(--font-display);font-size:2.4rem;font-weight:700;text-transfo
 .edit-actions{display:flex;align-items:center;gap:.6rem}
 .pd-status{font-size:.8rem;color:var(--muted)}
 .pd-status.err{color:#ef5350}
+.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
+.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
+.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
 </style>
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><span id="crumb-client"></span><span>/</span><span class="cur" id="crumb-proj"></span></div>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><span id="crumb-client"></span><span>/</span><span class="cur" id="crumb-proj"></span><span class="mode-chip" id="mode-chip"></span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
@@ -185,7 +188,7 @@ h1{font-family:var(--font-display);font-size:2.4rem;font-weight:700;text-transfo
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 const projectId = qs('project');
-const STATUS_LABEL = { brief:'Brief / Tags', generating:'Generating', checking:'Checking', compose:'Compose', review:'Review', delivered:'Delivered' };
+const STATUS_LABEL = { brief:'Brief & Specs', generating:'Generating', checking:'Checking', compose:'Size and Text', review:'Review', delivered:'Delivered' };
 // No separate "Generate" step — generation isn't a page, it's the action the
 // Scenes editor's CTA kicks off (ask Boss/Claude to run the image-gen batch),
 // which lands you on Check once renders exist. Matches the real pipeline
@@ -194,10 +197,10 @@ const STATUS_LABEL = { brief:'Brief / Tags', generating:'Generating', checking:'
 // "6-Client-Review" folder was always both the review view AND the zip
 // download source. Review's "Download all as zip" CTA IS delivery.
 const RAIL_STEPS = [
-  {key:'tags', n:1, label:'Brief / Tags', href:'4-tags-editor.html'},
+  {key:'tags', n:1, label:'Brief & Specs', href:'4-tags-editor.html'},
   {key:'scenes', n:2, label:'Scenes', href:'5-scenes-editor.html'},
   {key:'check', n:3, label:'Check', href:'6-checker-gallery.html'},
-  {key:'compose', n:4, label:'Compose', href:'8-compose.html'},
+  {key:'compose', n:4, label:'Size and Text', href:'8-compose.html'},
   {key:'review', n:5, label:'Review', href:'7-review-gallery.html'},
 ];
 // "furthest incomplete step" mapping from project status, per design-notes.md.
@@ -215,10 +218,13 @@ function tagPreviewHtml(tags){
 }
 
 function renderRail(status){
-  const doneUpTo = STATUS_STEP_INDEX[status] ?? 0;
+  // Done checkmarks only — no 'active' step here. Active means "you are on
+  // this page", and the overview isn't any of the steps; highlighting the
+  // status step read as a false location (Owner call, 2026-07-11).
+  const activeIdx = STATUS_STEP_INDEX[status] ?? 0;
   document.getElementById('rail').innerHTML = RAIL_STEPS.map((s,i) => {
-    const cls = i < doneUpTo ? 'done' : '';
-    const n = i < doneUpTo ? '✓' : s.n;
+    const cls = i < activeIdx ? 'done' : '';
+    const n = i < activeIdx ? '✓' : s.n;
     const click = s.href ? ` onclick="location.href='${s.href}?project=${encodeURIComponent(projectId)}'"` : '';
     return `<div class="rail-step ${cls}"${click}><span class="n">${n}</span>${s.label}</div>`;
   }).join('');
@@ -235,6 +241,10 @@ function renderProjHead(){
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('proj-name').textContent = project.name;
   document.getElementById('proj-sub').textContent = `${clientName} · ${project.product || ''} · started ${project.started_on}`;
+  // Mode chip (one app, two render modes — 2026-07-10 merge).
+  const chip = document.getElementById('mode-chip');
+  chip.className = 'mode-chip ' + (project.pipeline === 'pro' ? 'exact' : 'scene');
+  chip.textContent = project.pipeline === 'pro' ? 'Exact render' : 'Scene render';
 }
 
 // ---------- edit project details (name/product/description/started_on

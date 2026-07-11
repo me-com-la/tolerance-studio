@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Compose — Blue — Kindtail | Tolerance Studio</title>
+<title>Size and Text — Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="lib/supabase.js"></script>
@@ -12,6 +12,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Composed-graphic fonts (fontStack() below). Google-Fonts-only, no system
+     fonts (Owner call, 2026-07-11): a canvas 2D context can only draw a font
+     that's actually registered on the page — a system font "works" only on
+     a machine that happens to have it installed (mostly Mac), which breaks
+     the self-contained promise on anyone else's machine. The original lineup
+     had 5 system fonts (Avenir Next, Helvetica Neue, Futura, Georgia,
+     Baskerville); each is replaced below with a Google Font chosen for a
+     similar character, so the same spread (humanist sans, neutral grotesk,
+     geometric display, workhorse serif, editorial serif) survives:
+       Avenir Next    -> Manrope         (humanist geometric sans)
+       Helvetica Neue -> Inter           (neutral grotesk)
+       Futura         -> Jost            (geometric display; built as an
+                                          open-source Futura alternative)
+       Georgia        -> Lora            (screen-friendly text serif)
+       Baskerville    -> Playfair Display(high-contrast editorial serif)
+     Poppins/Oswald/Roboto/Lato are unchanged. -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&family=Inter:wght@400;700&family=Jost:wght@400;700&family=Lora:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;700&family=Oswald:wght@400;700&family=Roboto:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
@@ -87,10 +104,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .opt-card .body{color:var(--muted);line-height:1.4;margin-bottom:.4rem}
 .opt-card button{font-size:.72rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;color:var(--ink)}
 .opt-card button:hover{background:var(--chip)}
+.opt-more{border:1px dashed var(--line-2);border-radius:10px;padding:.7rem;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:.78rem}
+.opt-more:hover{color:var(--ink);background:var(--chip)}
 
 .field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
 .field label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.field input[type=text],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--card);color:var(--ink);width:100%}
+.field input[type=text],.field input[type=number],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--card);color:var(--ink);width:100%}
+.field input[type=number]{width:auto}
 .field textarea{resize:vertical;min-height:3.6rem}
 .platform-row{display:flex;gap:.5rem;flex-wrap:wrap}
 .platform-btn{flex:1;min-width:110px;padding:.6rem .5rem;border-radius:10px;border:1.5px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;font-size:.78rem;text-align:center;line-height:1.4;color:var(--ink)}
@@ -99,6 +119,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 
 /* text-size slider — one knob scales words + CTA together */
 .field input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;padding:.4rem 0;border:none;background:transparent}
+/* color pickers — CTA fill + text/font color (Owner call, 2026-07-10) */
+.color-row{display:flex;align-items:center;gap:.6rem}
+.color-row input[type=color]{width:2.5rem;height:2.5rem;flex:0 0 auto;padding:2px;border:1px solid var(--line-2);border-radius:8px;background:var(--card);cursor:pointer}
+.color-row input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.color-row input[type=color]::-webkit-color-swatch{border:none;border-radius:5px}
+.color-reset{font-size:.74rem;color:var(--muted);background:transparent;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0}
+.color-reset:hover{color:var(--ink)}
 /* paint chip — floats over the preview when the photo drag opens a gap */
 .paint-chip{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:600;font-size:.8rem;border-radius:100px;padding:.55rem 1.1rem;cursor:pointer;display:none;white-space:nowrap;z-index:2}
 .paint-chip:hover{opacity:.92}
@@ -108,8 +135,35 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .preview-wrap{position:sticky;top:140px}
 .preview-canvas-wrap{position:relative;background:var(--chip);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;min-height:200px}
 .preview-canvas-wrap canvas{max-width:100%;max-height:72vh;display:block;cursor:grab;touch-action:none}
-.preview-note{display:flex;gap:.5rem;align-items:flex-start;background:var(--accent-wash);color:var(--accent-ink);border-radius:10px;padding:.6rem .8rem;margin-top:.8rem;font-size:.76rem;line-height:1.5}
-.preview-note .ic{font-size:1rem;line-height:1}
+/* canvas cheat sheet — three scannable chips instead of a prose paragraph */
+.hint-chips{display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap}
+.hint-chip{flex:1;min-width:140px;display:flex;gap:.5rem;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem;font-size:.72rem;line-height:1.45;color:var(--muted)}
+.hint-chip .ic{font-size:.95rem;line-height:1.3;flex:0 0 auto}
+.hint-chip b{color:var(--ink);display:block;font-size:.74rem}
+/* faint always-on 3×3 zone grid — an HTML overlay glued to the canvas box,
+   so it guides the eye on screen but can never end up in the saved PNG
+   (saveComposed reads the canvas, not the DOM). The brighter in-canvas grid
+   still draws during a words/CTA drag, exactly as before. */
+/* paired dark+light hairlines so the grid stays visible on light AND dark
+   photos (a white-only line vanished on a white product shot) */
+.zone-overlay{position:absolute;pointer-events:none;display:none;z-index:1;background-image:linear-gradient(rgba(0,0,0,.20) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.20) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.16) 1px,transparent 1px);background-size:33.4% 33.4%;background-position:-1px -1px,-1px -1px,0 0,0 0}
+/* one-time first-visit callout, dismiss remembered in localStorage */
+.first-tip{display:none;align-items:flex-start;gap:.6rem;background:var(--accent-wash);border:1px solid rgba(157,122,255,.35);color:var(--accent-ink);border-radius:10px;padding:.7rem .9rem;font-size:.8rem;line-height:1.5;margin-bottom:.8rem}
+.first-tip button{margin-left:auto;background:transparent;border:none;color:var(--accent-ink);cursor:pointer;font-size:.9rem;padding:0 .2rem;flex:0 0 auto;font-family:inherit}
+/* numbered step badges — the page reads as a 1-2-3 recipe */
+.step-h{display:flex;align-items:center;gap:.55rem}
+.step-h .sn,.acc-h .sn{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600;flex:0 0 auto}
+/* collapsible step sections — arrow toggles, only step 1 open on load */
+.acc{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:1rem;overflow:hidden}
+.acc-h{display:flex;align-items:center;gap:.55rem;padding:.85rem 1.1rem;cursor:pointer;user-select:none;font-family:var(--font-display);font-size:1.05rem;font-weight:700;text-transform:uppercase}
+.acc-h:hover{background:var(--chip)}
+.acc-h .cnt{font-family:var(--font-body);font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)}
+.acc-h .chev{margin-left:auto;color:var(--muted);font-size:.85rem;transition:transform .2s}
+.acc.collapsed .chev{transform:rotate(-90deg)}
+.acc-b{padding:.2rem 1.1rem 1.1rem}
+.acc.collapsed .acc-b{display:none}
+/* preview header row — label left, Start over right */
+.preview-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem}
 .preview-empty{color:var(--muted);font-size:.85rem;padding:3rem 1rem;text-align:center}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1rem;margin-top:1rem}
@@ -149,88 +203,135 @@ img.lb-thumb{cursor:pointer}
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Compose</span></div>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Size and Text</span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
 <div class="rail-wrap"><div class="rail">
-  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief &amp; Specs</div>
   <div class="rail-step done" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Scenes</div>
   <div class="rail-step done" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Check</div>
-  <div class="rail-step active"><span class="n">4</span>Compose</div>
+  <div class="rail-step active"><span class="n">4</span>Size and Text</div>
   <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
 </div></div>
 
 <div class="wrap">
-  <p class="sub">Pick an approved image, write the copy, choose a size — then lay it out right on the preview: drag the photo, the words, and the button where you want them. Push the photo past an edge and the space that opens can be painted with more photo (a real AI extension, a few seconds and about 2¢).</p>
-
-  <div class="section-h">Approved renders <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="select-count"></span></div>
-  <div class="select-strip" id="select-strip"><span class="select-empty">loading…</span></div>
-
-  <div class="compose-grid" style="margin-top:1.6rem">
+  <div class="compose-grid">
     <div>
-      <div class="ai-bar">
-        <span class="lbl">✍️ Copy — AI options</span>
-        <span class="desc">Five directions using the brief tags + this campaign's description.</span>
-        <span class="ai-status" id="copy-status"></span>
-        <button class="btn btn-ai" id="copy-draft-btn" onclick="draftCopy()">Generate 5 options</button>
+      <div class="acc" id="acc-1">
+        <div class="acc-h" onclick="toggleAcc(1)"><span class="sn">1</span>Pick a photo <span class="cnt" id="select-count"></span><span class="chev">▾</span></div>
+        <div class="acc-b">
+          <div class="select-strip" id="select-strip"><span class="select-empty">loading…</span></div>
+        </div>
       </div>
-      <div class="copy-options" id="copy-options"></div>
 
-      <div class="card" style="margin-top:1rem">
-        <div class="field">
-          <label>Size <button type="button" class="btn btn-ghost" id="start-over-btn" style="margin-left:.6rem;padding:.3rem .65rem;font-size:.7rem" onclick="startOver()">↺ Start over</button></label>
-          <div class="platform-row" id="platform-row"></div>
+      <div class="acc collapsed" id="acc-2">
+        <div class="acc-h" onclick="toggleAcc(2)"><span class="sn">2</span>Lay it out<span class="chev">▾</span></div>
+        <div class="acc-b">
+          <div class="field">
+            <label for="cmp-size">Size</label>
+            <select id="cmp-size" onchange="pickPlatform(this.value)"></select>
+          </div>
+          <div class="field" id="custom-size-row" style="display:none">
+            <label>Custom size (px)</label>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <input type="number" id="cmp-cw" min="200" max="4096" value="1080" style="width:6.5rem">
+              <span style="color:var(--muted)">×</span>
+              <input type="number" id="cmp-ch" min="200" max="4096" value="1080" style="width:6.5rem">
+              <button type="button" class="btn btn-ghost" style="padding:.45rem .8rem;font-size:.78rem" onclick="applyCustomSize()">Apply</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="cmp-pzoom">Photo size <span id="pzoom-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
+            <input type="range" id="cmp-pzoom" min="60" max="180" step="5" value="100" oninput="setPhotoZoom(this.value)">
+          </div>
         </div>
-        <div class="field">
-          <label for="cmp-pzoom">Photo size <span id="pzoom-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
-          <input type="range" id="cmp-pzoom" min="60" max="180" step="5" value="100" oninput="setPhotoZoom(this.value)">
-        </div>
-        <div class="field">
-          <label for="cmp-tscale">Text size <span id="tscale-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
-          <input type="range" id="cmp-tscale" min="70" max="140" step="5" value="100" oninput="setTextScale(this.value)">
-        </div>
-        <div class="field">
-          <label for="cmp-font">Font</label>
-          <select id="cmp-font" onchange="renderPreview()">
-            <option>Avenir Next</option><option>Helvetica Neue</option><option>Futura</option>
-            <option>Georgia</option><option>Baskerville</option><option>Poppins</option>
-            <option>Oswald</option><option>Roboto</option><option>Lato</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="cmp-eyebrow">Eyebrow</label>
-          <input type="text" id="cmp-eyebrow" placeholder="small kicker, optional" oninput="renderPreview()">
-        </div>
-        <div class="field">
-          <label for="cmp-headline">Headline *</label>
-          <input type="text" id="cmp-headline" placeholder="the dominant line" oninput="renderPreview()">
-        </div>
-        <div class="field">
-          <label for="cmp-body">Body</label>
-          <textarea id="cmp-body" placeholder="one or two supporting sentences" oninput="renderPreview()"></textarea>
-        </div>
-        <div class="field">
-          <label for="cmp-cta">CTA</label>
-          <input type="text" id="cmp-cta" placeholder="button text, optional" oninput="renderPreview()">
-        </div>
-        <div class="ai-status" id="save-status"></div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveComposed()">Render Image</button>
       </div>
+
+      <div class="acc collapsed" id="acc-3">
+        <div class="acc-h" onclick="toggleAcc(3)"><span class="sn">3</span>Write &amp; style the copy<span class="chev">▾</span></div>
+        <div class="acc-b">
+          <div class="ai-bar">
+            <span class="lbl">✍️ Copy — AI options</span>
+            <span class="desc">A couple of directions from the brief tags — ask for more if neither fits.</span>
+            <span class="ai-status" id="copy-status"></span>
+            <button class="btn btn-ai" id="copy-draft-btn" onclick="draftCopy()">Generate copy</button>
+          </div>
+          <div class="copy-options" id="copy-options" style="margin-bottom:.9rem"></div>
+          <div class="field">
+            <label for="cmp-eyebrow">Eyebrow</label>
+            <input type="text" id="cmp-eyebrow" placeholder="small kicker, optional" oninput="renderPreview()">
+          </div>
+          <div class="field">
+            <label for="cmp-headline">Headline *</label>
+            <input type="text" id="cmp-headline" placeholder="the dominant line" oninput="renderPreview()">
+          </div>
+          <div class="field">
+            <label for="cmp-body">Body</label>
+            <textarea id="cmp-body" placeholder="one or two supporting sentences" oninput="renderPreview()"></textarea>
+          </div>
+          <div class="field">
+            <label for="cmp-cta">CTA</label>
+            <input type="text" id="cmp-cta" placeholder="button text, optional" oninput="renderPreview()">
+          </div>
+          <div class="field">
+            <label for="cmp-cta-color">CTA color <button type="button" class="color-reset" onclick="resetCtaColor()">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="cmp-cta-color" value="#d8502d" oninput="setCtaColor(this.value)">
+              <span class="ai-status" id="cta-color-hint" style="color:var(--muted)">Label text auto-switches dark or light to stay readable.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="cmp-tscale">Text size <span id="tscale-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
+            <input type="range" id="cmp-tscale" min="70" max="140" step="5" value="100" oninput="setTextScale(this.value)">
+          </div>
+          <div class="field">
+            <label for="cmp-font">Font</label>
+            <select id="cmp-font" onchange="renderPreview()">
+              <option>Manrope</option><option>Inter</option><option>Jost</option>
+              <option>Lora</option><option>Playfair Display</option><option>Poppins</option>
+              <option>Oswald</option><option>Roboto</option><option>Lato</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cmp-text-color">Text color <button type="button" class="color-reset" onclick="resetTextColor()">Auto</button></label>
+            <div class="color-row">
+              <input type="color" id="cmp-text-color" value="#ffffff" oninput="setTextColor(this.value)">
+              <span class="ai-status" id="text-color-hint" style="color:var(--muted)">Auto picks white or dark for you — pick a color to override.</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.4rem">
+            <button type="button" class="btn btn-ghost" style="padding:.4rem .8rem;font-size:.75rem" onclick="applyKitStyle(true)" title="Set font, colors and text size from this client's brand kit">Apply brand kit</button>
+            <button type="button" class="btn btn-ghost" style="padding:.4rem .8rem;font-size:.75rem" onclick="saveStyleToKit()" title="Font, colors and text size become this client's defaults on every new project">Save style to kit</button>
+            <span class="ai-status" id="kit-status"></span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="preview-wrap">
-      <div class="section-h" style="margin-top:0">Preview</div>
+      <div class="preview-top">
+        <div class="section-h" style="margin:0">Preview</div>
+        <button type="button" class="btn btn-ghost" id="start-over-btn" style="padding:.3rem .65rem;font-size:.7rem" onclick="startOver()">↺ Start over</button>
+      </div>
+      <div class="first-tip" id="first-tip"><span>👋</span><span><b>New here?</b> The preview is hands-on — drag the photo, the words, and the button right on the image below.</span><button onclick="dismissTip()" title="Got it">✕</button></div>
       <div class="preview-canvas-wrap" id="preview-canvas-wrap">
         <p class="preview-empty">Pick an approved render above to start.</p>
       </div>
-      <div class="preview-note"><span class="ic">✋</span><span>Drag the <b>photo</b> to place it — push it past an edge to open space you can paint. Drag the <b>words</b> or the <b>button</b> to any zone.</span></div>
+      <div class="hint-chips">
+        <div class="hint-chip"><span class="ic">✋</span><span><b>Drag the photo</b>to place it in the frame</span></div>
+        <div class="hint-chip"><span class="ic">✦</span><span><b>Push it past an edge</b>opens space AI paints with more photo (~2¢)</span></div>
+        <div class="hint-chip"><span class="ic">⠿</span><span><b>Drag words or button</b>they snap to one of 9 zones</span></div>
+      </div>
+      <div class="ai-status" id="save-status" style="margin-top:.7rem"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:.5rem" onclick="saveComposed()">Save image</button>
       <div class="ai-status" id="compose-hint" style="margin-top:.5rem"></div>
     </div>
   </div>
 
-  <div class="section-h">Rendered <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span>
+  <div class="section-h">Saved <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span>
     <span class="size-toggle" id="size-toggle">
       <button data-size="120" onclick="setThumbSize(120,this)">S</button>
       <button data-size="180" class="active" onclick="setThumbSize(180,this)">M</button>
@@ -240,8 +341,9 @@ img.lb-thumb{cursor:pointer}
   <div class="grid" id="rendered-grid"></div>
 
   <div class="savebar">
+    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
     <button class="btn btn-ghost" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)" title="Skip typesetting — your approved images still show up in Review">Skip this step →</button>
-    <button class="btn btn-primary" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)">Continue</button>
+    <button class="btn btn-primary" onclick="saveAndContinue()">Save and continue →</button>
   </div>
 </div>
 
@@ -265,6 +367,19 @@ function setThumbSize(px, btn){
   btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
+// collapsible step sections — only step 1 open on load; picking a photo
+// auto-opens step 2 so a new user gets walked forward
+function toggleAcc(n){ document.getElementById('acc-' + n).classList.toggle('collapsed'); }
+function openAcc(n){ document.getElementById('acc-' + n).classList.remove('collapsed'); }
+
+// first-visit callout — shown once, dismiss remembered per browser
+const TIP_KEY = 'ts-compose-tip-dismissed';
+function dismissTip(){
+  localStorage.setItem(TIP_KEY, '1');
+  document.getElementById('first-tip').style.display = 'none';
+}
+if (!localStorage.getItem(TIP_KEY)) document.getElementById('first-tip').style.display = 'flex';
+
 const projectId = qs('project');
 let project = null, renders = [];
 let selectedRenderId = null, selectedImg = null; // selectedImg = HTMLImageElement, loaded once per pick
@@ -287,40 +402,98 @@ let extendEdgeColor = null;    // {r,g,b} sampled from the painted edge, colors 
 let tCol = 'center', tRow = 'bottom';  // words zone (defaults set per platform)
 let cCol = null, cRow = null;  // CTA zone; null = rides along under the words
 let tScale = 1;                // one knob, words + button together — hierarchy stays locked
+// Color overrides (Owner call, 2026-07-10) — taste settings like tScale and
+// the font choice, so they deliberately survive resetLayout(): switching
+// platform or picking a new render doesn't erase a brand color you set.
+let ctaColor = '#d8502d';      // the app's own default accent, overridable
+let textColorOverride = null;  // null = automatic (scrimColor()'s luminance
+                                // pick below); a hex string once the Owner
+                                // chooses one explicitly
 let photoZoom = 1;             // pre-paint photo scale knob — zooming out before painting
                                 // opens more gap on every side at once, without a drag
+// Post-paint zoom (Owner call, 2026-07-10): the outpaint model doesn't
+// always fill its requested canvas exactly — a tall vertical extend in
+// particular can come back short on its own axis, leaving a flat
+// sampled-color sliver (see renderPreview's "short" fill below). Before
+// this, the Photo size slider silently no-op'd once extDir was set, so
+// there was no way to correct it short of re-painting from scratch.
+// extendZoom only scales UP from extendedFit's exact-fit floor — never
+// below, since going under the floor would reopen a gap on the axis the
+// paint exists to close. Same slider as photoZoom, same 100%-baseline feel.
+let extendZoom = 1;
 const MAX_GAP = 0.45;          // how far the photo may overpan, as a fraction of the frame
-const EXTEND_SRC_CAP = 900;    // cap source width before adding green — keeps fal fast/cheap
-// Default words zone per size — matches what each format is usually for.
-const DEFAULT_ZONES = {
-  horizontal: { col: 'right',  row: 'middle' },
-  square:     { col: 'center', row: 'bottom' },
-  vertical:   { col: 'center', row: 'top' },
+// Cap source width before adding green (Owner call, 2026-07-11: raised
+// 900 -> 1200). Renders come out of `generate` at a real 2K cap, but 900
+// threw away more than half that before painting ever started — and since
+// extendedFit (below) force-fits the RETURNED image to the target frame,
+// any source narrower than the frame's own width (1080 for vertical/square)
+// got upscaled by construction, before extendZoom ever touched it. 1200
+// clears every platform's perpendicular-fit need (1080) with real headroom,
+// so the baseline paint is full-quality and extendZoom becomes a genuine
+// reframe tool again, not a blur-rescue. Selectedimg.width < 1200 still
+// just uses its own real size (Math.min below) — never an artificial
+// upscale on the SOURCE side. Costs a bit more per paint (fal's outpaint is
+// ~$0.016/MP, per outpaint/index.ts — roughly 1.4MP -> 2.6MP on a typical
+// vertical extend, about +$0.02/paint) for a meaningfully sharper result.
+const EXTEND_SRC_CAP = 1200;
+// Type scale + default words zone are decided by ASPECT FAMILY, not by the
+// individual preset — every landscape frame types like the original
+// Horizontal, every portrait like Vertical, every squarish like Square,
+// with sizes scaled by the frame's min dimension. Keeps the Owner's
+// 2026-07-06 rule (one fixed deterministic baseline per format, no
+// per-session judgment; two sizes rendering the same copy at different
+// scales was a real bug) while letting the preset list grow freely. Family
+// base numbers are copy.py's TYPE_SPECS bumped +4pt (Owner call,
+// 2026-07-10); the Text size slider (tScale) is still the only knob.
+const FAMILY_BASE = {
+  horizontal: { minDim: 600,  eyebrow: 28, headline: 48, body: 23, cta: 24, span: [0.35, 0.48], zone: { col: 'right',  row: 'middle' } },
+  square:     { minDim: 1080, eyebrow: 32, headline: 60, body: 28, cta: 28, span: [0.55, 0.75], zone: { col: 'center', row: 'bottom' } },
+  vertical:   { minDim: 1080, eyebrow: 36, headline: 70, body: 30, cta: 32, span: [0.70, 0.85], zone: { col: 'center', row: 'top' } },
 };
-
-// Real fixed type scale per size — copy.py's TYPE_SPECS, bumped +4pt across
-// every field on every platform (Owner call, 2026-07-10 — the original
-// scale read a touch small). Still one fixed baseline per platform, no
-// per-session judgment calls (Owner's 2026-07-06 rule: two sizes rendering
-// the same copy at different scales was a real bug in an earlier
-// campaign); the Text size slider (tScale) is the only per-session knob.
+function familyOf(w, h){ const a = w / h; return a > 1.15 ? 'horizontal' : a < 0.87 ? 'vertical' : 'square'; }
+function makeSpec(label, w, h){
+  const b = FAMILY_BASE[familyOf(w, h)];
+  const k = Math.min(w, h) / b.minDim;
+  return { label, dims: `${w}×${h}`, w, h,
+    eyebrow: b.eyebrow * k, headline: b.headline * k, body: b.body * k, cta: b.cta * k,
+    span: b.span, zone: b.zone };
+}
+// The original three keep their keys (saved filenames reference them). IG
+// Story and TikTok are the same 1080×1920 frame — one preset, both names.
 const PLATFORMS = {
-  horizontal: { label: 'Horizontal', dims: '1200×600',  w: 1200, h: 600,  eyebrow: 28, headline: 48, body: 23, cta: 24, span: [0.35, 0.48] },
-  square:     { label: 'Square',     dims: '1080×1080', w: 1080, h: 1080, eyebrow: 32, headline: 60, body: 28, cta: 28, span: [0.55, 0.75] },
-  vertical:   { label: 'Vertical',   dims: '1080×1920', w: 1080, h: 1920, eyebrow: 36, headline: 70, body: 30, cta: 32, span: [0.70, 0.85] },
+  square:        makeSpec('Square — IG feed', 1080, 1080),
+  'ig-portrait': makeSpec('Portrait — IG', 1080, 1350),
+  vertical:      makeSpec('Story — IG / TikTok', 1080, 1920),
+  horizontal:    makeSpec('Horizontal — banner', 1200, 600),
+  'fb-ad':       makeSpec('Facebook ad', 1200, 628),
+  shopify:       makeSpec('Shopify product', 2048, 2048),
+  pinterest:     makeSpec('Pinterest pin', 1000, 1500),
 };
 let activePlatform = 'square';
 
 function renderPlatformRow(){
-  document.getElementById('platform-row').innerHTML = Object.entries(PLATFORMS).map(([key, p]) => `
-    <button class="platform-btn ${key===activePlatform?'active':''}" onclick="pickPlatform('${key}')">
-      <b>${esc(p.label)}</b>${p.dims ? esc(p.dims) : ''}
-    </button>`).join('');
+  const sel = document.getElementById('cmp-size');
+  sel.innerHTML = Object.entries(PLATFORMS).filter(([k]) => k !== 'custom').map(([key, p]) =>
+    `<option value="${key}" ${key===activePlatform?'selected':''}>${esc(p.label)} · ${p.dims}</option>`
+  ).join('') + `<option value="custom" ${activePlatform==='custom'?'selected':''}>Custom size…</option>`;
+  document.getElementById('custom-size-row').style.display = activePlatform === 'custom' ? '' : 'none';
 }
 function pickPlatform(key){
+  if (key === 'custom'){ applyCustomSize(); return; }
   activePlatform = key;
   renderPlatformRow();
   resetLayout();   // a paid extension belongs to a frame shape — switching discards it
+  renderPreview();
+}
+function applyCustomSize(){
+  const w = Math.max(200, Math.min(4096, parseInt(document.getElementById('cmp-cw').value, 10) || 1080));
+  const h = Math.max(200, Math.min(4096, parseInt(document.getElementById('cmp-ch').value, 10) || 1080));
+  document.getElementById('cmp-cw').value = w;
+  document.getElementById('cmp-ch').value = h;
+  PLATFORMS.custom = makeSpec('Custom', w, h);
+  activePlatform = 'custom';
+  renderPlatformRow();
+  resetLayout();   // same rule as a preset switch — new frame, fresh layout
   renderPreview();
 }
 
@@ -328,14 +501,17 @@ function pickPlatform(key){
 // every render pick, platform switch, and "Start over"; tScale deliberately
 // survives (it's a taste setting, not a layout).
 function resetLayout(){
-  ox = 0; oy = 0; photoZoom = 1;
+  ox = 0; oy = 0; photoZoom = 1; extendZoom = 1;
   extDir = null; extendedImg = null; extendEdgeColor = null;
   cCol = null; cRow = null;
-  const z = DEFAULT_ZONES[activePlatform];
+  const z = PLATFORMS[activePlatform].zone;
   tCol = z.col; tRow = z.row;
   dragState = null;
   const pz = document.getElementById('cmp-pzoom'), pzv = document.getElementById('pzoom-val');
-  if (pz){ pz.value = 100; pz.disabled = false; }
+  // Full 60-180 range pre-paint (zoom out to open a gap, or in); once
+  // painted, paintGap/anchorExtended below narrows this to 100-180
+  // (zoom-in-only from the exact-fit floor).
+  if (pz){ pz.min = 60; pz.value = 100; pz.disabled = false; }
   if (pzv) pzv.textContent = '100%';
 }
 
@@ -347,11 +523,93 @@ function setTextScale(v){
   if (lbl) lbl.textContent = v + '%';
   renderPreview();
 }
+
+// ---- color overrides ----
+function hexToRgb(hex){
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return { r: 255, g: 255, b: 255 };
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+// Shared by the words' auto ink and the CTA label's auto ink — one formula,
+// one legibility rule, wherever text sits on a solid or near-solid color.
+function pickInk(rgb){
+  return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) > 150 ? '#141118' : '#fff';
+}
+// ---------- brand kit (2026-07-11) ----------
+// clients.brand_kit carries { font, text_color, cta_color, text_size }
+// across projects. Applied automatically on page load (the kit IS the
+// default — these knobs were never persisted per project), re-appliable and
+// savable from the buttons in the copy section.
+function kitStatus(msg, err){
+  const el = document.getElementById('kit-status');
+  el.textContent = msg;
+  el.classList.toggle('err', !!err);
+  if (msg && !err) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+}
+function applyKitStyle(manual){
+  const kit = project?.clients?.brand_kit;
+  if (!kit || (!kit.font && !kit.text_color && !kit.cta_color && !kit.text_size)){
+    if (manual) kitStatus('no style in the brand kit yet — set it up, then Save style to kit', true);
+    return;
+  }
+  if (kit.font) document.getElementById('cmp-font').value = kit.font;
+  if (kit.text_color){ textColorOverride = kit.text_color; document.getElementById('cmp-text-color').value = kit.text_color; }
+  if (kit.cta_color){ ctaColor = kit.cta_color; document.getElementById('cmp-cta-color').value = kit.cta_color; }
+  if (kit.text_size){
+    tScale = kit.text_size;
+    document.getElementById('cmp-tscale').value = Math.round(tScale * 100);
+    document.getElementById('tscale-val').textContent = Math.round(tScale * 100) + '%';
+  }
+  renderPreview();
+  if (manual) kitStatus('brand style applied');
+}
+async function saveStyleToKit(){
+  const kit = { ...(project?.clients?.brand_kit || {}) };
+  kit.font = document.getElementById('cmp-font').value;
+  kit.text_color = textColorOverride; // null = auto — the kit remembers that choice too
+  kit.cta_color = ctaColor;
+  kit.text_size = tScale;
+  try {
+    await db.saveBrandKit(project.client_id, kit);
+    if (project.clients) project.clients.brand_kit = kit;
+    kitStatus('style saved — every new project for this client starts with it');
+  } catch (e) { kitStatus(e.message || String(e), true); }
+}
+
+function setCtaColor(v){ ctaColor = v; renderPreview(); }
+function resetCtaColor(){
+  ctaColor = '#d8502d';
+  document.getElementById('cmp-cta-color').value = ctaColor;
+  renderPreview();
+}
+function setTextColor(v){ textColorOverride = v; renderPreview(); }
+function resetTextColor(){
+  textColorOverride = null;
+  document.getElementById('cmp-text-color').value = '#ffffff';
+  renderPreview();
+}
+// Center-anchored (Owner call, 2026-07-10): previously the photo always
+// drew at (ox, oy) with a fixed top-left corner, so moving this slider
+// grew/shrank the image away from the frame's top-left instead of its
+// middle — a zoom-in visibly shoved the crop toward the bottom-right.
+// Now the frame's own center is held on the same image point across the
+// scale change (standard anchor-preserving zoom math), before and after
+// painting alike — one slider, one feel, in both states.
 function setPhotoZoom(v){
-  if (extDir) return; // fixed once painted — Start over to zoom again
-  photoZoom = v / 100;
+  const img = baseImage();
+  if (!img) return;
+  const spec = PLATFORMS[activePlatform];
+  const W = spec.w, H = spec.h;
+  const s0 = displayScale(img, W, H);
+  if (extDir) extendZoom = Math.max(1, v / 100);
+  else photoZoom = v / 100;
+  const s1 = displayScale(img, W, H);
+  const cx = W / 2, cy = H / 2;
+  ox = cx - (cx - ox) / s0 * s1;
+  oy = cy - (cy - oy) / s0 * s1;
   const lbl = document.getElementById('pzoom-val');
-  if (lbl) lbl.textContent = v + '%';
+  if (lbl) lbl.textContent = Math.round((extDir ? extendZoom : photoZoom) * 100) + '%';
   renderPreview();
 }
 
@@ -360,9 +618,10 @@ function baseImage(){ return extendedImg || selectedImg; }
 function coverScale(img, W, H){ return Math.max(W / img.width, H / img.height); }
 function coverSlack(img, s, W, H){ return { x: Math.min(0, W - img.width * s), y: Math.min(0, H - img.height * s) }; }
 // Scale actually on screen right now: zoomed cover pre-paint, or the
-// perpendicular-exact fit once an extension exists (see extendedFit below).
+// perpendicular-exact fit once an extension exists, itself scalable up via
+// extendZoom when the paint came back short (see extendedFit below).
 function displayScale(img, W, H){
-  return extDir ? extendedFit(img, W, H, extDir) : coverScale(img, W, H) * photoZoom;
+  return extDir ? extendedFit(img, W, H, extDir) * extendZoom : coverScale(img, W, H) * photoZoom;
 }
 // Once a direction is painted, the axis PERPENDICULAR to it (width for a
 // left/right extend, height for a top/bottom extend) fits the frame
@@ -460,12 +719,18 @@ function sampleEdgeColor(img, dir){
 // renderPreview fills with the sampled edge color.
 function anchorExtended(){
   const spec = PLATFORMS[activePlatform];
+  extendZoom = 1; // fresh paint — reset any zoom from a previous attempt
   const s = extendedFit(extendedImg, spec.w, spec.h, extDir);
   const dw = extendedImg.width * s, dh = extendedImg.height * s;
   if (extDir === 'left'){ ox = spec.w - dw; oy = (spec.h - dh) / 2; }
   else if (extDir === 'right'){ ox = 0; oy = (spec.h - dh) / 2; }
   else if (extDir === 'top'){ ox = (spec.w - dw) / 2; oy = spec.h - dh; }
   else { ox = (spec.w - dw) / 2; oy = 0; } // bottom
+  // Zoom-in-only past this point (see extendZoom's comment above) — narrow
+  // the slider's own range so the lower half isn't a dead zone.
+  const pz = document.getElementById('cmp-pzoom'), pzv = document.getElementById('pzoom-val');
+  if (pz){ pz.min = 100; pz.value = 100; }
+  if (pzv) pzv.textContent = '100%';
 }
 
 async function paintGap(){
@@ -565,6 +830,7 @@ async function renderSelectStrip(){
 }
 function pickRender(renderId, url){
   selectedRenderId = renderId;
+  openAcc(2);     // walk the user forward: photo picked, next is layout
   resetLayout();  // an extension and any pan belong to a specific image — start fresh
   selectedImg = new Image();
   selectedImg.crossOrigin = 'anonymous';
@@ -574,20 +840,30 @@ function pickRender(renderId, url){
 }
 
 // ---------- copy generation ----------
-async function draftCopy(){
-  const btn = document.getElementById('copy-draft-btn');
+// Two options per round (Owner call, 2026-07-11 — five up front was
+// overkill AND paid for output nobody read). Each round asks the function
+// for exactly 2; "+2 more" is a fresh call that sends the headlines already
+// on screen so the new pair takes different angles.
+function renderCopyOptions(){
+  const opts = window._copyOptions || [];
+  document.getElementById('copy-options').innerHTML = opts.map((o, i) => `
+    <div class="opt-card">
+      ${o.eyebrow ? `<div class="eyebrow">${esc(o.eyebrow)}</div>` : ''}
+      <div class="headline">${esc(o.headline||'')}</div>
+      <div class="body">${esc(o.body||'')}</div>
+      <button onclick='useCopy(${i})'>Use this</button>
+    </div>`).join('') + (opts.length ? `
+    <button class="opt-more" id="copy-more-btn" onclick="draftCopy(true)">✨ More directions</button>` : '');
+}
+async function draftCopy(more){
+  const btn = more ? document.getElementById('copy-more-btn') : document.getElementById('copy-draft-btn');
   const status = document.getElementById('copy-status');
+  const avoid = more ? (window._copyOptions || []).map(o => o.headline).filter(Boolean) : [];
   try {
-    const result = await withBusy(btn, status, 'drafting…', () => callFunction('ai-draft', { projectId, kind: 'copy' }));
-    const opts = result.options || [];
-    document.getElementById('copy-options').innerHTML = opts.map((o, i) => `
-      <div class="opt-card">
-        ${o.eyebrow ? `<div class="eyebrow">${esc(o.eyebrow)}</div>` : ''}
-        <div class="headline">${esc(o.headline||'')}</div>
-        <div class="body">${esc(o.body||'')}</div>
-        <button onclick='useCopy(${i})'>Use this</button>
-      </div>`).join('');
-    window._copyOptions = opts;
+    const result = await withBusy(btn, status, 'drafting…', () =>
+      callFunction('ai-draft', { projectId, kind: 'copy', count: 2, avoid }));
+    window._copyOptions = more ? [...(window._copyOptions || []), ...(result.options || [])] : (result.options || []);
+    renderCopyOptions();
   } catch (e) { /* status shows the error via withBusy */ }
 }
 function useCopy(i){
@@ -619,10 +895,13 @@ function wrapText(ctx, text, maxWidth){
   if (cur) lines.push(cur);
   return lines;
 }
+// Google-Fonts-only (Owner call, 2026-07-11) — every name here has a
+// matching <link> above, so nothing here depends on what's installed on
+// the machine viewing it.
 function fontStack(name){
   const map = {
-    'Avenir Next': "'Avenir Next',sans-serif", 'Helvetica Neue': "'Helvetica Neue',sans-serif",
-    'Futura': "'Futura',sans-serif", 'Georgia': "Georgia,serif", 'Baskerville': "Baskerville,serif",
+    'Manrope': "'Manrope',sans-serif", 'Inter': "'Inter',sans-serif",
+    'Jost': "'Jost',sans-serif", 'Lora': "'Lora',serif", 'Playfair Display': "'Playfair Display',serif",
     'Poppins': "'Poppins',sans-serif", 'Oswald': "'Oswald',sans-serif", 'Roboto': "'Roboto',sans-serif", 'Lato': "'Lato',sans-serif",
   };
   return map[name] || 'sans-serif';
@@ -693,6 +972,21 @@ function updatePaintChip(gp){
     ({ left: 'on the left', right: 'on the right', top: 'up top', bottom: 'down below' })[dir];
 }
 
+// Glue the faint zone-grid overlay to the canvas's on-screen box (the canvas
+// is centered and CSS-scaled inside the wrapper, so the overlay can't just
+// fill the wrapper). Display-only — never in the saved PNG.
+function syncZoneOverlay(){
+  const c = document.querySelector('#preview-canvas-wrap canvas');
+  const ov = document.getElementById('zone-overlay');
+  if (!c || !ov) return;
+  ov.style.display = 'block';
+  ov.style.left = c.offsetLeft + 'px';
+  ov.style.top = c.offsetTop + 'px';
+  ov.style.width = c.offsetWidth + 'px';
+  ov.style.height = c.offsetHeight + 'px';
+}
+window.addEventListener('resize', syncZoneOverlay);
+
 function renderPreview(){
   const wrapEl = document.getElementById('preview-canvas-wrap');
   if (!selectedImg){ wrapEl.innerHTML = '<p class="preview-empty">Pick an approved render above to start.</p>'; return; }
@@ -711,8 +1005,13 @@ function renderPreview(){
     chip.id = 'paint-chip';
     chip.onclick = paintGap;
     wrapEl.appendChild(chip);
+    const ov = document.createElement('div');
+    ov.className = 'zone-overlay';
+    ov.id = 'zone-overlay';
+    wrapEl.appendChild(ov);
   }
   canvas.width = W; canvas.height = H;
+  syncZoneOverlay();
   const ctx = canvas.getContext('2d');
 
   // photo layer — extended image once painted, otherwise the raw render,
@@ -783,9 +1082,9 @@ function renderPreview(){
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Ink follows the scrim: dark text on a light painted panel, otherwise
-  // white (luminance split at 150).
-  const ink = (sc && (0.299 * sc.r + 0.587 * sc.g + 0.114 * sc.b) > 150) ? '#141118' : '#fff';
+  // Ink follows the scrim (dark text on a light painted panel, otherwise
+  // white) unless the Owner picked an explicit text color (2026-07-10).
+  const ink = textColorOverride || (sc ? pickInk(sc) : '#fff');
 
   const marginX = W * 0.07;
   // Side columns wrap to a panel-width column; the center column may run wide.
@@ -815,7 +1114,13 @@ function renderPreview(){
     body: spec.body * tScale,
     cta: spec.cta * tScale,
   };
-  const FIELD_GAP = 20 * tScale;
+  // Base gap bumped 20 -> 35px (Owner call, 2026-07-10: "15px more between
+  // the copy items"), and scaled by tScale^FIELD_GAP_EXP instead of tScale
+  // directly — the Owner wanted the spacing to open up faster than the text
+  // itself as the Text size slider goes up (and close up faster going down),
+  // not track it 1:1 the way sz.* above still does on purpose.
+  const FIELD_GAP_EXP = 2;
+  const FIELD_GAP = 35 * Math.pow(tScale, FIELD_GAP_EXP);
   function lineMetrics(text, size, bold){
     ctx.font = `${bold ? 700 : 400} ${size}px ${fontStack(font)}`;
     const m = ctx.measureText(text || ' ');
@@ -910,7 +1215,7 @@ function renderPreview(){
       btnY = cRow === 'top' ? marginY : cRow === 'middle' ? H/2 - btnH/2 : H - marginY - btnH;
     }
     const radius = btnH/2;
-    ctx.fillStyle = '#d8502d'; // accent — the app's own brand color, not the sample's yellow
+    ctx.fillStyle = ctaColor; // Owner override, defaults to the app's own accent (2026-07-10)
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(btnX, btnY, btnW, btnH, radius);
     else { // roundRect fallback for older canvas implementations
@@ -921,7 +1226,10 @@ function renderPreview(){
       ctx.arcTo(btnX, btnY, btnX+btnW, btnY, radius);
     }
     ctx.fill();
-    ctx.fillStyle = '#fff';
+    // Label ink follows the CTA's own fill color, not a hardcoded white — a
+    // light CTA color (say a pale yellow) would otherwise print white-on-
+    // white (2026-07-10, same pickInk() rule the words' auto ink uses).
+    ctx.fillStyle = pickInk(hexToRgb(ctaColor));
     ctx.textAlign = 'center';
     ctx.fillText(cta, ctaCenterX, btnY + btnH/2 + sz.cta*0.35);
     ctaBox = { x: btnX, y: btnY, w: btnW, h: btnH };
@@ -953,7 +1261,9 @@ async function saveComposed(){
     // save identity tracks.
     const baseName = (sourceRender?.filename || 'composed').replace(/\.[^.]+$/, '');
     const mode = extDir ? `-ext-${extDir}` : '';
-    const filename = `${baseName}-${activePlatform}${mode}.png`;
+    // Custom frames key by their pixel size (there's no stable preset name).
+    const sizeKey = activePlatform === 'custom' ? `${PLATFORMS.custom.w}x${PLATFORMS.custom.h}` : activePlatform;
+    const filename = `${baseName}-${sizeKey}${mode}.png`;
     const path = db.storagePath(project.clients.slug, projectId, 'composed', filename);
     await db.uploadFile(path, blob);
     await db.upsertRender(projectId, filename, { storage_path: path, stage: 'composed' });
@@ -963,6 +1273,21 @@ async function saveComposed(){
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
   }
+}
+
+// Continue from the savebar saves whatever's laid out first (if anything),
+// so leaving the page never silently drops a layout the Owner forgot to hit
+// "Save image" on. Nothing to save (no photo picked, no headline) just
+// continues — that's what "Skip this step" is already for. A real save
+// error keeps the Owner on the page instead of navigating past it unseen.
+async function saveAndContinue(){
+  const canvas = document.querySelector('#preview-canvas-wrap canvas');
+  const headline = document.getElementById('cmp-headline').value.trim();
+  if (selectedImg && headline && canvas){
+    await saveComposed();
+    if (document.getElementById('save-status').classList.contains('err')) return;
+  }
+  location.href = `7-review-gallery.html?project=${encodeURIComponent(projectId)}`;
 }
 
 async function loadRendered(){
@@ -1013,9 +1338,10 @@ async function init(){
   project = await db.getProject(projectId);
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
-  document.title = `Compose — ${project.name} | Tolerance Studio`;
+  document.title = `Size and Text — ${project.name} | Tolerance Studio`;
   renderPlatformRow();
   resetLayout();
+  applyKitStyle(false); // brand kit is the default style — silent on load
   renders = await db.listRenders(projectId);
   await renderSelectStrip();
   await loadRendered();

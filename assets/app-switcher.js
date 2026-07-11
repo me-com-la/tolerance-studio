@@ -1,24 +1,25 @@
-/* Tolerance Studio — in-app product switcher + real user identity.
+/* Tolerance Studio — in-app user menu + shared top chrome.
  *
  * Turns the ".who" element (top-right, "Owner" + avatar placeholder) in
- * every app topbar (Standard app/ and Pro pro/ pages) into a dropdown showing
- * the real signed-in user: Standard / Pro / Full Service (coming soon),
- * Account, Log out. The ".brand" label (top-left) stays static — it only
- * says which app you're in, no dropdown there.
+ * every app/ page topbar into a dropdown showing the real signed-in user:
+ * Files / Projects / Service (coming soon), Account, Log out. The ".brand"
+ * label (top-left) stays static — no dropdown there.
  *
- * Load AFTER supabase-js + lib/supabase.js (logout uses window.sb directly —
- * Standard and Pro share one Supabase project, so there's nothing to bridge).
+ * One app since the 2026-07-10 merge (render mode lives on the project);
+ * the old /pro/ folder is deleted outright (Owner call, same day — no
+ * legacy redirects kept; originals in _archive-2026-07-10/pro-app/).
+ *
+ * Load AFTER supabase-js + lib/supabase.js (logout uses window.sb directly).
  */
 (function () {
   var who = document.querySelector('.topbar .who');
   if (!who) return;
 
   // my-images.html (Files) lives at the repo root, one level up from every
-  // app/ and pro/ page — so link targets need a prefix that depends on
-  // where this script is actually running, not a fixed "../" like before.
-  var inSubfolder = location.pathname.indexOf('/app/') !== -1 || location.pathname.indexOf('/pro/') !== -1;
+  // app/ page — so link targets need a prefix that depends on where this
+  // script is actually running, not a fixed "../" like before.
+  var inSubfolder = location.pathname.indexOf('/app/') !== -1;
   var prefix = inSubfolder ? '../' : '';
-  var isPro = location.pathname.indexOf('/pro/') !== -1;
   var isFullService = location.pathname.indexOf('full-service') !== -1;
   var isAccount = location.pathname.indexOf('account') !== -1;
   var isFiles = !inSubfolder && !isFullService && !isAccount;
@@ -52,8 +53,7 @@
       '<div class="ts-menu-user"><div class="ts-menu-avatar" id="ts-menu-av">O</div><span id="ts-menu-name">…</span></div>' +
       '<hr>' +
       '<a href="' + prefix + 'my-images.html" class="' + (isFiles ? 'on' : '') + '">Files</a>' +
-      '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isPro && !isFullService && !isAccount ? 'on' : '') + '">Standard</a>' +
-      '<a href="' + prefix + 'pro/2-project-list.html" class="' + (isPro ? 'on' : '') + '">Pro</a>' +
+      '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isFullService && !isAccount ? 'on' : '') + '">Projects</a>' +
       '<a href="' + prefix + 'full-service.html" class="' + (isFullService ? 'on' : '') + '">Service <span class="soon">Coming soon</span></a>' +
       '<hr>' +
       '<a href="' + prefix + 'account.html">Account</a>' +
@@ -95,8 +95,8 @@
 
   // ---- Universal top chrome (2026-07-09) --------------------------------
   // Replaces the old per-page breadcrumbs with one shared treatment so every
-  // in-app page matches: (1) brand is text-only ("Standard"/"Pro", no logo),
-  // (2) a real main nav (Files / Standard / Pro) where the crumbs used to be,
+  // in-app page matches: (1) brand is the logo + Beta pill,
+  // (2) a real main nav (Files / Projects / Service) where the crumbs used to be,
   // (3) the project name shown in its own band above the step rail, fed from
   // the #crumb-proj value each page's init() already writes. Done here, once,
   // rather than in 16 page files (shared-linkage rule, project CLAUDE.md).
@@ -125,7 +125,7 @@
 
   // (1) Brand: drop the logo image, collapse the label to "TS", and always
   // point it at the Files page (not "whichever app you're in" — the Files
-  // page is the one shared home base across Standard/Pro/Files itself).
+  // page is the one shared home base for the whole app).
   var brand = document.querySelector('.topbar .brand');
   if (brand) {
     brand.innerHTML = '<picture><source srcset="' + prefix + 'images/ts-logo-white-sm.png" media="(max-width:480px)"><img src="' + prefix + 'images/ts-logo_white.png" alt="Tolerance Studio" style="height:15px;width:auto;display:block;"></picture><span style="font-family:\'IBM Plex Mono\',monospace;font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);border:1px solid var(--accent-ink);border-radius:4px;padding:.1rem .35rem;opacity:.85">Beta</span>';
@@ -146,11 +146,13 @@
   }
   if (nav) {
     var keep = [];
-    ['#crumb-proj', '#crumb-client'].forEach(function (sel) { var el = nav.querySelector(sel); if (el) keep.push(el); });
+    // #mode-chip (2026-07-10 merge: per-project Scene/Exact render badge) is
+    // preserved here, then RELOCATED into the project-name band below — the
+    // crumbs container it starts in is replaced by this main nav.
+    ['#crumb-proj', '#crumb-client', '#mode-chip'].forEach(function (sel) { var el = nav.querySelector(sel); if (el) keep.push(el); });
     nav.innerHTML =
       '<a class="ts-mainnav' + (isFiles ? ' on' : '') + '" href="' + prefix + 'my-images.html">Files</a>' +
-      '<a class="ts-mainnav' + (!isFiles && !isPro && !isFullService && !isAccount ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Standard</a>' +
-      '<a class="ts-mainnav' + (isPro ? ' on' : '') + '" href="' + prefix + 'pro/2-project-list.html">Pro</a>' +
+      '<a class="ts-mainnav' + (!isFiles && !isFullService && !isAccount ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Projects</a>' +
       '<a class="ts-mainnav' + (isFullService ? ' on' : '') + '" href="' + prefix + 'full-service.html">Service</a>';
     if (keep.length) {
       var hold = document.createElement('span'); hold.style.display = 'none';
@@ -181,5 +183,19 @@
     };
     sync();
     if (src) new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
+  }
+
+  // Mode chip: pull it out of the hidden crumbs holder and show it beside
+  // the project name (the page's own init() fills its text/color class).
+  var modeChip = document.getElementById('mode-chip');
+  if (modeChip && projNameEl) {
+    var nameRow = projNameEl.parentNode;
+    if (nameRow) {
+      nameRow.style.display = 'flex';
+      nameRow.style.alignItems = 'center';
+      nameRow.style.gap = '.6rem';
+      modeChip.style.display = '';
+      nameRow.appendChild(modeChip);
+    }
   }
 })();

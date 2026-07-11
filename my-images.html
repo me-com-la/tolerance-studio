@@ -19,7 +19,7 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
-  --thumb:190px;
+  --thumb:280px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -35,14 +35,9 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .page-sub{color:var(--muted);font-size:.9rem;margin-top:.3rem}
 
 .page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1.2rem;margin-bottom:1.8rem}
-.pipeline-cards{display:flex;gap:.9rem;flex-wrap:wrap}
-.pipeline-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;width:13rem;flex-shrink:0;display:flex;flex-direction:column;gap:.5rem}
-@media(max-width:480px){.pipeline-card{width:100%}}
-.pipeline-card .pc-label{font-family:var(--font-display);font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
-.pipeline-card .pc-count{font-family:var(--font-mono);font-size:1.5rem;font-weight:600;line-height:1}
-.pipeline-card .pc-count-label{font-size:.72rem;color:var(--muted);font-weight:400;margin-left:.3rem}
-.pipeline-card .pc-cta{align-self:flex-start;font-size:.76rem;font-weight:600;padding:.4rem .8rem;border-radius:8px;border:1px solid var(--line-2);background:transparent;color:var(--ink);text-decoration:none}
-.pipeline-card .pc-cta:hover{background:var(--chip)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s;text-decoration:none;white-space:nowrap}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#fff}
 
 .tabs{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem}
 .tab{padding:.8rem 1.1rem;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none}
@@ -55,7 +50,15 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .grid[hidden]{display:none}
 .card{border-radius:10px;overflow:hidden}
 .card .imgwrap{position:relative;background:var(--chip);overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
-.card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;cursor:pointer}
+/* width/height:100% (not auto) — with data-full/no src (2026-07-11 lazy
+   load), an auto-sized img has no intrinsic size to derive from and
+   collapses to 0×0, which is an unreliable IntersectionObserver target
+   (some browsers never fire isIntersecting for a zero-area element even
+   sitting in-viewport — the lazy load would just silently never trigger).
+   Filling the already-reserved .imgwrap box gives it real geometry before
+   the image loads; object-fit:contain keeps the same letterboxed look
+   once it does. */
+.card img{width:100%;height:100%;object-fit:contain;display:block;cursor:pointer}
 .empty{color:var(--muted);font-size:.88rem;padding:1rem 0}
 
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
@@ -100,18 +103,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
       <h1 id="greeting">Welcome back</h1>
       <p class="page-sub" id="page-sub">Loading…</p>
     </div>
-    <div class="pipeline-cards">
-      <div class="pipeline-card">
-        <span class="pc-label">Standard</span>
-        <span class="pc-count" id="pc-count-standard">0<span class="pc-count-label">generations</span></span>
-        <a class="pc-cta" href="app/2-project-list.html?new=1">＋ New Standard Project</a>
-      </div>
-      <div class="pipeline-card">
-        <span class="pc-label">Pro</span>
-        <span class="pc-count" id="pc-count-pro">0<span class="pc-count-label">generations</span></span>
-        <a class="pc-cta" href="pro/2-project-list.html?new=1">＋ New Pro Project</a>
-      </div>
-    </div>
+    <a class="btn btn-primary" href="app/2-project-list.html?new=1">＋ New Project</a>
   </div>
 
   <div class="tabs">
@@ -119,8 +111,8 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
     <button class="tab" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
     <span class="size-toggle" id="size-toggle">
       <button data-size="130" onclick="setThumbSize(130,this)">S</button>
-      <button data-size="190" class="active" onclick="setThumbSize(190,this)">M</button>
-      <button data-size="280" onclick="setThumbSize(280,this)">L</button>
+      <button data-size="190" onclick="setThumbSize(190,this)">M</button>
+      <button data-size="280" class="active" onclick="setThumbSize(280,this)">L</button>
     </span>
   </div>
 
@@ -165,27 +157,55 @@ async function loadAllRenders(){
   return data;
 }
 
+// One batched createSignedUrls() call instead of N parallel createSignedUrl()
+// calls (Owner report, 2026-07-11: page felt slow on load) — with a real
+// library this was firing a network round-trip PER image before the grid
+// could even render its first row. Same result shape either way (a
+// storage_path -> signed URL map), just one request instead of N.
 async function resolveSignedUrls(rows){
-  await Promise.all(rows.map(async r => {
-    if (!r.storage_path || signedUrls[r.storage_path]) return;
-    try {
-      const { data, error } = await sb.storage.from('projects').createSignedUrl(r.storage_path, 3600);
-      signedUrls[r.storage_path] = error ? '' : data.signedUrl;
-    } catch (e) { signedUrls[r.storage_path] = ''; }
-  }));
+  const paths = [...new Set(rows.map(r => r.storage_path).filter(p => p && !signedUrls[p]))];
+  if (!paths.length) return;
+  const { data, error } = await sb.storage.from('projects').createSignedUrls(paths, 3600);
+  if (error) { paths.forEach(p => signedUrls[p] = ''); return; }
+  data.forEach((d, i) => { signedUrls[paths[i]] = d.error ? '' : d.signedUrl; });
+}
+
+// Real viewport-gated lazy load (Owner report, 2026-07-11: images below the
+// fold were already loaded before scrolling there). loading="lazy" alone
+// wasn't enough — these are full, un-thumbnailed renders (no resize step
+// exists anywhere in the pipeline), so on a fast connection the browser's
+// own lookahead margin was generous enough to fetch many rows' worth of
+// multi-MB images at once. This puts the real URL in data-full (not src) so
+// the fetch only starts once a card is actually near the viewport — a tight
+// 400px margin, not the browser's own (larger, connection-dependent) one.
+// lightbox.js reads data-full directly, so Next/Prev still works instantly
+// on a card the observer hasn't reached yet.
+function handleLazyIntersect(entries){
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const img = entry.target;
+    if (img.dataset.full) img.src = img.dataset.full;
+    lazyThumbObserver.unobserve(img);
+  });
+}
+const lazyThumbObserver = new IntersectionObserver(handleLazyIntersect, { rootMargin: '400px 0px' });
+function observeLazyThumbs(){
+  document.querySelectorAll('img.lb-thumb[data-full]').forEach(img => lazyThumbObserver.observe(img));
 }
 
 function cardHtml(r){
   const url = signedUrls[r.storage_path] || '';
   const isPro = r.projects?.pipeline === 'pro';
-  const projHref = r.project_id ? `${isPro ? 'pro' : 'app'}/3-project-view.html?project=${esc(r.project_id)}` : '';
+  // One app since the 2026-07-10 merge — every project opens under app/;
+  // pipeline only decides the badge (Exact = the old Pro pixel-lock mode).
+  const projHref = r.project_id ? `app/3-project-view.html?project=${esc(r.project_id)}` : '';
   const projName = r.projects?.name || 'Open project';
   return `<div class="card">
     <div class="imgwrap">
-      <img class="lb-thumb" src="${esc(url)}" loading="lazy" onclick="openLightbox(this)">
+      <img class="lb-thumb" data-full="${esc(url)}" loading="lazy" alt="" onclick="openLightbox(this)">
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRender(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
-      ${isPro ? '<span class="pro-tag">Pro</span>' : ''}
+      ${isPro ? '<span class="pro-tag">Exact</span>' : ''}
       ${projHref ? `<a class="proj-link" href="${esc(projHref)}" title="Open ${esc(projName)}'s overview" onclick="event.stopPropagation()">📁 ${esc(projName)}</a>` : ''}
     </div>
   </div>`;
@@ -199,13 +219,9 @@ function renderGrids(){
   document.getElementById('count-favorites').textContent = ` (${favorites.length})`;
   document.getElementById('page-sub').textContent = `${allRenders.length} generation${allRenders.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'}`;
 
-  // Per-pipeline totals for the Standard/Pro cards — same rows this page
-  // already loaded (projects.pipeline is embedded per render, used above for
-  // the Pro badge), just tallied by pipeline instead of shown per-card.
-  const standardCount = allRenders.filter(r => r.projects?.pipeline !== 'pro').length;
-  const proCount = allRenders.filter(r => r.projects?.pipeline === 'pro').length;
-  document.getElementById('pc-count-standard').innerHTML = `${standardCount}<span class="pc-count-label">generation${standardCount===1?'':'s'}</span>`;
-  document.getElementById('pc-count-pro').innerHTML = `${proCount}<span class="pc-count-label">generation${proCount===1?'':'s'}</span>`;
+  // innerHTML above just replaced every <img>, so the observer needs fresh
+  // targets — old (now-detached) elements just stop being watched, harmless.
+  observeLazyThumbs();
 }
 
 async function toggleFavorite(event, id){

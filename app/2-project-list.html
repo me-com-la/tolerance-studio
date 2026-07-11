@@ -52,9 +52,15 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 .proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.25)}
 .proj-card:hover .proj-del{opacity:1;pointer-events:auto}
 .proj-head{display:flex;align-items:center;gap:.7rem}
-.proj-thumb{width:40px;height:40px;flex:0 0 40px;border-radius:50%;overflow:hidden;background:var(--chip)}
-.proj-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.proj-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1rem;opacity:.5}
+/* Card image = the WORK (favorite render > newest approved > reference
+   photo fallback), not the client's flat source photo (Owner call,
+   2026-07-10). The reference photo stays visible as a small corner inset
+   so similar campaigns are still tellable apart by product. */
+.proj-banner{position:relative;width:100%;aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:var(--chip);margin-bottom:.2rem}
+.proj-banner img.main{width:100%;height:100%;object-fit:cover;display:block}
+.proj-banner.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.4rem;opacity:.5}
+.proj-banner .ref-inset{position:absolute;bottom:.5rem;left:.5rem;width:34px;height:34px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 4px rgba(0,0,0,.35);background:var(--chip)}
+.proj-banner .ref-inset img{width:100%;height:100%;object-fit:cover;display:block}
 .proj-name{font-weight:600;font-size:1rem}
 .proj-product{font-size:.82rem;color:var(--muted)}
 .proj-del{position:absolute;top:.6rem;right:.6rem;opacity:0;pointer-events:none;transition:opacity .15s;padding:.3rem .6rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.72rem;font-weight:600;line-height:1;cursor:pointer}
@@ -86,21 +92,32 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 .modal-status{font-size:.8rem;color:var(--muted)}
 .modal-status.busy{font-style:italic}
 .modal-status.err{color:#ef5350;font-style:normal}
+/* ---------- render-mode picker (one app, two modes — 2026-07-10 merge) ---------- */
+.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.1rem}
+.mode-card{position:relative;border:1.5px solid var(--line-2);border-radius:12px;padding:.85rem .95rem;cursor:pointer;transition:border-color .15s,background .15s}
+.mode-card:hover{border-color:var(--accent)}
+.mode-card.selected{border-color:var(--accent);background:var(--accent-wash)}
+.mode-card h4{font-size:.92rem;font-weight:600;margin-bottom:.25rem;display:flex;align-items:center;gap:.45rem}
+.mode-card p{font-size:.76rem;color:var(--muted);line-height:1.45}
+.mode-card .pro-pill{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.15rem .45rem;border-radius:100px;color:#7ee2c0;background:rgba(46,180,130,.16)}
+.mode-card.locked{opacity:.55;cursor:not-allowed}
+.mode-card.locked:hover{border-color:var(--line-2)}
+.proj-mode-chip{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.16rem .5rem;border-radius:100px;white-space:nowrap;color:#7ee2c0;background:rgba(46,180,130,.16)}
 </style>
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
 <div class="wrap">
   <div class="page-head">
     <div>
-      <h1>Standard Projects</h1>
+      <h1>Projects</h1>
       <p class="page-sub" id="page-sub">Loading…</p>
     </div>
-    <button class="btn btn-primary" onclick="openNewProject()">＋ New Standard Project</button>
+    <button class="btn btn-primary" onclick="openNewProject()">＋ New Project</button>
   </div>
 
   <div class="toolbar">
@@ -112,10 +129,21 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 
 <div class="modal-backdrop" id="new-project-backdrop">
   <div class="modal">
-    <h2>New Standard Project</h2>
-    <p class="modal-sub">Same first step as the old tool's "1-Client-Assets": name the campaign and drop
-      in 1-3 real product photos before anything else — the checker compares every render against
-      whichever photo becomes the reference.</p>
+    <h2>New Project</h2>
+    <p class="modal-sub">Pick how this project renders, name the campaign, and drop in 1-3 real
+      product photos — the checker compares every render against whichever photo becomes the
+      reference.</p>
+
+    <div class="mode-pick">
+      <div class="mode-card" id="mode-card-standard" onclick="pickMode('standard')">
+        <h4>Scene render</h4>
+        <p>AI redraws your product into each scene. Fast drafts, any angle — small drift risk on fine detail. Every image gets an accuracy score.</p>
+      </div>
+      <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
+        <h4>Exact render <span class="pro-pill">Pro</span></h4>
+        <p>Your photo's actual pixels, pixel-locked into AI-built scenes. Zero drift — best for listings and ads. Scored by the same checker.</p>
+      </div>
+    </div>
 
     <div class="field">
       <label for="np-client">Client</label>
@@ -144,7 +172,7 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
       <div class="file-drop" onclick="document.getElementById('np-files').click()">Click to choose 1-3 real product photos</div>
       <input type="file" id="np-files" accept="image/*" multiple style="display:none" onchange="renderFileList()">
       <div class="file-list" id="np-file-list"></div>
-      <span class="field-hint">The first photo becomes the checker's reference image (projects.reference_image).</span>
+      <span class="field-hint" id="np-photo-hint">The first photo becomes the checker's reference image (projects.reference_image).</span>
     </div>
 
     <div class="modal-actions">
@@ -157,30 +185,58 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 
 <script>
 let allProjects = [];
-// Signed URLs for each project's reference_image, resolved once when the
-// list loads (not per-render — render() fires on every search keystroke,
-// see the search input's oninput below, so it has to stay synchronous).
+// Signed URLs resolved once when the list loads (not per-render — render()
+// fires on every search keystroke, so it has to stay synchronous).
+// thumbCache = the card's main image: best render per project (favorite >
+// newest approved > reference photo fallback — Owner call, 2026-07-10).
+// refInsetCache = the small reference-photo inset, only shown when the main
+// image is a render (a reference inset on top of itself is noise).
 const thumbCache = {};
+const refInsetCache = {};
 async function resolveThumbnails(projs){
-  await Promise.all(projs.filter(p => p.reference_image && !(p.id in thumbCache)).map(async p => {
-    try { thumbCache[p.id] = await db.getSignedUrl(p.reference_image); }
-    catch (e) { thumbCache[p.id] = ''; }
+  await Promise.all(projs.filter(p => !(p.id in thumbCache)).map(async p => {
+    const best = bestRender[p.id];
+    try {
+      if (best) {
+        thumbCache[p.id] = await db.getSignedUrl(best.storage_path);
+        if (p.reference_image) {
+          try { refInsetCache[p.id] = await db.getSignedUrl(p.reference_image); }
+          catch (e) { refInsetCache[p.id] = ''; }
+        }
+      } else if (p.reference_image) {
+        thumbCache[p.id] = await db.getSignedUrl(p.reference_image);
+      } else {
+        thumbCache[p.id] = '';
+      }
+    } catch (e) { thumbCache[p.id] = ''; }
   }));
 }
 
-// Per-project render counts (total images + favorites), shown on each card in
-// place of the old status pill. One query for all listed projects, tallied
-// client-side; RLS already scopes `renders` to this user's rows.
+// Per-project render counts (total images + favorites) + the best render for
+// the card image. One query for all listed projects, tallied client-side;
+// RLS already scopes `renders` to this user's rows. Must run BEFORE
+// resolveThumbnails (it feeds bestRender).
 const counts = {};
+const bestRender = {};
 async function resolveCounts(projs){
   const ids = projs.map(p => p.id);
   for (const id of ids) counts[id] = { total: 0, favorites: 0 };
   if (!ids.length) return;
-  const { data, error } = await sb.from('renders').select('project_id, is_favorite').in('project_id', ids);
+  const { data, error } = await sb.from('renders')
+    .select('project_id, is_favorite, storage_path, stage, verdict, human_override, created_at')
+    .in('project_id', ids);
   if (error) return;
   for (const r of data) {
     const c = counts[r.project_id]; if (!c) continue;
     c.total++; if (r.is_favorite) c.favorites++;
+    if (r.stage !== 'render' || !r.storage_path) continue;
+    // Rank: favorite (2) > approved (1) > anything else (0); newest wins ties.
+    // An explicit ♥ beats recency — the Owner picked it for a reason.
+    const rank = r.is_favorite ? 2 : ((r.human_override || r.verdict) === 'approved' ? 1 : 0);
+    const cur = bestRender[r.project_id];
+    if (!cur || rank > cur._rank || (rank === cur._rank && r.created_at > cur.created_at)) {
+      bestRender[r.project_id] = { storage_path: r.storage_path, created_at: r.created_at, _rank: rank };
+    }
   }
 }
 
@@ -203,19 +259,23 @@ function render(){
     const projs = byClient[cname];
     const cards = projs.map(p => {
       const thumbUrl = thumbCache[p.id];
-      const thumb = thumbUrl
-        ? `<div class="proj-thumb"><img src="${esc(thumbUrl)}" loading="lazy"></div>`
-        : `<div class="proj-thumb empty">◇</div>`;
+      const insetUrl = refInsetCache[p.id];
+      const inset = insetUrl
+        ? `<span class="ref-inset" title="Client reference photo"><img src="${esc(insetUrl)}" loading="lazy"></span>`
+        : '';
+      const banner = thumbUrl
+        ? `<div class="proj-banner"><img class="main" src="${esc(thumbUrl)}" loading="lazy">${inset}</div>`
+        : `<div class="proj-banner empty">◇</div>`;
       return `<a class="proj-card" href="3-project-view.html?project=${esc(p.id)}">
+        ${banner}
         <div class="proj-head">
-          ${thumb}
           <div><div class="proj-name">${esc(p.name)}</div>
           <div class="proj-product">${esc(p.product || '')}</div></div>
           <button type="button" class="proj-del" title="Delete project" onclick="return deleteProjectCard(event,'${esc(p.id)}')">Delete</button>
         </div>
         <div class="proj-meta">
           <span class="proj-date">started ${esc(p.started_on)}</span>
-          <span class="proj-counts"><span>${(counts[p.id]||{}).total||0} image${((counts[p.id]||{}).total||0)===1?'':'s'}</span><span>${(counts[p.id]||{}).favorites||0} ♥</span></span>
+          <span class="proj-counts">${p.pipeline === 'pro' ? '<span class="proj-mode-chip">Exact</span>' : ''}<span>${(counts[p.id]||{}).total||0} image${((counts[p.id]||{}).total||0)===1?'':'s'}</span><span>${(counts[p.id]||{}).favorites||0} ♥</span></span>
         </div>
       </a>`;
     }).join('');
@@ -256,6 +316,23 @@ async function deleteProjectCard(event, projectId){
 let cachedClients = [];
 let selectedFiles = [];
 
+// ---------- render mode (one app, two modes — 2026-07-10 merge) ----------
+// Everything is unlocked during beta. At paid launch, wire this to the real
+// per-user entitlements (Supabase) so Exact render gates on the Pro plan —
+// the locked-card UI below already handles hasProAccess() === false.
+const BETA_ALL_ACCESS = true;
+function hasProAccess(){ return BETA_ALL_ACCESS; }
+let selectedMode = 'standard';
+function pickMode(mode){
+  if (mode === 'pro' && !hasProAccess()) return;
+  selectedMode = mode;
+  document.getElementById('mode-card-standard').classList.toggle('selected', mode === 'standard');
+  document.getElementById('mode-card-pro').classList.toggle('selected', mode === 'pro');
+  document.getElementById('np-photo-hint').textContent = mode === 'pro'
+    ? 'The first photo is what your product gets cut out from and pixel-locked into every scene — a pre-made cutout (transparent PNG with "cutout" in the filename, added to the project\'s assets later) holds fine detail even better.'
+    : 'The first photo becomes the checker\'s reference image (projects.reference_image).';
+}
+
 async function openNewProject(){
   cachedClients = await db.listClients();
   const sel = document.getElementById('np-client');
@@ -270,6 +347,9 @@ async function openNewProject(){
   renderFileList();
   document.getElementById('np-status').textContent = '';
   onClientSelectChange();
+  // Locked state for Exact render once entitlements are real (no-op in beta).
+  document.getElementById('mode-card-pro').classList.toggle('locked', !hasProAccess());
+  pickMode(selectedMode);
   document.getElementById('new-project-backdrop').classList.add('open');
 }
 function closeNewProject(){
@@ -311,7 +391,7 @@ async function submitNewProject(){
         clientId = c.id; clientSlug = c.slug;
       }
 
-      const proj = await db.createProject({ clientId, name, product, description });
+      const proj = await db.createProject({ clientId, name, product, description, pipeline: selectedMode });
 
       let referencePath = null;
       for (const file of selectedFiles) {
@@ -335,13 +415,19 @@ async function submitNewProject(){
     document.getElementById('page-sub').textContent = 'Failed to load: ' + e.message;
     return;
   }
-  await Promise.all([resolveThumbnails(allProjects), resolveCounts(allProjects)]);
+  // Sequential on purpose: resolveCounts picks each project's best render,
+  // which resolveThumbnails then signs as the card image.
+  await resolveCounts(allProjects);
+  await resolveThumbnails(allProjects);
   render();
 
-  // Files page's "New Standard/Pro Project" card CTAs link here with
-  // ?new=1 to jump straight into project creation instead of landing on
-  // an empty list first.
-  if (new URLSearchParams(location.search).get('new') === '1') openNewProject();
+  // Files page's "New Project" card CTAs link here with ?new=1 to jump
+  // straight into project creation instead of landing on an empty list
+  // first; ?mode=pro|standard preselects the render-mode card.
+  const params = new URLSearchParams(location.search);
+  const preMode = params.get('mode');
+  if (preMode === 'pro' || preMode === 'standard') selectedMode = preMode;
+  if (params.get('new') === '1') openNewProject();
 })();
 </script>
 <script src="../assets/app-switcher.js"></script>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Tags — Blue — Kindtail | Tolerance Studio</title>
+<title>Brief &amp; Specs — Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="lib/supabase.js"></script>
@@ -44,12 +44,12 @@ a{color:inherit;text-decoration:none}
 
 .wrap{max-width:88rem;margin:0 auto;padding:2.6rem 1.6rem 4rem}
 h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
-.sub{color:var(--muted);font-size:.9rem;margin-bottom:1.6rem}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:1.4rem}
 
 .ai-bar{display:flex;align-items:center;gap:.7rem;background:var(--card);border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1.6rem}
 .ai-bar .lbl{font-weight:600;font-size:.9rem}
-.ai-bar .desc{font-size:.8rem;color:var(--muted);flex:1}
-.ai-status{font-size:.8rem;color:var(--muted)}
+.ai-bar .desc{font-size:.76rem;color:var(--muted);flex:1;line-height:1.5}
+.ai-status{font-size:.75rem;color:var(--muted)}
 .ai-status.busy{font-style:italic}
 .ai-status.err{color:#ef5350;font-style:normal}
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
@@ -61,10 +61,14 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 /* ---------- project brief panel (read-only, locked after creation) ---------- */
 .brief-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1.6rem}
 .brief-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
-.brief-head h3{font-size:.92rem;font-weight:600}
-.brief-grid{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem;margin-bottom:.8rem}
-.brief-grid dt{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;padding-top:.1rem}
+.brief-head h3{font-family:var(--font-display);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.brief-grid{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem;margin-bottom:0}
+.brief-grid dt{color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding-top:.15rem}
 .brief-grid dd{margin:0}
+.brief-body{display:flex;gap:1.3rem;align-items:flex-start}
+.brief-fields{flex:1;min-width:0}
+.brief-photos-col{flex:0 0 186px}
+@media(max-width:640px){.brief-body{flex-direction:column}.brief-photos-col{flex:none}}
 .brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
 .brief-photos img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
 .brief-photos .none{font-size:.8rem;color:var(--muted)}
@@ -85,13 +89,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .brief-edit .pd-status.err{color:#ef5350}
 .btn-sm{font-size:.72rem;padding:.35rem .7rem}
 
-.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem}
+.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-bottom:1.2rem}
 .legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
 .sw-must{background:#c62828}.sw-should{background:#e65100}.sw-flavor{background:#5f5e5a}
 
 .tag-group{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1rem}
-.tag-group h3{font-size:.92rem;font-weight:600;margin-bottom:.15rem}
-.tag-group .grp-hint{font-size:.8rem;color:var(--muted);margin-bottom:.8rem}
+.tag-group h3{font-family:var(--font-display);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem}
+.tag-group .grp-hint{font-size:.75rem;color:var(--muted);margin-bottom:.8rem;line-height:1.5}
 .tags{display:flex;flex-wrap:wrap;gap:.5rem}
 .tag{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;user-select:none;color:#fff;line-height:1.2;transition:transform .1s}
 .tag:hover{transform:translateY(-1px)}
@@ -101,65 +105,105 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .tag.should{background:#e65100}
 .tag.flavor{background:#5f5e5a}
 .add-row{display:flex;gap:.5rem;margin-top:.9rem}
-.add-row input{flex:1;padding:.55rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem}
+.add-row input{flex:1;padding:.55rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--ink)}
 .add-row select{padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--ink)}
 
-.preview{font-family:var(--font-mono);font-size:.8rem;line-height:2;background:var(--chip);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin-top:1.2rem}
+.preview{font-family:var(--font-mono);font-size:.78rem;line-height:1.9;background:var(--chip);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin-top:1.2rem}
 .preview b{color:#ef5350}
 .preview b.should{color:#e65100}
 .preview b.flavor{color:#5f5e5a}
 
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;justify-content:flex-end;gap:.6rem}
+/* Brief & Specs layout (2026-07-11): brief and specs side by side up top,
+   tag groups in two columns — the stacked full-width cards left most of a
+   wide screen empty. */
+.setup-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:1rem;margin-bottom:1.2rem;align-items:start}
+@media(max-width:900px){.setup-grid{grid-template-columns:1fr}}
+.setup-grid .brief-panel{margin-bottom:0}
+.tag-cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+@media(max-width:900px){.tag-cols{grid-template-columns:1fr}}
+.tag-cols .tag-group{margin-bottom:0}
+.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
+.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
+.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
 </style>
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Brief / Tags</span></div>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Brief &amp; Specs</span><span class="mode-chip" id="mode-chip"></span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
 <div class="rail-wrap"><div class="rail">
-  <div class="rail-step active"><span class="n">1</span>Brief / Tags</div>
+  <div class="rail-step active"><span class="n">1</span>Brief &amp; Specs</div>
   <div class="rail-step" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(projectId)"><span class="n">2</span>Scenes</div>
   <div class="rail-step" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">3</span>Check</div>
-  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Compose</div>
+  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Size and Text</div>
   <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
 </div></div>
 
 <div class="wrap">
   <p class="sub" id="page-sub">Loading…</p>
 
-  <div class="brief-panel">
-    <div class="brief-head"><h3>Project brief</h3><button type="button" class="edit-trigger" id="brief-edit-btn" onclick="openBriefEdit()">✎ Edit</button></div>
-    <dl class="brief-grid" id="brief-view">
-      <dt>Client</dt><dd id="brief-client">… <span class="brief-lock-inline">locked</span></dd>
-      <dt>Campaign</dt><dd id="brief-campaign">…</dd>
-      <dt>Product</dt><dd id="brief-product">…</dd>
-      <dt>Description</dt><dd id="brief-description">…</dd>
-    </dl>
-    <div class="brief-edit" id="brief-edit" style="display:none">
-      <div class="field"><label for="bd-campaign">Campaign</label><input type="text" id="bd-campaign"></div>
-      <div class="field"><label for="bd-product">Product</label><input type="text" id="bd-product" placeholder="e.g. PAWD Crate"></div>
-      <div class="field"><label for="bd-description">Description</label><textarea id="bd-description" placeholder="What's this campaign about — product, mood, key facts."></textarea></div>
-      <div class="edit-actions">
-        <button class="btn btn-primary btn-sm" onclick="saveBriefEdit()">Save</button>
-        <button class="btn btn-ghost btn-sm" onclick="cancelBriefEdit()">Cancel</button>
-        <span class="pd-status" id="bd-status"></span>
+  <div class="setup-grid">
+    <div class="brief-panel">
+      <div class="brief-head"><h3>Project brief</h3><button type="button" class="edit-trigger" id="brief-edit-btn" onclick="openBriefEdit()">✎ Edit</button></div>
+      <div class="brief-body">
+      <div class="brief-fields">
+      <dl class="brief-grid" id="brief-view">
+        <dt>Client</dt><dd id="brief-client">… <span class="brief-lock-inline">locked</span></dd>
+        <dt>Campaign</dt><dd id="brief-campaign">…</dd>
+        <dt>Product</dt><dd id="brief-product">…</dd>
+        <dt>Description</dt><dd id="brief-description">…</dd>
+      </dl>
+      <div class="brief-edit" id="brief-edit" style="display:none">
+        <div class="field"><label for="bd-campaign">Campaign</label><input type="text" id="bd-campaign"></div>
+        <div class="field"><label for="bd-product">Product</label><input type="text" id="bd-product" placeholder="e.g. PAWD Crate"></div>
+        <div class="field"><label for="bd-description">Description</label><textarea id="bd-description" placeholder="What's this campaign about — product, mood, key facts."></textarea></div>
+        <div class="edit-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveBriefEdit()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="cancelBriefEdit()">Cancel</button>
+          <span class="pd-status" id="bd-status"></span>
+        </div>
+      </div>
+      </div>
+      <div class="brief-photos-col">
+        <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
+        <div class="brief-photo-actions">
+          <button class="btn btn-ghost btn-sm" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
+          <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
+          <span class="ai-status" id="photo-action-status"></span>
+        </div>
+      </div>
       </div>
     </div>
-    <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
-    <div class="brief-photo-actions">
-      <button class="btn btn-ghost" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
-      <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
-      <span class="ai-status" id="photo-action-status"></span>
+
+    <div class="brief-panel" id="specs-panel">
+      <div class="brief-head"><h3>Specs</h3></div>
+      <!-- Exact mode only (projects.pipeline='pro') — placement constraints for
+           the pixel-lock compositor. In Scene mode the whole Specs card hides
+           (the model picker moved to the Scenes page, 2026-07-11); see init(). -->
+      <div id="placement-group" style="display:none">
+        <h3 style="font-family:var(--font-display);font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem">Placement</h3>
+        <div class="grp-hint">Product size in frame — how tall the product renders as a percentage of the image height. Leave blank to vary per render.</div>
+        <div class="add-row">
+          <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)">
+        </div>
+        <div class="grp-hint" style="margin-top:1rem">Real height, in inches — tells the AI how to scale the room and furniture around the product so it doesn't look shrunk into or blown up past its surroundings. Leave blank to skip.</div>
+        <div class="add-row">
+          <input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)">
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="ai-bar">
-    <span class="lbl">✨ AI draft</span>
-    <span class="desc">Seeds from this client's previous campaigns — review the weights, they're a starting point.</span>
+    <span class="lbl">🏷 Tags</span>
+    <span class="desc">Fill them from the brand kit, or let AI draft from this client's previous campaigns — weights are a starting point.</span>
+    <span class="ai-status" id="kit-status"></span>
     <span class="ai-status" id="ai-status"></span>
+    <button class="btn btn-ghost" id="kit-apply-btn" onclick="applyKitTags()" title="Fill the tags from this client's saved brand kit">Apply brand kit</button>
     <button class="btn btn-ai" id="ai-draft-btn" onclick="aiDraftTags()">Ask AI to draft tags</button>
   </div>
 
@@ -169,31 +213,32 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
   </div>
 
-  <div class="tag-group">
-    <h3>Product spec</h3>
-    <div class="grp-hint">What must be true on the product itself.</div>
-    <div class="tags" id="tags-product"></div>
-    <div class="add-row">
-      <input id="add-text-product" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('product')">
-      <select disabled><option>Product spec</option></select>
-      <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
+  <div class="tag-cols">
+    <div class="tag-group">
+      <h3>Product spec</h3>
+      <div class="grp-hint">What must be true on the product itself.</div>
+      <div class="tags" id="tags-product"></div>
+      <div class="add-row">
+        <input id="add-text-product" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('product')">
+        <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
+      </div>
     </div>
-  </div>
 
-  <div class="tag-group">
-    <h3>Creative constants</h3>
-    <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
-    <div class="tags" id="tags-creative"></div>
-    <div class="add-row">
-      <input id="add-text-creative" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('creative')">
-      <select disabled><option selected>Creative constants</option></select>
-      <button class="btn btn-ghost" onclick="addTag('creative')">Add</button>
+    <div class="tag-group">
+      <h3>Creative constants</h3>
+      <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
+      <div class="tags" id="tags-creative"></div>
+      <div class="add-row">
+        <input id="add-text-creative" placeholder="e.g. warm morning light" onkeydown="if(event.key==='Enter')addTag('creative')">
+        <button class="btn btn-ghost" onclick="addTag('creative')">Add</button>
+      </div>
     </div>
   </div>
 
   <div class="preview" id="preview">(no tags yet)</div>
 
   <div class="savebar">
+    <button class="btn btn-ghost" id="kit-save-btn" style="margin-right:auto" onclick="saveTagsToKit()" title="Save these tags as the client's brand kit — new projects start with them">Save tags to kit</button>
     <button class="btn btn-ghost" onclick="location.reload()">Cancel</button>
     <button class="btn btn-primary" onclick="saveAndContinue()">Save &amp; continue →</button>
   </div>
@@ -230,9 +275,73 @@ function addTag(group){
   inp.value = '';
   renderTags();
 }
+function isExactMode(){ return project && project.pipeline === 'pro'; }
+
+// Exact mode placement (ported from the old Pro app, 2026-07-10 merge) —
+// scale writes straight into tags.placement.scale, the fraction-of-canvas-
+// height the Cloud Run compositor pastes the real product cutout at;
+// realHeightIn becomes a familiar-object comparison sentence in the scene
+// prompt (see 5-scenes-editor.html's sizeComparisonPhrase).
+function readPlacement(){
+  const scaleV = parseFloat(document.getElementById('placement-scale').value);
+  const heightV = parseFloat(document.getElementById('placement-height').value);
+  const scale = Number.isFinite(scaleV) && scaleV > 0 ? Math.min(1, scaleV / 100) : null;
+  const realHeightIn = Number.isFinite(heightV) && heightV > 0 ? heightV : null;
+  if (!scale && !realHeightIn) return null;
+  const p = {};
+  if (scale) p.scale = scale;
+  if (realHeightIn) p.realHeightIn = realHeightIn;
+  return p;
+}
+function fillPlacement(placement){
+  document.getElementById('placement-scale').value = placement?.scale ? Math.round(placement.scale * 100) : '';
+  document.getElementById('placement-height').value = placement?.realHeightIn ?? '';
+}
 async function saveAndContinue(){
+  // Only Exact mode owns tags.placement — in Scene mode the inputs are
+  // hidden/blank, and writing their null here would wipe a value saved
+  // back when the project ran as Exact.
+  if (isExactMode()) tags.placement = readPlacement();
   await db.saveTags(projectId, tags);
   location.href = `5-scenes-editor.html?project=${encodeURIComponent(projectId)}`;
+}
+
+// ---------- brand kit (2026-07-11) ----------
+// The kit lives on the CLIENT (clients.brand_kit) so it survives across
+// projects. New projects auto-seed from it (db.createProject); these two
+// buttons cover the manual paths: forgot / project predates the kit
+// (apply), and capture-while-working (save).
+function kitStatus(msg, err){
+  const el = document.getElementById('kit-status');
+  el.textContent = msg;
+  el.classList.toggle('err', !!err);
+  if (msg && !err) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+}
+function applyKitTags(){
+  const kit = project.clients?.brand_kit;
+  if (!kit?.tags || (!kit.tags.product?.length && !kit.tags.creative?.length)){
+    kitStatus('no brand kit saved for this client yet', true); return;
+  }
+  const hasTags = tags.product?.length || tags.creative?.length;
+  if (hasTags && !confirm('Replace the current tags with the brand kit tags?')) return;
+  // deep copy — editing here must not silently mutate the kit object
+  tags = JSON.parse(JSON.stringify({ ...tags, ...kit.tags }));
+  renderTags();
+  kitStatus('brand kit applied — Save & continue to keep it');
+}
+async function saveTagsToKit(){
+  if (!tags.product?.length && !tags.creative?.length){
+    kitStatus('nothing to save — add some tags first', true); return;
+  }
+  const kit = project.clients?.brand_kit || {};
+  const clientName = project.clients?.name || 'this client';
+  if (kit.tags && !confirm(`Replace ${clientName}'s brand kit tags with these?`)) return;
+  try {
+    const updated = { ...kit, tags: { product: tags.product || [], creative: tags.creative || [] } };
+    await db.saveBrandKit(project.client_id, updated);
+    if (project.clients) project.clients.brand_kit = updated;
+    kitStatus('saved to brand kit — new projects start with these tags');
+  } catch (e) { kitStatus(e.message || String(e), true); }
 }
 
 // Title/crumb/subhead all quote the project name — kept in one place so a
@@ -240,7 +349,7 @@ async function saveAndContinue(){
 // next page load.
 function renderPageMeta(){
   const clientName = project.clients ? project.clients.name : '';
-  document.title = `Tags — ${project.name} — ${clientName} | Tolerance Studio`;
+  document.title = `Brief & Specs — ${project.name} — ${clientName} | Tolerance Studio`;
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('page-sub').textContent =
     `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
@@ -375,6 +484,21 @@ async function init(){
   renderPageMeta();
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
+  // Mode-aware chrome (one app, two render modes — 2026-07-10 merge).
+  const chip = document.getElementById('mode-chip');
+  if (isExactMode()) {
+    chip.textContent = 'Exact render';
+    chip.classList.add('exact');
+    document.getElementById('placement-group').style.display = '';
+    fillPlacement(tags.placement);
+  } else {
+    chip.textContent = 'Scene render';
+    chip.classList.add('scene');
+    // Scene mode has no specs left on this page (the model picker lives on
+    // the Scenes page now) — hide the card and let the brief run full width.
+    document.getElementById('specs-panel').style.display = 'none';
+    document.querySelector('.setup-grid').style.gridTemplateColumns = '1fr';
+  }
   renderTags();
   renderBrief();
 }

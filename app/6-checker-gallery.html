@@ -144,25 +144,33 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 #lightbox .lb-open-orig:hover{background:rgba(255,255,255,.24)}
 #lightbox .lb-hint{position:absolute;bottom:1rem;right:1rem;color:#999;font-size:.68rem}
 .imgwrap img.lb-thumb{cursor:pointer}
+.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
+.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
+.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
+/* Exact-mode edit guard (Owner call, 2026-07-10): editing redraws the
+   product, which breaks the pixel-lock promise — warn at the edit box and
+   badge any AI-edited render so it can't pass as pixel-exact. */
+.edit-warn{font-size:.68rem;line-height:1.45;color:var(--warn);background:var(--warn-wash);border-radius:8px;padding:.4rem .55rem;margin-top:.3rem}
+.lockbreak-chip{position:absolute;bottom:.4rem;left:.4rem;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.22rem .5rem;border-radius:8px;background:rgba(180,83,9,.92);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Check</span></div>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Check</span><span class="mode-chip" id="mode-chip"></span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
 <div class="rail-wrap"><div class="rail">
-  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief &amp; Specs</div>
   <div class="rail-step done" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Scenes</div>
   <div class="rail-step active"><span class="n">3</span>Check</div>
-  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Compose</div>
+  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Size and Text</div>
   <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
 </div></div>
 
 <div class="wrap">
-  <p class="sub">AI Vision check complete. Approved image will be available for Compose on the next step.</p>
+  <p class="sub">AI Vision check complete. Approved images move on to the Text step next.</p>
 
   <div class="tally-bar">
     <div class="tally-item"><span class="tally-num" id="tally-approved">0</span><span class="tally-label">approved</span></div>
@@ -183,7 +191,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
   <div class="grid" id="rejected-grid"></div>
 
   <div class="savebar">
-    <button class="btn btn-primary" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)">Continue to Compose →</button>
+    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
+    <button class="btn btn-primary" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)">Continue to Text →</button>
   </div>
 </div>
 
@@ -275,6 +284,16 @@ async function resolveSignedUrls(rs){
 // mirrors run_checker.py's sort loop (skip anything with human_override set,
 // else sort by checker's hard-fail rule).
 function effectiveVerdict(r){ return r.human_override || r.verdict; }
+
+// Exact mode (projects.pipeline='pro') promises the product is the real
+// photo's pixels, composited, never regenerated. The Edit box below regen-
+// erates via AI, so on an Exact project it quietly breaks that promise —
+// guarded with a warning + confirm (Owner call, 2026-07-10), and the edited
+// copy is badged so it can't be mistaken for a pixel-exact render.
+function isExactProject(){ return !!(project && project.pipeline === 'pro'); }
+// Edited renders carry "-edit-<timestamp>" in the filename (editRender's
+// naming convention below) — in Exact mode that means the lock is broken.
+function isAiEdited(r){ return /-edit-\d+\./.test(r.filename || ''); }
 
 // checker.js asks the model for a plain-language note ("overall_notes"/
 // "note", 2-3 sentences) alongside the per-item list and the countable score.
@@ -398,11 +417,20 @@ function cardHtml(r){
     checkBlock = '<span class="verdict-pill v-checker-review">◐ not checked yet</span>';
   }
 
+  // Exact mode: badge AI-edited copies (lock broken) and warn at the edit box.
+  const lockBreakChip = (isExactProject() && isAiEdited(r))
+    ? '<span class="lockbreak-chip" title="This copy was edited with AI, so the product is no longer a pixel-exact match to your photo.">Not pixel-locked</span>'
+    : '';
+  const editWarn = isExactProject()
+    ? '<div class="edit-warn">Editing redraws the product with AI — the result won\'t be pixel-locked. For a different scene, re-run from Scenes instead.</div>'
+    : '';
+
   return `<div class="card">
     <div class="imgwrap">
       <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
+      ${lockBreakChip}
     </div>
     <div class="body">
       ${checkBlock}
@@ -412,6 +440,7 @@ function cardHtml(r){
         <input type="text" id="edit-instr-${r.id}" placeholder="e.g. change the bowl color to blue">
         <button onclick="editRender('${r.id}')">✎ Edit</button>
       </div>
+      ${editWarn}
       <span class="edit-hint" id="edit-status-${r.id}"></span>
     </div>
   </div>`;
@@ -516,6 +545,11 @@ async function editRender(renderId){
   if (!instruction) { statusEl.textContent = 'describe what should change first'; statusEl.classList.add('err'); return; }
   const r = renders.find(x => x.id === renderId);
   if (!r) return;
+  // Exact-mode guard (Owner call, 2026-07-10): make breaking the pixel lock
+  // an explicit opt-in, never a silent side effect of a quick edit.
+  if (isExactProject() && !confirm('This is an Exact-render project. Editing redraws the product with AI, so the result will no longer be a pixel-exact match to your photo. Continue anyway?')) {
+    return;
+  }
   statusEl.textContent = 'editing…'; statusEl.classList.remove('err'); statusEl.classList.add('busy');
   try {
     const sourceUrl = signedUrlCache[r.storage_path] || await db.getSignedUrl(r.storage_path);
@@ -552,8 +586,24 @@ async function init(){
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Checker — ${project.name} | Tolerance Studio`;
+  // Mode chip (one app, two render modes — 2026-07-10 merge). The checker
+  // itself is mode-blind: it scores Scene renders and Exact composites the
+  // same way (Owner call, 2026-07-10: scoring runs on BOTH modes).
+  const chip = document.getElementById('mode-chip');
+  if (project.pipeline === 'pro') { chip.textContent = 'Exact render'; chip.classList.add('exact'); }
+  else { chip.textContent = 'Scene render'; chip.classList.add('scene'); }
   renders = await loadRenders();
   await render();
+  // ?autocheck=1 (set by the Scenes page after an Exact-mode composite run,
+  // where the checker doesn't run inside `generate`): score everything that
+  // arrived unchecked, one at a time so per-card status stays readable.
+  // Sticky human overrides are respected by setCheckerResult regardless.
+  if (new URLSearchParams(location.search).get('autocheck') === '1') {
+    const unchecked = renders.filter(r => !r.checker);
+    for (const r of unchecked) {
+      try { await runChecker(r.id); } catch (e) { /* per-card status already shows it */ }
+    }
+  }
 }
 init();
 </script>

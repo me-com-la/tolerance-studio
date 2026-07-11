@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tolerance Studio — product imagery built around your brand</title>
-<meta name="description" content="Three ways to get brand-true product imagery without a reshoot: Standard, a self-serve AI app for range (free for 2 projects, $10/mo unlimited); PRO, a self-serve AI app that locks your product's real pixels ($20/mo); and a full-service Creative Director tier for brands who want it fully handled.">
+<meta name="description" content="One studio app, two render modes, plus a full-service tier: Scene render draws your product into any scene (Standard, free for 2 projects, $10/mo unlimited); Exact render locks your product's real pixels into the scene (Pro, $20/mo); and a Creative Director tier for brands who want it fully handled. Every image scored on a 7-point accuracy inspection.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
 // Redirect signed-in users straight to the app
 try {
   var _tok = localStorage.getItem('sb-mqgfosfadmmiqlvuvbcy-auth-token');
-  if (_tok && JSON.parse(_tok).access_token) location.replace('my-images.html');
+  if (_tok && JSON.parse(_tok).access_token) location.replace('app/2-project-list.html');
 } catch(e){}
 </script>
 <script>
@@ -188,6 +188,17 @@ img{max-width:100%;display:block}
 /* 7-point brand inspection — the verified-accuracy score, marketed */
 .insp-points{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem}
 .insp-card{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.3rem 1.2rem}
+/* in-the-app feature cards — real dark-UI screenshots on the light page */
+.featcards{display:grid;grid-template-columns:1.05fr 1fr;gap:1.1rem;align-items:stretch}
+@media(max-width:800px){.featcards{grid-template-columns:1fr}}
+.featcol{display:flex;flex-direction:column;gap:1.1rem}
+.featcard{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;margin:0}
+.featcard-img{background:#0c0b10;flex:1;display:flex;align-items:center}
+.featcard-img img{width:100%;height:auto;display:block}
+.featcard figcaption{padding:1rem 1.2rem 1.2rem}
+.featcard h4{font-family:var(--display);font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.3rem}
+.featcard figcaption p{font-size:.85rem;color:var(--muted);line-height:1.6}
+.featcol .featcard{flex:1}
 .insp-card .insp-num{font-family:var(--mono);font-size:.66rem;color:var(--accent);letter-spacing:.08em}
 .insp-card h4{font-family:var(--display);font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:.35rem 0 .35rem}
 .insp-card p{font-size:.82rem;color:var(--muted);line-height:1.55}
@@ -269,8 +280,8 @@ footer a:hover{color:var(--ink)}
 <section class="sec" id="products" style="padding-top:1.5rem">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="sec-h">Pick yout Tolerance, build your brand.</h2>
-      <p class="sec-lead">Same brand rules underneath everything. Choose the tier that matches how hands-on you want to be.</p>
+      <h2 class="sec-h">Pick your Tolerance, build your brand.</h2>
+      <p class="sec-lead">Standard and Pro are the same app — the plan sets which render modes you unlock. Scene render draws your product into any scene you can brief; Exact render locks your photo's actual pixels into the scene. Every image, either mode, gets the same 7-point accuracy score. Creative Director puts a human on all of it.</p>
     </div>
     <div class="compare-scroll">
       <table class="compare">
@@ -311,31 +322,55 @@ footer a:hover{color:var(--ink)}
             <td class="val hl"><span class="check">&#10003;</span></td>
           </tr>
           <tr>
-            <th class="feat" scope="row">Product in the frame</th>
-            <td class="val txt">AI-drawn, spec-checked against your photos</td>
-            <td class="val txt">Your photo's pixels, never redrawn</td>
-            <td class="val txt hl">Your photo's pixels, never redrawn</td>
+            <th class="feat" scope="row">Brand kit — your fonts, colors, and brand rules saved once, applied to every new project</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Two looks per campaign — photoreal or hyper-real, picked per batch</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Scene render — AI draws your product into any scene</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Exact render — your photo's pixels locked into the scene, never redrawn</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">7-point accuracy score on every image, both modes</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
           </tr>
           <tr>
             <th class="feat" scope="row">Angles</th>
             <td class="val txt">Any you can brief</td>
-            <td class="val txt">The angles you photograph</td>
+            <td class="val txt">Any in Scene mode; your photo's angle in Exact mode</td>
             <td class="val txt hl">Any — directed by your creative director</td>
           </tr>
           <tr>
             <th class="feat" scope="row">People &amp; pets</th>
             <td class="val txt">Interacting with the product</td>
-            <td class="val txt">Beside it, or photographed with it</td>
+            <td class="val txt">Interacting (Scene) or beside it (Exact)</td>
             <td class="val txt hl">Directed to fit the campaign</td>
           </tr>
           <tr>
             <th class="feat" scope="row">Drift risk</th>
-            <td class="val txt">Possible — caught by machine check + human review</td>
-            <td class="val txt">None, by construction</td>
+            <td class="val txt">Possible — every image scored, rejects flagged</td>
+            <td class="val txt">None in Exact mode, by construction</td>
             <td class="val txt hl">None — human-reviewed before it ships</td>
           </tr>
           <tr>
-            <th class="feat" scope="row">Sized for every campaign need</th>
+            <th class="feat" scope="row">Platform size presets — Instagram, TikTok, Shopify, Pinterest, Facebook — plus any custom size</th>
             <td class="val"><span class="check">&#10003;</span></td>
             <td class="val"><span class="check">&#10003;</span></td>
             <td class="val hl"><span class="check">&#10003;</span></td>
@@ -347,10 +382,16 @@ footer a:hover{color:var(--ink)}
             <td class="val hl"><span class="check">&#10003;</span></td>
           </tr>
           <tr>
-            <th class="feat" scope="row">AI directs the scenes and tags for you</th>
+            <th class="feat" scope="row">True-size and framing controls — the product scales right in the room</th>
             <td class="val"><span class="no">&mdash;</span></td>
             <td class="val"><span class="check">&#10003;</span></td>
             <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Hand any project to a creative director mid-flow — one click, from inside the app</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val txt hl">Built in — that's us</td>
           </tr>
           <tr>
             <th class="feat" scope="row">A real creative director builds your campaign</th>
@@ -373,7 +414,7 @@ footer a:hover{color:var(--ink)}
           <tr>
             <th class="feat" scope="row">Best for</th>
             <td class="val txt">Range, volume, concepts</td>
-            <td class="val txt">Hero shots, PDPs, accuracy-critical SKUs</td>
+            <td class="val txt">Everything Standard does, plus hero shots, PDPs, accuracy-critical SKUs</td>
             <td class="val txt hl">Full campaigns, brand launches, high-stakes releases</td>
           </tr>
         </tbody>
@@ -416,24 +457,24 @@ footer a:hover{color:var(--ink)}
 <section class="sec" style="padding-top:0">
   <div class="wrap honest-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
     <div class="limits">
-      <span class="eyebrow">The honest part — Standard</span>
+      <span class="eyebrow">The honest part — Scene render</span>
       <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">AI-drawn products can drift</h3>
       <ul>
         <li>Redrawing a product means small errors are possible — proportions, patterns, embossing, hardware.</li>
-        <li>Every render is checked against your real photos, and rejects never reach you.</li>
+        <li>Every render is scored on the 7-point inspection against your real photos — you see the score, not just the image.</li>
         <li>You approve against a visible checklist — nothing ships on our say-so alone.</li>
       </ul>
-      <p style="margin-top:1rem"><a class="btn btn-ghost" href="contact.html">Ask about Standard &rarr;</a></p>
+      <p style="margin-top:1rem"><a class="btn btn-ghost" href="contact.html">Ask about Scene render &rarr;</a></p>
     </div>
     <div class="limits">
-      <span class="eyebrow">The honest part — PRO</span>
-      <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">What PRO can't do</h3>
+      <span class="eyebrow">The honest part — Exact render</span>
+      <h3 style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase;letter-spacing:.02em">What Exact render can't do</h3>
       <ul>
         <li>The scene angle is your photo's angle. A new angle needs a new photo — not more prompting.</li>
         <li>Nothing can pass in front of the product unless it was photographed with it.</li>
         <li>Fine detail (thin stems, wisps) needs a clean, sharp source photo — the photo is the product.</li>
       </ul>
-      <p style="margin-top:1rem"><a class="btn btn-ghost" href="contact.html">Ask about PRO &rarr;</a></p>
+      <p style="margin-top:1rem"><a class="btn btn-ghost" href="contact.html">Ask about Exact render &rarr;</a></p>
     </div>
   </div>
 </section>
@@ -504,7 +545,7 @@ footer a:hover{color:var(--ink)}
       <div>
         <span class="eyebrow">Built into every render</span>
         <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Complete it with custom or AI text.</h2>
-        <p class="ba-cap" style="margin-bottom:.9rem">Write your own headline, body, and CTA — or let AI draft on-brand copy for you. Placed to dodge the product, in your brand's type. No separate design pass.</p>
+        <p class="ba-cap" style="margin-bottom:.9rem">Write your own headline, body, and CTA — or let AI draft on-brand copy. Then lay it out by hand, right on the image: drag the photo, the words, and the button where you want them. Push the photo past an edge and AI paints more scene to fill the space. No separate design pass.</p>
         <div style="border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
           <img src="images/ticker/7.jpg" alt="Product image with headline, body copy, and a call-to-action button composited on top" style="width:100%;height:auto;display:block">
         </div>
@@ -513,7 +554,7 @@ footer a:hover{color:var(--ink)}
       <div>
         <span class="eyebrow">One render, every placement</span>
         <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">One image. Every size.</h2>
-        <p class="ba-cap" style="margin-bottom:.9rem">Square, portrait, story — the same shot, reframed for every platform's spec. No re-shoots, no manual cropping.</p>
+        <p class="ba-cap" style="margin-bottom:.9rem">Instagram feed, portrait, story, TikTok, Shopify, Pinterest, Facebook — presets for every platform, plus any custom size you type in. Same shot, same brand type rules, reframed per spec. No re-shoots, no manual cropping.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:.6rem;align-items:end">
           <div>
             <div style="aspect-ratio:1/1;border-radius:10px;overflow:hidden;box-shadow:var(--shadow)">
@@ -537,6 +578,42 @@ footer a:hover{color:var(--ink)}
       </div>
 
     </div><!-- end grid -->
+  </div>
+</section>
+
+<!-- ── IN THE APP: FEATURE SCREENSHOTS ───────────── -->
+<section class="sec" id="in-the-app">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Inside the app</span>
+      <h2 class="sec-h">The newest tools, as they actually look.</h2>
+      <p class="sec-lead">Real screenshots from the app today — not mockups.</p>
+    </div>
+    <div class="featcards">
+      <figure class="featcard">
+        <div class="featcard-img"><img src="images/features/text-canvas.jpg" alt="The layout canvas: a product photo with headline, body copy, and CTA button placed on it, green zones showing space AI can paint with more photo" loading="lazy"></div>
+        <figcaption>
+          <h4>The hands-on canvas</h4>
+          <p>Drag your photo, your words, and your button right on the preview. Push the photo past an edge and AI paints more scene into the space — about 2¢ a paint.</p>
+        </figcaption>
+      </figure>
+      <div class="featcol">
+        <figure class="featcard">
+          <div class="featcard-img"><img src="images/features/brand-kit.jpg" alt="The Tags bar with an Apply brand kit button beside Ask AI to draft tags, above weighted product-spec and creative-constant tags" loading="lazy"></div>
+          <figcaption>
+            <h4>Your brand kit rides along</h4>
+            <p>Brand rules, font, and colors saved once per client. Every new project starts on-brand, and AI drafts copy and tags from them — one click to apply, one click to save.</p>
+          </figcaption>
+        </figure>
+        <figure class="featcard">
+          <div class="featcard-img"><img src="images/features/scenes-models.jpg" alt="The batch settings strip with a model picker offering Gemini, Seedream, and GPT Image" loading="lazy"></div>
+          <figcaption>
+            <h4>Pick the look per batch</h4>
+            <p>Gemini for photoreal, Seedream for hyper-real, GPT Image for the strictest product match. Switched per campaign, right where you set the batch size.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
   </div>
 </section>
 

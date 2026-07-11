@@ -29,28 +29,43 @@
     return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
+  // clients.slug is globally unique AND doubles as the storage folder name
+  // (see 001_init.sql). It has to stay globally unique, not just per-owner:
+  // 002_beta_members.sql's storage policy grants access to a folder if its
+  // top-level segment matches ANY client the current user owns — it never
+  // checks the owner on the rows underneath. Two different self-serve
+  // accounts landing on the same slug (e.g. two people both create a client
+  // called "Acme") would otherwise both pass that check for the same
+  // folder — a real cross-tenant storage hole, not just a cosmetic error.
+  // So on a slug collision this retries with a short random suffix instead
+  // of surfacing the raw Postgres constraint violation to a signup.
   async function createClient(name) {
-    const { data, error } = await client()
-      .from('clients')
-      .insert({ name, slug: slugify(name) })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const baseSlug = slugify(name);
+    let slug = baseSlug;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const { data, error } = await client()
+        .from('clients')
+        .insert({ name, slug })
+        .select()
+        .single();
+      if (!error) return data;
+      const isSlugCollision = error.code === '23505' && /clients_slug_key/.test(error.message || '');
+      if (!isSlugCollision) throw error;
+      slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+    throw new Error(`Could not create a unique storage slug for "${name}" — try a slightly different client name.`);
   }
 
   // ---------- projects ----------
-  // This app is the Standard pipeline — only ever show/create 'standard'
-  // rows so Pro projects (app/pro, same shared DB) don't leak in here.
-  // Kept as two separate tiers on purpose: may become two paid tiers later.
-  const PIPELINE = 'standard';
-
+  // One app, two render modes (apps merged 2026-07-10). projects.pipeline
+  // ('standard' = Scene render, 'pro' = Exact render) is the per-project
+  // mode, picked at creation — existing rows from the old two-app split
+  // keep working unchanged.
   async function listProjects() {
-    // Owner view: every Standard project, joined with client name for grouping.
+    // Owner view: every project in both modes, joined with client name.
     const { data, error } = await client()
       .from('projects')
       .select('*, clients(name, slug)')
-      .eq('pipeline', PIPELINE)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data;
@@ -59,14 +74,24 @@
   async function getProject(projectId) {
     const { data, error } = await client()
       .from('projects')
-      .select('*, clients(name, slug)')
+      .select('*, clients(name, slug, brand_kit)')
       .eq('id', projectId)
       .single();
     if (error) throw error;
     return data;
   }
 
-  async function createProject({ clientId, name, product, description, startedOn }) {
+  async function createProject({ clientId, name, product, description, startedOn, pipeline }) {
+    // Brand kit auto-apply: the client's saved tags seed every new project
+    // (fill-at-birth only — never touches a project that already has tags).
+    // A kit lookup failure must not block project creation.
+    let seedTags = { product: [], creative: [] };
+    try {
+      const { data: c } = await client().from('clients').select('brand_kit').eq('id', clientId).single();
+      if (c?.brand_kit?.tags && (c.brand_kit.tags.product?.length || c.brand_kit.tags.creative?.length)) {
+        seedTags = c.brand_kit.tags;
+      }
+    } catch (e) { /* no kit, no problem */ }
     const { data, error } = await client()
       .from('projects')
       .insert({
@@ -76,11 +101,25 @@
         description: description || null,
         started_on: startedOn || new Date().toISOString().slice(0, 10),
         status: 'brief',
-        pipeline: PIPELINE,
-        tags: { product: [], creative: [] },
+        pipeline: pipeline === 'pro' ? 'pro' : 'standard',
+        tags: seedTags,
         scenes: '',
         settings: {},
       })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  // Brand kit: one jsonb blob per client — { tags, font, text_color,
+  // cta_color, text_size }. Pass the whole updated kit; partial saves are
+  // the caller's job (spread the old kit, change one key).
+  async function saveBrandKit(clientId, brandKit) {
+    const { data, error } = await client()
+      .from('clients')
+      .update({ brand_kit: brandKit })
+      .eq('id', clientId)
       .select()
       .single();
     if (error) throw error;
@@ -348,6 +387,7 @@
     listProjects,
     getProject,
     createProject,
+    saveBrandKit,
     deleteProject,
     saveTags,
     saveScenes,

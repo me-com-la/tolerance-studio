@@ -7,22 +7,49 @@
 <meta name="description" content="Full Service — a real creative director builds your campaign with Tolerance Studio's pipeline. Coming soon.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
-<link rel="stylesheet" href="assets/auth.css">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Self-contained, no assets/styles.css or assets/auth.css — same call
+     and same reasoning as account.html (2026-07-11): matches
+     2-project-list.html's own inline styles instead of the marketing
+     site's light-mode .hero/.acct-card classes. -->
 <style>
 :root{
   --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
   --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
   --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
-  --chip:#2a2735;
+  --chip:#2a2735; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
 }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
 .topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:-.01em}
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
-.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.85rem}
-.acct-card{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.1),0 4px 16px rgba(0,0,0,.14)}
-.acct-card p{color:var(--muted)}
+.avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.85rem}
+
+/* ---- page-head, matched to 2-project-list.html exactly ---- */
+.wrap{max-width:88rem;margin:0 auto;padding:2.8rem 1.6rem 4rem}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2.2rem;flex-wrap:wrap;gap:1rem}
+h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+/* Same small-pill language as the app's mode chips (Scenes/Tags/Compose) —
+   ties this page's "Coming soon" flag to the rest of the app's visual
+   vocabulary instead of the marketing site's standalone .hero-label. */
+.page-badge{display:inline-block;vertical-align:middle;margin-left:.7rem;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.25rem .6rem;border-radius:100px;color:var(--accent-ink);background:var(--accent-wash)}
+.page-sub{color:var(--muted);font-size:.9rem;margin-top:.5rem;max-width:44rem}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;padding:.7rem 1.3rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .15s;text-decoration:none}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#fff}
+
+/* ---- card, matched to .proj-card's surface/radius/shadow language ---- */
+.acct-grid{display:grid;grid-template-columns:1fr;max-width:32rem;gap:1rem}
+.acct-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem 1.5rem;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.acct-card h3{font-family:var(--font-display);font-size:1.2rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em;margin-bottom:.5rem}
+.acct-card p{color:var(--muted);font-size:.88rem;margin-bottom:1rem;line-height:1.55}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
@@ -35,26 +62,22 @@
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
-<header class="hero auth-hero">
-  <div class="wrap">
-    <span class="hero-label">Coming soon</span>
-    <h1>Full Service.</h1>
-    <p>A real creative director builds your campaign — brief, scenes, renders, review — using the same pipeline behind Standard and Pro, with a human hand on every image before it ships.</p>
-  </div>
-</header>
-
-<section class="sec" style="padding-top:0">
-  <div class="wrap">
-    <div class="acct-grid" style="grid-template-columns:1fr;max-width:36rem">
-      <div class="acct-card">
-        <h3>Want in early?</h3>
-        <p>We're onboarding Full Service clients by hand during beta. Tell us about your brand and we'll reach out.</p>
-        <a class="btn btn-primary" href="contact.html">Talk to a creative director &rarr;</a>
-      </div>
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Full Service<span class="page-badge">Coming soon</span></h1>
+      <p class="page-sub">A real creative director builds your campaign — brief, scenes, renders, review — using the same app and both render modes, with a human hand on every image before it ships.</p>
     </div>
   </div>
-</section>
 
+  <div class="acct-grid">
+    <div class="acct-card">
+      <h3>Want in early?</h3>
+      <p>We're onboarding Full Service clients by hand during beta. Tell us about your brand and we'll reach out.</p>
+      <a class="btn btn-primary" href="contact.html">Talk to a creative director &rarr;</a>
+    </div>
+  </div>
+</div>
 
 <script src="assets/app-switcher.js"></script>
 </body>

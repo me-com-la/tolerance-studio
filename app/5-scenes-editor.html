@@ -31,6 +31,9 @@ a{color:inherit;text-decoration:none}
 .crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
 .crumbs a:hover{color:var(--ink)}
 .crumbs .cur{color:var(--ink);font-weight:600}
+.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
+.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
+.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
 .avatar{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
 .overview-bar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:16}
@@ -60,7 +63,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 
 .settings-strip{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem 1.1rem;margin-bottom:1.4rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;font-size:.85rem}
 .settings-strip label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.settings-strip input{width:5rem;padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:var(--font-mono);font-size:.88rem;text-align:center}
+.settings-strip input{width:5rem;padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:var(--font-mono);font-size:.88rem;text-align:center;background:var(--card);color:var(--ink)}
 .settings-strip .hint{font-size:.78rem;color:var(--muted)}
 
 .scene-list{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.6rem}
@@ -74,7 +77,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .scene .rm{color:var(--muted);cursor:pointer;font-size:.85rem;padding:.2rem}
 .scene .rm:hover{color:#a33}
 .add-scene{display:flex;gap:.5rem}
-.add-scene input{flex:1;padding:.6rem .85rem;border:1px dashed var(--line-2);border-radius:10px;font-family:inherit;font-size:.85rem;background:var(--ink);color:var(--paper)}
+.add-scene input{flex:1;padding:.6rem .85rem;border:1px dashed var(--line-2);border-radius:10px;font-family:inherit;font-size:.85rem;background:var(--chip);color:var(--ink)}
 
 .section-h{font-family:var(--font-display);font-size:1.1rem;font-weight:700;text-transform:uppercase;margin:1.8rem 0 .5rem}
 .sec-hint{font-family:var(--font-body);font-size:.76rem;font-weight:400;text-transform:none;color:#b8b5ac;margin-left:.6rem}
@@ -105,16 +108,16 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Standard</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Scenes</span></div>
+  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Scenes</span><span class="mode-chip" id="mode-chip"></span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
 <div class="rail-wrap"><div class="rail">
-  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief / Tags</div>
+  <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief &amp; Specs</div>
   <div class="rail-step active"><span class="n">2</span>Scenes</div>
   <div class="rail-step" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">3</span>Check</div>
-  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Compose</div>
+  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Size and Text</div>
   <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
 </div></div>
 
@@ -123,8 +126,18 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 
   <div class="settings-strip">
     <label for="batch-size">Batch size</label>
-    <input type="number" id="batch-size" min="1" max="30" onchange="saveBatchSize()">
+    <input type="number" id="batch-size" min="1" max="5" onchange="saveBatchSize()">
     <span class="hint">how many images this campaign generates — one per scene below</span>
+    <span id="scene-model-wrap" style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
+      <span style="width:1px;align-self:stretch;background:var(--line)"></span>
+      <label for="scene-model">Model</label>
+      <select id="scene-model" onchange="saveSceneModel(this.value)" style="padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--card);color:var(--ink)">
+        <option value="default">Gemini</option>
+        <option value="seedream">Seedream</option>
+        <option value="gpt">GPT Image</option>
+      </select>
+      <span class="hint" id="scene-model-hint">Gemini — photoreal · Seedream — hyper-real · GPT Image — strictest product match.</span>
+    </span>
   </div>
 
   <div class="section-h">AI scenes <span class="sec-hint">re-drafting replaces only this section, topping up to the batch size</span></div>
@@ -244,8 +257,25 @@ function updateDraftDesc(n){
   document.getElementById('ai-draft-desc').textContent =
     `Writes ${n} scenes (batch size above) using the brief tags + this client's previous scene lists.`;
 }
+// Per-project render model, stored in projects.settings.image_model — the
+// generate function maps 'seedream' to fal's Seedream v4 endpoint and uses
+// the standard Gemini model otherwise. Lives here next to batch size:
+// both decide what the Generate run produces.
+async function saveSceneModel(v){
+  const settings = Object.assign({}, project.settings || {});
+  if (v === 'seedream' || v === 'gpt') settings.image_model = v;
+  else delete settings.image_model;
+  await db.saveSettings(projectId, settings);
+  project.settings = settings;
+  const hint = document.getElementById('scene-model-hint');
+  if (hint) hint.textContent =
+    v === 'seedream' ? 'Seedream — hyper-real, glossier. Renders every scene in this batch.'
+    : v === 'gpt' ? 'GPT Image — strictest product match, slightly softer scenes. Renders every scene in this batch.'
+    : 'Gemini — photoreal · Seedream — hyper-real · GPT Image — strictest product match.';
+}
+
 async function saveBatchSize(){
-  const n = Math.max(1, Math.min(30, parseInt(document.getElementById('batch-size').value, 10) || 8));
+  const n = Math.max(1, Math.min(5, parseInt(document.getElementById('batch-size').value, 10) || 3));
   document.getElementById('batch-size').value = n;
   const settings = Object.assign({}, project.settings || {}, { batch_size: n });
   await db.saveSettings(projectId, settings);
@@ -254,17 +284,168 @@ async function saveBatchSize(){
 }
 // The one CTA runs the whole invisible middle of the pipeline (Owner call,
 // 2026-07-06: the shot-expansion machinery is internal, users think in
-// scenes): save scenes → expand-shots (turns each scene into a full locked
-// prompt, silently) → generate (Higgsfield, which also auto-runs the
-// checker per shot) → land on the Check page with everything scored.
+// scenes). It forks on the project's render mode (projects.pipeline, merged
+// 2026-07-10 — one app, two modes):
+//   Scene mode ('standard'): expand-shots → generate (full regeneration;
+//     the checker runs inside `generate`, so you land on Check scored).
+//   Exact mode ('pro'): expand-shots-pro → pixel-lock composite per shot on
+//     Cloud Run (real product pixels, no regeneration) → land on Check with
+//     ?autocheck=1 so the same checker scores these too (Owner call,
+//     2026-07-10: scoring runs on BOTH modes — supersedes the 07-09 "Pro
+//     has no checker" call).
 // Full-screen takeover while the batch runs (Owner call, 2026-07-06): the
 // whole page locks behind an overlay with a "don't refresh or leave" note,
-// a beforeunload guard backs that up, and you land on Check only once
-// generation AND checking are done (the checker runs inside `generate`).
+// a beforeunload guard backs that up.
 let generating = false;
 window.addEventListener('beforeunload', (e) => {
   if (generating) { e.preventDefault(); e.returnValue = ''; }
 });
+
+function isExactMode(){ return project && project.pipeline === 'pro'; }
+
+// ---------- Exact mode (pixel-lock) helpers ----------
+// Why this runs on Google Cloud Run instead of a `generate` Edge Function:
+// the real method's snap-back step needs OpenCV multi-scale masked template
+// matching, and Supabase Edge Functions (Deno, 2s CPU cap) can't run that.
+// The compositor lives at tools/pixel-lock/cloudrun/ (deployed 2026-07-08).
+// See tools/pixel-lock/README.md and Obsidian Vault/2-Projects/Tolerance
+// Studio/Pixel-Lock Pipeline.md for the full method. callLocalService()
+// (lib/functions.js) sends the user's session token; the service rejects
+// calls without a valid login.
+function blobToBase64(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.slice(reader.result.indexOf(',') + 1));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+function base64ToBlob(b64, mime){
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+// Finds the project's product cutout (transparent-background PNG of the
+// real product) in assets/ by filename — same convention as
+// clients/<Client>/products/<Product>/originals/*-cutout.png. If no such
+// file exists, falls back to auto-removing the background from the
+// project's reference photo (projects.reference_image, uploaded at project
+// creation) via the pixel-lock service's rembg-backed /remove-background
+// endpoint — same Cloud Run service the compositing step already depends on.
+async function findCutoutBase64(clientSlug, note){
+  const files = await db.listFiles(`${clientSlug}/${projectId}/assets`);
+  const cutoutFile = (files || []).find(f => f.id && /cutout/i.test(f.name));
+  if (cutoutFile) {
+    const url = await db.getSignedUrl(`${clientSlug}/${projectId}/assets/${cutoutFile.name}`);
+    const blob = await (await fetch(url)).blob();
+    return blobToBase64(blob);
+  }
+
+  if (!project.reference_image) {
+    throw new Error('no product cutout found in this project\'s assets/ folder (need a filename containing "cutout"), and no reference photo to auto-cut from either. Upload one of the two first.');
+  }
+  if (note) note.textContent = 'No cutout uploaded — removing the background from the reference photo automatically…';
+  const refUrl = await db.getSignedUrl(project.reference_image);
+  const refBlob = await (await fetch(refUrl)).blob();
+  const refB64 = await blobToBase64(refBlob);
+  const { cutout_b64 } = await callLocalService('remove-background', { image_b64: refB64 });
+  return cutout_b64;
+}
+
+// Converts a real-world height (inches, Owner-entered on the tags page) into
+// a familiar-object comparison — added 2026-07-09 after the frame-percentage
+// placement fix alone still left rooms scaled wrong: the compositor's scale%
+// only controls how big the pasted cutout ends up in the final composite, it
+// gives the AI background generator zero grounding on the product's real
+// size when it paints the room/furniture around it. Raw inches in a prompt
+// don't reliably move image-model output — a comparison to a common,
+// visually-familiar object does.
+function sizeComparisonPhrase(heightIn){
+  if (!heightIn || heightIn <= 0) return null;
+  if (heightIn < 4) return 'tiny, about the size of a votive candle or a golf ball';
+  if (heightIn < 8) return 'small, about the size of a coffee mug';
+  if (heightIn < 13) return 'about the height of a wine bottle';
+  if (heightIn < 20) return 'about knee-height on an adult, like a large houseplant pot';
+  if (heightIn < 30) return 'about the height of a side table or a large dog standing';
+  if (heightIn < 40) return 'about waist-height on an adult, like a dining table';
+  if (heightIn < 55) return 'about chest-height on an adult, like a bar cart or a tall bookshelf shelf';
+  if (heightIn < 72) return 'about the height of an adult person';
+  return 'taller than an adult person, like a wardrobe or a doorframe';
+}
+
+// FLUX Fill prompt (2026-07-09) — with a mask, product preservation is
+// structural, not something the prompt needs to ask for. "No text/labels/
+// logos" leads the prompt, not trails it — models weight earlier tokens
+// more heavily, and FLUX Fill has no dedicated negative-prompt field.
+function pixelLockPrompt(project, shots, item){
+  const sceneDesc = [shots.style_lock, item.prompt].map(s => (s || '').trim()).filter(Boolean).join(' ');
+  const sizePhrase = sizeComparisonPhrase(project.tags?.placement?.realHeightIn);
+  const sizeLine = sizePhrase
+    ? ` The product about to be placed into this scene is ${sizePhrase} in real life — scale the room, furniture, and any other objects in the background consistently with an object of that real-world size.`
+    : '';
+  return (
+    `No added text, labels, logos, brand names, or watermarks anywhere in the image. ` +
+    `${sceneDesc}${sizeLine} Soft natural contact shadow beneath the product, consistent with the scene's light direction.`
+  );
+}
+
+// placement (optional): { scale } — Owner-entered "size in frame" percentage
+// from the tags page (tags.placement.scale, 0-1 fraction). Forwarded as-is
+// to the Cloud Run compositor's /composite endpoint.
+async function compositeOneShot(cutoutB64, prompt, placement){
+  return callLocalService('composite', { cutout_b64: cutoutB64, prompt, placement });
+}
+
+// Exact mode's generation loop — real product cutout composited into an
+// AI-generated scene per shot, then on to Check with autocheck.
+async function generateExact(note){
+  note.textContent = 'Expanding your scenes into full prompts…';
+  await callFunction('expand-shots-pro', { projectId });
+
+  note.textContent = 'Loading your product cutout…';
+  const clientSlug = project.clients.slug;
+  const cutoutB64 = await findCutoutBase64(clientSlug, note);
+
+  const freshProject = await db.getProject(projectId);
+  const shots = freshProject.shots;
+  const placement = freshProject.tags?.placement?.scale ? { scale: freshProject.tags.placement.scale } : undefined;
+  const failed = [];
+  for (let i = 0; i < shots.items.length; i++) {
+    const item = shots.items[i];
+    note.textContent = `Compositing image ${i + 1} of ${shots.items.length} — Your real product, no regeneration…`;
+    try {
+      const prompt = pixelLockPrompt(freshProject, shots, item);
+      const result = await compositeOneShot(cutoutB64, prompt, placement);
+      // Unique per run (same timestamp convention as Compose's output
+      // filenames) — item.file alone is product+motif+index, so re-running
+      // a similar scene used to produce the SAME filename and the upsert
+      // silently REPLACED the earlier render. Every generation now keeps
+      // its own row/file.
+      const filename = `${item.file.replace(/\.[a-z0-9]+$/i, '')}-${Date.now().toString(36)}.png`;
+      const path = db.storagePath(clientSlug, projectId, 'renders', filename);
+      await db.uploadFile(path, base64ToBlob(result.composite_b64, 'image/png'));
+      await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render' });
+    } catch (e) {
+      // e.match (set in callLocalService, lib/functions.js) is the LAST
+      // attempt's score/drift/scale from the drift guard — shown so a
+      // refusal reads as "how close" (tune the guard) vs "way off" (the
+      // scene/prompt itself is the problem), instead of a bare error string.
+      const matchInfo = e.match
+        ? ` [last attempt: score=${e.match.score ?? '?'} drift=${e.match.drift ?? '?'}px scale=${e.match.scale ?? '?'}]`
+        : '';
+      failed.push(`${item.file}: ${e.message || String(e)}${matchInfo}`);
+    }
+  }
+  await db.saveStatus(projectId, 'checking');
+  await db.createRunLogEntry(projectId, 'generate',
+    `${shots.items.length - failed.length}/${shots.items.length} shots composited via pixel-lock (real product cutout + AI-generated scene, snap-back verified).` +
+    (failed.length ? ` Failed: ${failed.join('; ')}` : ''));
+
+  if (failed.length) throw new Error(`${failed.length} shot(s) failed:\n${failed.join('\n')}`);
+}
+
 async function generateAndCheck(){
   if (!scenes.length){ alert('add at least one scene first'); return; }
   const overlay = document.getElementById('gen-overlay');
@@ -276,6 +457,13 @@ async function generateAndCheck(){
   try {
     await db.saveScenes(projectId, scenesText());
     await saveBatchSize();
+
+    if (isExactMode()) {
+      await generateExact(note);
+      generating = false;
+      location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}&autocheck=1`;
+      return;
+    }
 
     note.textContent = 'Expanding your scenes into full prompts…';
     await callFunction('expand-shots', { projectId });
@@ -297,7 +485,7 @@ async function aiDraftScenes(){
   // size is honored even if its onchange save hasn't fired/landed yet. Also
   // persist it so the two can't drift.
   await saveBatchSize();
-  const n = parseInt(document.getElementById('batch-size').value, 10) || 8;
+  const n = parseInt(document.getElementById('batch-size').value, 10) || 3;
   // Your lines survive a re-draft: only Claude's lines get replaced, and
   // the draft tops the list up to the batch size around what you wrote.
   const ownerScenes = scenes.filter(s => s.src === 'owner');
@@ -329,13 +517,27 @@ async function init(){
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.getElementById('page-sub').textContent =
     `${clientName} — ${project.name}. One scene = one image. Keep each line short — the product and style facts from your brief tags get combined with every scene automatically, so don't repeat them here.`;
+  // Mode-aware chrome (one app, two render modes — 2026-07-10 merge).
+  const chip = document.getElementById('mode-chip');
+  if (isExactMode()) {
+    chip.textContent = 'Exact render';
+    chip.classList.add('exact');
+    document.getElementById('generate-btn').innerHTML = 'Generate &amp; composite these scenes now →';
+    // Exact renders composite the real product via pixel-lock — the model
+    // picker only steers Scene mode's `generate` function, so hide it here.
+    document.getElementById('scene-model-wrap').style.display = 'none';
+  } else {
+    chip.textContent = 'Scene render';
+    chip.classList.add('scene');
+  }
   // Settings strip pared down to just batch_size (Owner call, 2026-07-06):
   // generation_aspect/master_size/model stay in projects.settings with their
   // defaults (the generate function still reads generation_aspect), they just
   // don't earn UI space here.
   const settings = project.settings || {};
-  const batchSize = settings.batch_size ?? 8;
+  const batchSize = settings.batch_size ?? 3;
   document.getElementById('batch-size').value = batchSize;
+  document.getElementById('scene-model').value = ['seedream','gpt'].includes(settings.image_model) ? settings.image_model : 'default';
   updateDraftDesc(batchSize);
   scenes = parseScenesText(project.scenes);
   renderScenes();

@@ -1,4 +1,0 @@
--- 002 — project pipeline (applied against the shared mqgfosfadmmiqlvuvbcy DB).
--- See ../../app/migrations/003_project_pipeline.sql for the actual migration —
--- this file is a pointer only, kept here so app/pro's migration history isn't
--- missing the change. Do not apply this file separately; it's the same DB.
