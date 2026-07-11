@@ -99,6 +99,28 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .check-status{font-size:.72rem;color:var(--muted)}
 .check-status.busy{font-style:italic}
 .check-status.err{color:var(--bad);font-style:normal}
+/* ---------- 7-point inspection (checker v8, 2026-07-10) ---------- */
+.insp-score{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.2rem}
+.insp-score-num{font-family:var(--font-display);font-weight:700;font-size:1.8rem;line-height:1}
+.insp-score-num small{font-size:.85rem;font-weight:600;opacity:.7;margin-left:1px}
+.insp-score-lbl{font-size:.76rem;color:var(--muted)}
+.insp-score.sc-good .insp-score-num{color:var(--ok)}
+.insp-score.sc-mid .insp-score-num{color:var(--warn)}
+.insp-score.sc-bad .insp-score-num{color:var(--bad)}
+.insp-headline{font-family:var(--font-display);font-weight:700;font-size:1.02rem;text-transform:uppercase;letter-spacing:.01em;margin-bottom:.5rem}
+.insp-headline.hl-pass{color:var(--ok)}
+.insp-headline.hl-attn{color:var(--warn)}
+.insp-headline.hl-fail{color:var(--bad)}
+.insp-points{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.2rem}
+.insp-pt{font-family:var(--font-mono);font-size:.66rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:.28rem .55rem;border-radius:100px;border:none;cursor:pointer;background:var(--chip);color:var(--muted);transition:transform .1s}
+.insp-pt:hover{transform:translateY(-1px)}
+.insp-pt.pt-pass{background:var(--ok-wash);color:var(--ok)}
+.insp-pt.pt-attn{background:var(--warn-wash);color:var(--warn)}
+.insp-pt.pt-fail{background:var(--bad-wash);color:var(--bad)}
+.insp-pt.pt-na{opacity:.45}
+.insp-detail{font-size:.78rem;color:var(--ink);background:var(--chip);border-radius:8px;padding:.55rem .7rem;margin:.1rem 0 .6rem;line-height:1.55}
+.ov-btn.redo{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ov-btn.redo:hover{opacity:.88;background:var(--accent)}
 .edit-row{display:flex;gap:.4rem;margin-top:.3rem}
 .edit-row input{flex:1;min-width:0;padding:.4rem .55rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.76rem;background:var(--card);color:var(--ink)}
 .edit-row button{font-size:.76rem;font-weight:600;padding:.4rem .7rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;white-space:nowrap;color:var(--ink)}
@@ -254,15 +276,15 @@ async function resolveSignedUrls(rs){
 // else sort by checker's hard-fail rule).
 function effectiveVerdict(r){ return r.human_override || r.verdict; }
 
-// checker.js asks Gemini for a plain-language summary ("overall_notes: one
-// or two lines") alongside the per-item list and a single 0-100 score.
+// checker.js asks the model for a plain-language note ("overall_notes"/
+// "note", 2-3 sentences) alongside the per-item list and the countable score.
 function checkSummary(r){
   return r.checker && r.checker.overall_notes ? r.checker.overall_notes.trim() : '';
 }
 
-// Score badge (re-added 2026-07-09, Owner call): one number only, no
-// per-item breakdown in the card — r.checker.score is a single 0-100
-// fidelity read written by checker.js/generate.js's runCheckerInline.
+// LEGACY score badge — for renders checked before the v8 (7-point) rebuild,
+// whose r.checker has a 0-100 vibe score but no r.checker.points. Keeps old
+// data readable without re-running the checker on every past render.
 function scoreBadge(r){
   const score = r.checker && typeof r.checker.score === 'number' ? r.checker.score : null;
   if (score === null) return '';
@@ -270,10 +292,85 @@ function scoreBadge(r){
   return `<span class="verdict-pill ${cls}">Check score: ${score}</span>`;
 }
 
+// ---- 7-point inspection (checker v8) — the public, countable score. ----
+// r.checker.score is verified÷applicable of the fixed seven (Shape, Color,
+// Materials, Details, Clarity, Lighting, Scene). r.checker.points carries
+// each point's name/blurb/verdict/reason straight from the checker result —
+// this card just renders it.
+function scoreRow(r){
+  const c = r.checker;
+  if (typeof c.score !== 'number') return '';
+  const cls = c.score >= 85 ? 'sc-good' : c.score >= 60 ? 'sc-mid' : 'sc-bad';
+  const count = (typeof c.verified === 'number' && typeof c.applicable === 'number')
+    ? `${c.verified} of ${c.applicable} verified` : 'verified accuracy';
+  return `<div class="insp-score ${cls}">
+      <span class="insp-score-num">${c.score}<small>%</small></span>
+      <span class="insp-score-lbl">${esc(count)}</span>
+    </div>`;
+}
+
+function headlineBlock(r){
+  const c = r.checker;
+  const tier = c.stage2_verdict;
+  const cls = tier === 'REJECT' ? 'hl-fail' : tier === 'HUMAN_REVIEW' ? 'hl-attn' : 'hl-pass';
+  const headline = c.headline || (tier === 'REJECT' ? 'Hold — off-brand' : tier === 'HUMAN_REVIEW' ? 'One fix from ready' : 'Send-ready');
+  return `<div class="insp-headline ${cls}">${esc(headline)}</div>`;
+}
+
+// Name-only pills on the live card (Owner call: full blurb lives on the info
+// toggle and the downloadable report, not cluttering the working view).
+function pointsRow(r){
+  const pts = r.checker.points.map(p => {
+    const cls = p.verdict === 'pass' ? 'pt-pass' : p.verdict === 'attention' ? 'pt-attn' : p.verdict === 'fail' ? 'pt-fail' : 'pt-na';
+    return `<button type="button" class="insp-pt ${cls}" onclick="togglePointDetail(event,'${r.id}','${p.key}')">${esc(p.name)}</button>`;
+  }).join('');
+  return `<div class="insp-points">${pts}</div><div class="insp-detail" id="insp-detail-${r.id}" hidden></div>`;
+}
+
+function noteBlock(r){
+  const note = (r.checker.note || r.checker.overall_notes || '').trim();
+  return note ? `<p class="check-summary">${esc(note)}</p>` : '';
+}
+
+// "Redo with this fix" — reuses the existing manual edit-render flow (not a
+// new backend call): pre-fills the edit box with the checker's own
+// suggested_fix so the correction is already written, the user just confirms.
+function redoBlock(r){
+  const fix = r.checker && r.checker.suggested_fix;
+  if (!fix) return '';
+  return `<div class="override-row"><button type="button" class="ov-btn redo" onclick="prefillRedo('${r.id}')">↻ Redo with this fix</button></div>`;
+}
+
+// Click a point pill to see its blurb + the model's specific reason — one
+// shared detail slot per card (not seven hidden divs), toggled open/closed.
+function togglePointDetail(event, renderId, key){
+  event.stopPropagation();
+  const r = renders.find(x => x.id === renderId);
+  const el = document.getElementById(`insp-detail-${renderId}`);
+  if (!r || !r.checker || !r.checker.points || !el) return;
+  const p = r.checker.points.find(pt => pt.key === key);
+  if (!p) return;
+  if (el.dataset.key === key && !el.hidden) { el.hidden = true; el.dataset.key = ''; return; }
+  el.dataset.key = key;
+  el.hidden = false;
+  el.innerHTML = `<b>${esc(p.name)}.</b> ${esc(p.blurb)}${p.reason ? ` — ${esc(p.reason)}` : ''}`;
+}
+
+// Drops the checker's suggested_fix straight into the existing edit-row
+// input — the user still reviews/edits it and clicks Edit themselves; this
+// never calls edit-render on its own.
+function prefillRedo(renderId){
+  const r = renders.find(x => x.id === renderId);
+  const input = document.getElementById(`edit-instr-${renderId}`);
+  if (!r || !r.checker || !input) return;
+  input.value = r.checker.suggested_fix || '';
+  input.focus();
+}
+
 function cardHtml(r){
   const url = signedUrlCache[r.storage_path] || '';
   const verdict = effectiveVerdict(r);
-  const summary = checkSummary(r);
+  const hasInspection = !!(r.checker && Array.isArray(r.checker.points));
 
   // Owner call, 2026-07-09: every card always offers BOTH directions (not
   // just "move to the other bucket"), and doesn't wait on "Run checker"
@@ -289,6 +386,18 @@ function cardHtml(r){
       <span class="check-status" id="check-status-${r.id}"></span>`;
   }
 
+  let checkBlock;
+  if (hasInspection) {
+    // Current (v8) shape — the 7-point inspection.
+    checkBlock = `${scoreRow(r)}${headlineBlock(r)}${pointsRow(r)}${noteBlock(r)}`;
+  } else if (r.checker) {
+    // Legacy shape — renders checked before the v8 rebuild.
+    const summary = checkSummary(r);
+    checkBlock = `${scoreBadge(r)}${summary ? `<p class="check-summary">${esc(summary)}</p>` : '<p class="check-summary">Checked — no summary returned.</p>'}`;
+  } else {
+    checkBlock = '<span class="verdict-pill v-checker-review">◐ not checked yet</span>';
+  }
+
   return `<div class="card">
     <div class="imgwrap">
       <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
@@ -296,10 +405,9 @@ function cardHtml(r){
       <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
     </div>
     <div class="body">
-      ${r.checker
-        ? `${scoreBadge(r)}${summary ? `<p class="check-summary">${esc(summary)}</p>` : '<p class="check-summary">Checked — no summary returned.</p>'}`
-        : '<span class="verdict-pill v-checker-review">◐ not checked yet</span>'}
+      ${checkBlock}
       ${overrideBlock}
+      ${hasInspection ? redoBlock(r) : ''}
       <div class="edit-row">
         <input type="text" id="edit-instr-${r.id}" placeholder="e.g. change the bowl color to blue">
         <button onclick="editRender('${r.id}')">✎ Edit</button>

@@ -1,56 +1,66 @@
-// functions/checker.js — port of spec-checker/check_stage2.py + run_checker.py
-// (spec-checker/README.md, run_checker.py) for the hosted pipeline.
+// functions/checker.js — Node-flavored mirror of the deployed
+// supabase/functions/checker/index.ts (Deno). Keep these in sync by hand —
+// if you edit one, mirror the change in the other. Source of truth for what
+// is actually LIVE is always the deployed index.ts (pulled via the
+// Management REST API GET .../functions/checker/body), not this file.
 //
-// Stage 1 (check_stage1.py: resolution/sharpness/color code checks) is NOT
-// ported here — it's a pure-image-bytes operation with no filesystem/DB
-// dependency, so it can run client-side or in this same function unchanged;
-// left as a TODO (see app/README.md) since it needs an image-processing lib
-// (PIL equivalent) not yet chosen for the JS side.
+// STANDARD CHECKER — "7-point inspection" model (rebuilt 2026-07-10).
 //
-// Stage 2 (vision compare against a spec) IS ported: sends the source photo
-// + candidate render to a vision model, same instructions/schema shape as
-// check_stage2.py, and writes the verdict onto the renders row —
-// WITHOUT ever overwriting a row that has human_override set. This mirrors
-// run_checker.py's sorting loop, which skips anything in the `overridden`
-// bucket.
+// The inspection is a FIXED set of seven named points (Shape, Color,
+// Materials, Details, Clarity, Lighting, Scene). The names never change —
+// that consistency is the marketing asset. What each point *means* for a
+// given brand comes from that brand's declared truths (the weighted brief
+// tags), fed in as the per-point standard.
 //
-// Provider history: Claude (direct) -> Gemini (2026-07-09) -> fal.ai
-// (2026-07-09, later same day, Owner rule: one provider — fal already pays
-// for Bria image gen on Pro, and Standard's text/vision calls consolidated
-// onto it too). Routes through fal's OpenRouter-backed chat endpoint
-// (OpenAI-compatible, images as data-URI image_url parts), model Claude
-// Haiku 4.5 — vision-capable, priced for high-volume verdict calls. Standard's
-// image generation (functions/generate.js) also moved onto fal the same day
-// (same underlying Gemini 3.1 Flash Image model, just via fal's endpoint
-// instead of Google's) — nothing in this app calls Google or Anthropic
-// directly anymore.
+// Two numbers come out, kept separate on purpose:
+//   • SCORE — "X of 7 verified" — countable, reproducible, the public number.
+//   • GATE  — PASS / HUMAN_REVIEW / REJECT — driven by whether a must-have or
+//     should-have brand truth failed. A high score can still Hold if the one
+//     thing wrong is critical.
 //
-// GUESS FLAGGED: 001_init.sql's projects table has no `spec` / `spec.json`
-// column — spec-checker's per-SKU spec.json (code_checks, vision_checks,
-// rules) has no home in the schema yet. I pass `spec` in as a parameter
-// here (caller's responsibility to source it — e.g. from project.settings
-// or a future `projects.spec jsonb` column) rather than inventing a new
-// column myself, per the ground rule not to ALTER TABLE. Flagging this to
-// the Owner in the final report — this is the biggest structural gap
-// blocking a real checker run.
+// On top, the model writes in a direct creative-director voice: a short
+// headline, a 2-3 sentence note, and a suggested_fix that pre-loads the redo.
+//
+// Response shape written to renders.checker (superset of the old shape, so
+// existing readers keep working):
+//   { spec, stage2_verdict, score, verified, applicable,
+//     points:[{key,name,blurb,verdict,reason}],   // the seven, always present
+//     headline, note, suggested_fix,
+//     items:[{id,item,verdict,reason}],            // per declared truth (gate + callouts)
+//     overall_notes }                              // == note, back-compat
+//
+// Sticky human_override rule preserved exactly (never overwrites a row that
+// has one set — mirrors run_checker.py's `overridden` bucket and
+// db.setCheckerResult()). Provider unchanged: fal.ai OpenRouter chat
+// endpoint, model Claude Haiku 4.5.
 //
 // TODAY: plain Node/CommonJS module for a trusted server context (same
 // reasons as ai-draft.js — needs the fal.ai key and raw image bytes).
-// Edge Function migration note: swap key source, swap the image byte read
-// (currently expects base64 already decoded/passed in, so this part barely
-// changes), wrap in Deno.serve().
 
 const https = require('https');
 
 const MODEL = process.env.CHECKER_MODEL || 'anthropic/claude-haiku-4.5'; // matches deployed supabase/functions/checker/index.ts
 const API = 'https://fal.run/openrouter/router/openai/v1/chat/completions';
 
+// The seven fixed inspection points — constant across every brand and both
+// tiers. Names + blurbs live here so the report/card can render them straight
+// from the stored result.
+const POINTS = [
+  { key: 'shape', name: 'Shape', blurb: 'Silhouette, structure, and proportions match your product.' },
+  { key: 'color', name: 'Color', blurb: 'Colors match the real thing.' },
+  { key: 'materials', name: 'Materials', blurb: 'Surface, texture, sheen, and pattern read true.' },
+  { key: 'details', name: 'Details', blurb: 'Logos, hardware, closures, seams, and text are correct and undistorted.' },
+  { key: 'clarity', name: 'Clarity', blurb: 'Sharp and clean — no artifacts or warping.' },
+  { key: 'lighting', name: 'Lighting', blurb: 'Believable light direction, shadows, and reflections.' },
+  { key: 'scene', name: 'Scene', blurb: 'The product sits naturally in its setting, not pasted on.' },
+];
+
 function callFalVision(falKey, sourceImage, candidateImage, instructions) {
   // sourceImage / candidateImage: { mediaType: 'image/jpeg', base64: '...' }
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 2800,
       messages: [{
         role: 'user',
         content: [
@@ -94,80 +104,125 @@ function callFalVision(falKey, sourceImage, candidateImage, instructions) {
   });
 }
 
+function toRenderVerdict(stage2Verdict) {
+  return stage2Verdict === 'REJECT' ? 'rejected' : 'approved';
+}
+
+function fallbackHeadline(tier) {
+  if (tier === 'REJECT') return 'Hold — off-brand';
+  if (tier === 'HUMAN_REVIEW') return 'One fix from ready';
+  return 'Send-ready';
+}
+
 /**
- * Runs stage-2 vision check for a single render against a spec, same verdict
- * rules as check_stage2.py:
- *   any severity:reject item failing        -> REJECT
- *   any item confidence < threshold (80)    -> HUMAN_REVIEW
- *   any severity:flag item failing          -> HUMAN_REVIEW
- *   else                                    -> PASS
+ * Runs the 7-point inspection for a single render against a spec.
  *
  * @param {object} deps - { falKey }
  * @param {object} params - { spec, sourceImage, candidateImage }
- *   spec: parsed spec.json shape { sku, variant, vision_checks:[{id,item,when_visible,severity}], rules:{confidence_below} }
- *   sourceImage / candidateImage: { mediaType, base64 } — caller resizes/encodes,
- *     same as check_stage2.py's b64() helper (downscale to 1568px, JPEG q90).
+ *   spec: { sku, variant, vision_checks:[{id,item,when_visible,severity}], rules:{confidence_below} }
+ *   sourceImage / candidateImage: { mediaType, base64 }
  */
 async function checkStage2(deps, { spec, sourceImage, candidateImage }) {
   const { falKey } = deps;
-  const checks = spec.vision_checks;
-  const instructions = `You are a spec-accuracy QA inspector for AI-generated product imagery.
-IMAGE 1 is the REAL product (ground truth). IMAGE 2 is an AI-generated candidate.
-Judge IMAGE 2 against IMAGE 1 for each checklist item. The product must match
-the real one exactly; scene/background/lighting style differences are allowed
-unless an item says otherwise. Items have a "when_visible" condition: if the
-relevant feature is not visible in IMAGE 2, return "n/a" for that item.
-Be strict: subtle branding moves, invented hardware, warped pattern cells,
-and color shifts are exactly what you exist to catch.
+  const truths = spec.vision_checks || [];
 
-Checklist (JSON): ${JSON.stringify(checks)}
+  const instructions = `You are a working creative director reviewing an AI-generated product image before it goes to a client. You are direct and specific — never gushing, never padding.
 
-Respond with ONLY a JSON object:
-{"items": [{"id": "...", "verdict": "pass|fail|n/a", "confidence": 0-100,
-"reason": "one line"}], "overall_notes": "one or two lines",
-"score": 0-100 — a single overall fidelity score for how closely IMAGE 2
-matches IMAGE 1 against this checklist (100 = perfect match, 0 = completely
-wrong product)}`;
+IMAGE 1 is the REAL product (ground truth). IMAGE 2 is the AI-generated candidate. The product in IMAGE 2 must match the real one; scene and lighting *style* may differ unless a brand truth says otherwise.
+
+Run a fixed 7-POINT INSPECTION. Judge each point against IMAGE 1:
+${POINTS.map((p) => `- ${p.name}: ${p.blurb}`).join('\n')}
+
+This brand's declared truths (use them as the specific standard for the points they touch): ${JSON.stringify(truths)}
+
+For each point give: "pass" (verified), "attention" (minor issue), "fail" (clearly wrong), or "na" (can't be judged in this shot). Be strict — subtle color shifts, warped patterns, garbled text, invented hardware, and pasted-on lighting are exactly what you catch.
+
+Also rule on each declared truth: "pass", "fail", or "na".
+
+Then speak to the brand owner like their creative director: name the specific thing that's off (or confirm it's right), in plain words. If a fix is needed, write a one-line redo instruction they could hand straight to the generator.
+
+Respond with ONLY this JSON:
+{
+  "points": [{"key": "shape|color|materials|details|clarity|lighting|scene", "verdict": "pass|attention|fail|na", "reason": "one short line"}],
+  "truths": [{"id": "...", "verdict": "pass|fail|na"}],
+  "headline": "at most 6 words, e.g. 'Send-ready' or 'One fix: color'",
+  "note": "2-3 sentences, first person, direct",
+  "suggested_fix": "one-line redo instruction, or empty string"
+}`;
 
   const text = await callFalVision(falKey, sourceImage, candidateImage, instructions);
   const result = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
 
-  const sev = {};
-  for (const c of checks) sev[c.id] = c.severity;
-  const threshold = (spec.rules && spec.rules.confidence_below) || 80;
+  // Normalize the model's points back onto the fixed seven, in order. A point
+  // the model skipped defaults to 'na' so the inspection is always complete
+  // (seven rows, every time).
+  const byKey = {};
+  for (const p of Array.isArray(result.points) ? result.points : []) byKey[p.key] = p;
+  const points = POINTS.map((p) => {
+    const got = byKey[p.key] || {};
+    const v = ['pass', 'attention', 'fail', 'na'].includes(got.verdict) ? got.verdict : 'na';
+    return { key: p.key, name: p.name, blurb: p.blurb, verdict: v, reason: (got.reason || '').trim() };
+  });
 
-  let verdict = 'PASS';
-  for (const it of result.items) {
-    if (it.verdict === 'fail' && sev[it.id] === 'reject') {
-      verdict = 'REJECT';
-      break;
+  // COUNTABLE SCORE — points verified ÷ points applicable (of seven). This is
+  // the number that goes public. Only "pass" counts as verified.
+  const applicableP = points.filter((p) => p.verdict !== 'na');
+  const verifiedP = applicableP.filter((p) => p.verdict === 'pass');
+  const applicable = applicableP.length;
+  const verified = verifiedP.length;
+  const score = applicable > 0 ? Math.round((verified / applicable) * 100) : null;
+
+  // Per-truth results, tagged with their human-readable text for callouts.
+  const sev = {};
+  const truthText = {};
+  for (const t of truths) { sev[t.id] = t.severity; truthText[t.id] = t.item; }
+  const truthResults = Array.isArray(result.truths) ? result.truths : [];
+  const items = truthResults.map((t) => ({
+    id: t.id,
+    item: truthText[t.id] || t.id,
+    verdict: ['pass', 'fail', 'na'].includes(t.verdict) ? t.verdict : 'na',
+    reason: '',
+  }));
+
+  // GATE — derived, deterministic:
+  //   a failed must-have truth   -> REJECT
+  //   a failed should-have truth -> HUMAN_REVIEW
+  //   no declared truths? fall back to the points: any 'fail' -> HUMAN_REVIEW
+  //   else                       -> PASS
+  let stage2Verdict = 'PASS';
+  if (items.length > 0) {
+    for (const it of items) { if (it.verdict === 'fail' && sev[it.id] === 'reject') stage2Verdict = 'REJECT'; }
+    if (stage2Verdict === 'PASS') {
+      for (const it of items) { if (it.verdict === 'fail' && sev[it.id] === 'flag') stage2Verdict = 'HUMAN_REVIEW'; }
     }
+  } else {
+    if (points.some((p) => p.verdict === 'fail')) stage2Verdict = 'HUMAN_REVIEW';
   }
-  if (verdict === 'PASS') {
-    for (const it of result.items) {
-      if (it.verdict === 'n/a') continue;
-      if (it.confidence < threshold || (it.verdict === 'fail' && sev[it.id] === 'flag')) {
-        verdict = 'HUMAN_REVIEW';
-      }
-    }
-  }
+
+  let headline = typeof result.headline === 'string' ? result.headline.trim() : '';
+  if (!headline || headline.length > 42) headline = fallbackHeadline(stage2Verdict);
+  const note = typeof result.note === 'string' ? result.note.trim() : '';
+  const suggested_fix = typeof result.suggested_fix === 'string' ? result.suggested_fix.trim() : '';
 
   return {
     spec: `${spec.sku}/${spec.variant}`,
-    model: MODEL,
-    stage2_verdict: verdict,
-    items: result.items,
-    overall_notes: result.overall_notes || '',
-    score: typeof result.score === 'number' ? Math.max(0, Math.min(100, Math.round(result.score))) : null,
+    stage2_verdict: stage2Verdict,
+    score,
+    verified,
+    applicable,
+    points,
+    headline,
+    note,
+    suggested_fix,
+    items,
+    overall_notes: note, // back-compat: old gallery read overall_notes
   };
 }
 
 // Maps a stage2 result onto this app's renders.verdict vocabulary
-// ('approved' | 'rejected'), matching run_checker.py's sort logic:
-// any reject-severity failed item -> rejected; everything else (clean pass
-// or low-confidence human-review) -> approved (flagged for a glance).
-function toRenderVerdict(stage2Result) {
-  return stage2Result.stage2_verdict === 'REJECT' ? 'rejected' : 'approved';
+// ('approved' | 'rejected'), matching run_checker.py's sort logic.
+function toRenderVerdictFromResult(stage2Result) {
+  return toRenderVerdict(stage2Result.stage2_verdict);
 }
 
 /**
@@ -183,11 +238,11 @@ async function runCheckerForRender(deps, params) {
   const { db } = deps;
   const { renderId, spec, sourceImage, candidateImage } = params;
   const stage2Result = await checkStage2(deps, { spec, sourceImage, candidateImage });
-  const verdict = toRenderVerdict(stage2Result);
+  const verdict = toRenderVerdictFromResult(stage2Result);
   // db.setCheckerResult itself checks human_override and no-ops if set —
   // enforced in the data layer, not just here, so no other caller can
   // accidentally clobber a sticky override either.
   return db.setCheckerResult(renderId, { checker: stage2Result, verdict });
 }
 
-module.exports = { checkStage2, toRenderVerdict, runCheckerForRender };
+module.exports = { POINTS, checkStage2, toRenderVerdict: toRenderVerdictFromResult, runCheckerForRender };
