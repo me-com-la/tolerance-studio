@@ -185,6 +185,20 @@ img{max-width:100%;display:block}
 .plan-cta{display:block;margin-top:.9rem}
 .plan-cta .btn{padding:.5rem 1.05rem;font-size:.82rem}
 
+/* 7-point brand inspection — the verified-accuracy score, marketed */
+.insp-points{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem}
+.insp-card{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.3rem 1.2rem}
+.insp-card .insp-num{font-family:var(--mono);font-size:.66rem;color:var(--accent);letter-spacing:.08em}
+.insp-card h4{font-family:var(--display);font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:.35rem 0 .35rem}
+.insp-card p{font-size:.82rem;color:var(--muted);line-height:1.55}
+.insp-sample{margin-top:1.5rem;background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem;display:grid;grid-template-columns:auto 1fr;gap:1.4rem;align-items:center}
+.insp-sample-img{width:96px;height:96px;border-radius:10px;overflow:hidden;flex-shrink:0}
+.insp-sample-img img{width:100%;height:100%;object-fit:cover;display:block}
+.insp-sample-score{font-family:var(--display);font-weight:700;font-size:1.8rem;color:var(--ink);line-height:1}
+.insp-sample-score small{font-family:var(--mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-left:.5rem;font-weight:600}
+.insp-sample-note{font-size:.86rem;color:var(--muted);margin-top:.4rem;line-height:1.5;font-style:italic}
+@media(max-width:640px){.insp-sample{grid-template-columns:1fr}.insp-sample-img{width:100%;height:160px}}
+
 /* honest-limits cards — moved here from pro.html, same markup/classes as there */
 .limits{background:var(--bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem}
 .limits ul{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem}
@@ -361,6 +375,36 @@ footer a:hover{color:var(--ink)}
   </div>
 </section>
 
+<!-- ── VERIFIED ACCURACY: 7-POINT BRAND INSPECTION ── -->
+<section class="sec" id="inspection">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Every image, checked</span>
+      <h2 class="sec-h">The 7-point brand inspection.</h2>
+      <p class="sec-lead">Every image we deliver is scored against your real product on seven fixed points — the same seven, every brand, every time. Not a vibe score. A receipt you can check.</p>
+    </div>
+
+    <div class="insp-points">
+      <div class="insp-card"><span class="insp-num">01</span><h4>Shape</h4><p>Silhouette, structure, and proportions match your product.</p></div>
+      <div class="insp-card"><span class="insp-num">02</span><h4>Color</h4><p>Colors match the real thing.</p></div>
+      <div class="insp-card"><span class="insp-num">03</span><h4>Materials</h4><p>Surface, texture, sheen, and pattern read true.</p></div>
+      <div class="insp-card"><span class="insp-num">04</span><h4>Details</h4><p>Logos, hardware, closures, seams, and text — correct and undistorted.</p></div>
+      <div class="insp-card"><span class="insp-num">05</span><h4>Clarity</h4><p>Sharp and clean — no artifacts or warping.</p></div>
+      <div class="insp-card"><span class="insp-num">06</span><h4>Lighting</h4><p>Believable light direction, shadows, and reflections.</p></div>
+      <div class="insp-card"><span class="insp-num">07</span><h4>Scene</h4><p>The product sits naturally in its setting, not pasted on.</p></div>
+    </div>
+
+    <div class="insp-sample">
+      <div class="insp-sample-img"><img src="images/pro/crate-final.png" alt="Sample product render used in a brand inspection report" loading="lazy"></div>
+      <div class="insp-sample-body">
+        <span class="eyebrow" style="margin-bottom:.5rem">Sample inspection</span>
+        <div class="insp-sample-score">7<small>/7 verified</small></div>
+        <p class="insp-sample-note">"Structure, color, and hardware all check out — ships as-is."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── HONEST LIMITS (Standard + PRO combined) ───── -->
 <section class="sec" style="padding-top:0">
   <div class="wrap honest-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
@@ -452,8 +496,8 @@ footer a:hover{color:var(--ink)}
 
       <div>
         <span class="eyebrow">Built into every render</span>
-        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Add text to your image.</h2>
-        <p class="ba-cap" style="margin-bottom:.9rem">Headline, body, and a CTA — placed to dodge the product, in your brand's type. No separate design pass.</p>
+        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Complete it with custom or AI text.</h2>
+        <p class="ba-cap" style="margin-bottom:.9rem">Write your own headline, body, and CTA — or let AI draft on-brand copy for you. Placed to dodge the product, in your brand's type. No separate design pass.</p>
         <div style="border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
           <img src="images/ticker/7.jpg" alt="Product image with headline, body copy, and a call-to-action button composited on top" style="width:100%;height:auto;display:block">
         </div>
@@ -461,7 +505,7 @@ footer a:hover{color:var(--ink)}
 
       <div>
         <span class="eyebrow">One render, every placement</span>
-        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">Create size variations.</h2>
+        <h2 class="sec-h" style="font-size:clamp(1.2rem,2.5vw,1.8rem)">One image. Every size.</h2>
         <p class="ba-cap" style="margin-bottom:.9rem">Square, portrait, story — the same shot, reframed for every platform's spec. No re-shoots, no manual cropping.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:.6rem;align-items:end">
           <div>
