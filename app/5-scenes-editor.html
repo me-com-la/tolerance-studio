@@ -88,10 +88,15 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .count-row{display:flex;align-items:center;gap:.8rem}
 .num-input{width:5rem;padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:var(--font-mono);font-size:1.05rem;text-align:center;background:var(--paper);color:var(--ink)}
 .step-actions{display:flex;align-items:center;gap:.7rem;margin-top:1.3rem}
-.model-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--line)}
-.model-row label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.model-row select{padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--paper);color:var(--ink)}
-.model-row .hint{font-size:.72rem;color:var(--muted);flex-basis:100%}
+/* Model choice as three selectable mini cards (each with its own blurb),
+   not a dropdown, so the tradeoffs are visible up front. */
+.model-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--line)}
+@media(max-width:520px){.model-picker{grid-template-columns:1fr}}
+.model-mini{border:1.5px solid var(--line-2);border-radius:10px;padding:.6rem .7rem;cursor:pointer;transition:border-color .15s,background .15s}
+.model-mini:hover{border-color:var(--accent)}
+.model-mini.selected{border-color:var(--accent);background:var(--accent-wash)}
+.model-mini .mm-name{font-weight:700;font-size:.86rem}
+.model-mini .mm-desc{font-size:.72rem;color:var(--muted);line-height:1.35;margin-top:.15rem}
 .mode-pick{display:flex;align-items:center;gap:.7rem;margin-bottom:1.1rem}
 .mode-pick .mode-card{flex:1;min-width:0}
 .mode-or{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:.95rem;color:var(--muted);letter-spacing:.06em}
@@ -192,14 +197,19 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
         <div class="mode-card" id="mode-card-standard" onclick="pickMode('standard')">
           <h4>AI Render</h4>
           <p>AI redraws your product in any angle but there may be accuracy risks.</p>
-          <div class="model-row" id="scene-model-wrap">
-            <label for="scene-model">Model</label>
-            <select id="scene-model" onchange="saveSceneModel(this.value)">
-              <option value="default">Gemini</option>
-              <option value="seedream">Seedream</option>
-              <option value="gpt">GPT Image</option>
-            </select>
-            <span class="hint" id="scene-model-hint">Gemini — photoreal · Seedream — hyper-real · GPT Image — strictest product match.</span>
+          <div class="model-picker" id="scene-model-wrap">
+            <div class="model-mini" data-model="default" onclick="pickSceneModel(event,'default')">
+              <div class="mm-name">Gemini</div>
+              <div class="mm-desc">Photoreal, natural lighting.</div>
+            </div>
+            <div class="model-mini" data-model="seedream" onclick="pickSceneModel(event,'seedream')">
+              <div class="mm-name">Seedream</div>
+              <div class="mm-desc">Hyper-real, glossier finish.</div>
+            </div>
+            <div class="model-mini" data-model="gpt" onclick="pickSceneModel(event,'gpt')">
+              <div class="mm-name">GPT Image</div>
+              <div class="mm-desc">Strictest product match, softer scenes.</div>
+            </div>
           </div>
         </div>
         <div class="mode-or">OR</div>
@@ -392,11 +402,18 @@ async function saveSceneModel(v){
   else delete settings.image_model;
   await db.saveSettings(projectId, settings);
   project.settings = settings;
-  const hint = document.getElementById('scene-model-hint');
-  if (hint) hint.textContent =
-    v === 'seedream' ? 'Seedream — hyper-real, glossier. Renders every scene in this batch.'
-    : v === 'gpt' ? 'GPT Image — strictest product match, slightly softer scenes. Renders every scene in this batch.'
-    : 'Gemini — photoreal · Seedream — hyper-real · GPT Image — strictest product match.';
+}
+// Reflect the chosen model card's selected state.
+function markSceneModel(v){
+  document.querySelectorAll('#scene-model-wrap .model-mini').forEach(c =>
+    c.classList.toggle('selected', c.dataset.model === v));
+}
+// Clicking a model card picks it (and implies AI Render mode).
+function pickSceneModel(e, v){
+  e.stopPropagation();
+  markSceneModel(v);
+  saveSceneModel(v);
+  pickMode('standard');
 }
 
 async function saveBatchSize(){
@@ -644,7 +661,7 @@ async function init(){
   const settings = project.settings || {};
   const batchSize = settings.batch_size ?? 3;
   document.getElementById('batch-size').value = batchSize;
-  document.getElementById('scene-model').value = ['seedream','gpt'].includes(settings.image_model) ? settings.image_model : 'default';
+  markSceneModel(['seedream','gpt'].includes(settings.image_model) ? settings.image_model : 'default');
   updateDraftDesc(batchSize);
   scenes = parseScenesText(project.scenes);
   renderScenes();

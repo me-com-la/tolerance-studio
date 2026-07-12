@@ -68,9 +68,9 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .brief-body{display:flex;gap:1.3rem;align-items:flex-start}
 .brief-fields{flex:1;min-width:0}
 .brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
-.brief-photos img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.brief-photos img{width:101px;height:101px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
 .brief-photos .none{font-size:.8rem;color:var(--muted)}
-.brief-photo{position:relative;width:84px;height:84px}
+.brief-photo{position:relative;width:101px;height:101px}
 .brief-photo .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.7rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .brief-photo .rm:hover{color:#a33;border-color:#a33}
 .brief-lock-inline{font-size:.68rem;color:var(--muted);background:var(--chip);padding:.1rem .5rem;border-radius:100px;margin-left:.4rem;vertical-align:1px}
@@ -88,7 +88,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 
 .legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:15px;margin-bottom:1.2rem}
 .legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
-.sw-must{background:#c62828}.sw-should{background:#e65100}.sw-flavor{background:#5f5e5a}
+.sw-must{background:#4c1d95}.sw-should{background:#7c3aed}.sw-flavor{background:#9d7aff}
 
 .tag-group{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1rem}
 .tag-group h3{font-family:var(--font-display);font-size:1.35rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem}
@@ -98,9 +98,9 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .tag:hover{transform:translateY(-1px)}
 .tag .x{opacity:.65;font-weight:400;font-size:.78rem}
 .tag .x:hover{opacity:1}
-.tag.must{background:#c62828}
-.tag.should{background:#e65100}
-.tag.flavor{background:#5f5e5a}
+.tag.must{background:#4c1d95}
+.tag.should{background:#7c3aed}
+.tag.flavor{background:#9d7aff}
 .add-row{display:flex;gap:.5rem;margin-top:.9rem}
 .add-row input{flex:1;padding:.55rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--ink)}
 .add-row select{padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--ink)}
@@ -145,10 +145,14 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 /* Upload row: the uploaded photo sits on the left, the best-results note on
    the right. Before any upload the (empty) photo column collapses and the note
    takes the full width. */
-.photo-row{display:flex;gap:1.2rem;align-items:flex-start;margin-top:1rem}
-.photo-row .brief-photos{flex:0 0 auto;margin-top:0}
-.photo-row .photo-tips{flex:1;margin-top:0}
-.photo-tips{display:flex;gap:1rem;align-items:flex-start;margin-top:1rem;padding:.9rem 1rem;background:var(--chip);border:1px solid var(--line);border-radius:12px}
+/* image + "add more details" on the left, weak-photo warning beside it, and
+   the "for best results" card pushed to the right. */
+.photo-row{display:flex;gap:1.2rem;align-items:flex-start;margin-top:1rem;flex-wrap:wrap}
+.photo-left{flex:0 0 auto}
+.photo-left .brief-photos{margin-top:0}
+.photo-left .more-details{margin-top:.5rem}
+.photo-row .photo-warn{flex:0 1 24rem;min-width:13rem;margin-top:0}
+.photo-tips{display:inline-flex;gap:.85rem;align-items:flex-start;max-width:440px;margin-left:auto;padding:.85rem 1rem;background:var(--chip);border:1px solid var(--line);border-radius:12px}
 .photo-tips svg{flex:0 0 auto;border-radius:8px;border:1px solid var(--line)}
 .photo-tips .tips-body{font-size:.85rem;color:var(--ink);line-height:1.5}
 .photo-tips .tips-body b{font-weight:700}
@@ -221,9 +225,19 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     </div>
     <div class="col-body">
       <div class="photo-row">
-        <div class="brief-photos" id="brief-photos"></div>
+        <div class="photo-left">
+          <div class="brief-photos" id="brief-photos"></div>
+          <div class="more-details">
+            <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">add more details</span>
+            <div id="more-details-body" style="display:none">
+              <div class="grp-hint" style="margin-top:.8rem">Real height, in inches — helps the AI scale the room and furniture around your product so it doesn't look shrunk or blown up. Leave blank to skip.</div>
+              <div class="add-row"><input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)"></div>
+            </div>
+          </div>
+        </div>
+        <div class="photo-warn" id="photo-warn" style="display:none"></div>
         <div class="photo-tips">
-          <svg width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Example of an ideal product photo: product centered on a plain white background, fully in frame">
+          <svg width="76" height="76" viewBox="0 0 96 96" role="img" aria-label="Example of an ideal product photo: product centered on a plain white background, fully in frame">
             <rect x="0" y="0" width="96" height="96" rx="8" fill="#ffffff"/>
             <rect x="7" y="7" width="82" height="82" rx="5" fill="none" stroke="#cbd2da" stroke-width="1.5" stroke-dasharray="4 3"/>
             <rect x="36" y="26" width="24" height="44" rx="4" fill="#e7ebf0" stroke="#9aa6b2" stroke-width="1.5"/>
@@ -231,22 +245,14 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
             <ellipse cx="48" cy="76" rx="20" ry="3.4" fill="#e2e7ec"/>
           </svg>
           <div class="tips-body">
-            <b>For best results — especially for Exact render:</b>
+            <b>For best results:</b>
             <ul>
-              <li><b>Plain background</b> — white is best</li>
-              <li>Product <b>fully in frame</b>, clear edge to edge (not cut off)</li>
-              <li><b>Higher resolution</b>, sharp focus</li>
-              <li>A good, <b>straight-on angle</b></li>
+              <li>Plain White background</li>
+              <li>Product fully in frame</li>
+              <li>Higher resolution</li>
+              <li>Straight-on angle</li>
             </ul>
           </div>
-        </div>
-      </div>
-      <div class="photo-warn" id="photo-warn" style="display:none"></div>
-      <div class="more-details">
-        <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">add more details</span>
-        <div id="more-details-body" style="display:none">
-          <div class="grp-hint" style="margin-top:.8rem">Real height, in inches — helps the AI scale the room and furniture around your product so it doesn't look shrunk or blown up. Leave blank to skip.</div>
-          <div class="add-row"><input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)"></div>
         </div>
       </div>
     </div>

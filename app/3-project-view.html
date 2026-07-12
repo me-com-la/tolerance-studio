@@ -218,15 +218,12 @@ function tagPreviewHtml(tags){
 }
 
 function renderRail(status){
-  // Done checkmarks only — no 'active' step here. Active means "you are on
-  // this page", and the overview isn't any of the steps; highlighting the
-  // status step read as a false location (Owner call, 2026-07-11).
-  const activeIdx = STATUS_STEP_INDEX[status] ?? 0;
-  document.getElementById('rail').innerHTML = RAIL_STEPS.map((s,i) => {
-    const cls = i < activeIdx ? 'done' : '';
-    const n = i < activeIdx ? '✓' : s.n;
+  // Plain step numbers only — no green "done" checkmarks on the overview
+  // (Owner call, 2026-07-12). The overview isn't a step, so progress marks
+  // read as noise here; the rail is just navigation to each step.
+  document.getElementById('rail').innerHTML = RAIL_STEPS.map((s) => {
     const click = s.href ? ` onclick="location.href='${s.href}?project=${encodeURIComponent(projectId)}'"` : '';
-    return `<div class="rail-step ${cls}"${click}><span class="n">${n}</span>${s.label}</div>`;
+    return `<div class="rail-step"${click}><span class="n">${s.n}</span>${s.label}</div>`;
   }).join('');
 }
 
