@@ -142,22 +142,16 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 let allProjects = [];
 // Signed URLs resolved once when the list loads (not per-render — render()
 // fires on every search keystroke, so it has to stay synchronous).
-// thumbCache = a render thumbnail per project (favorite > newest approved),
-// or the reference photo when there's no render yet.
-// refInsetCache = the client reference photo. The card prefers this (the
-// Owner recognizes a project by its reference), falling back to thumbCache.
+// thumbCache = the card image: a saved/best render per project (favorite >
+// composed > approved), falling back to the reference photo only when the
+// project has nothing rendered yet.
 const thumbCache = {};
-const refInsetCache = {};
 async function resolveThumbnails(projs){
   await Promise.all(projs.filter(p => !(p.id in thumbCache)).map(async p => {
     const best = bestRender[p.id];
     try {
       if (best) {
         thumbCache[p.id] = await db.getSignedUrl(best.storage_path);
-        if (p.reference_image) {
-          try { refInsetCache[p.id] = await db.getSignedUrl(p.reference_image); }
-          catch (e) { refInsetCache[p.id] = ''; }
-        }
       } else if (p.reference_image) {
         thumbCache[p.id] = await db.getSignedUrl(p.reference_image);
       } else {
@@ -184,10 +178,12 @@ async function resolveCounts(projs){
   for (const r of data) {
     const c = counts[r.project_id]; if (!c) continue;
     c.total++; if (r.is_favorite) c.favorites++;
-    if (r.stage !== 'render' || !r.storage_path) continue;
-    // Rank: favorite (2) > approved (1) > anything else (0); newest wins ties.
-    // An explicit ♥ beats recency — the Owner picked it for a reason.
-    const rank = r.is_favorite ? 2 : ((r.human_override || r.verdict) === 'approved' ? 1 : 0);
+    if (!r.storage_path || (r.stage !== 'render' && r.stage !== 'composed')) continue;
+    // Show the finished work: favorite (3) > saved/composed (2) > approved
+    // render (1) > any render (0); newest wins ties. An explicit ♥ beats all.
+    const rank = r.is_favorite ? 3
+      : r.stage === 'composed' ? 2
+      : ((r.human_override || r.verdict) === 'approved' ? 1 : 0);
     const cur = bestRender[r.project_id];
     if (!cur || rank > cur._rank || (rank === cur._rank && r.created_at > cur.created_at)) {
       bestRender[r.project_id] = { storage_path: r.storage_path, created_at: r.created_at, _rank: rank };
@@ -213,9 +209,9 @@ function render(){
   groups.innerHTML = Object.keys(byClient).sort().map(cname => {
     const projs = byClient[cname];
     const cards = projs.map(p => {
-      // Prefer the client's reference photo (what the Owner recognizes a
-      // project by); fall back to a render thumbnail, else a placeholder.
-      const thumbUrl = refInsetCache[p.id] || thumbCache[p.id];
+      // Show the WORK — a saved/best render — not the client's flat source
+      // photo. Reference photo is only a fallback when there's nothing rendered.
+      const thumbUrl = thumbCache[p.id];
       const thumb = thumbUrl
         ? `<div class="proj-thumb"><img src="${esc(thumbUrl)}" loading="lazy" alt=""></div>`
         : `<div class="proj-thumb empty">◇</div>`;
