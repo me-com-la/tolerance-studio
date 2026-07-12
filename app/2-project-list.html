@@ -47,29 +47,28 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 .client-name{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
 .client-count{font-size:.78rem;color:var(--muted);background:var(--chip);padding:.15rem .55rem;border-radius:100px}
 
-.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
-.proj-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem 1.5rem;cursor:pointer;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:.7rem;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+/* Projects read as ROWS, not photo tiles (2026-07-12): a large cover image
+   made every card look like the Files gallery. Now it's a horizontal media
+   object — small square reference thumbnail on the left, project name + meta
+   on the right — so the list is clearly "projects," not "images." */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:.8rem}
+.proj-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:.85rem 1rem;cursor:pointer;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:row;align-items:center;gap:1rem;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .proj-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.25)}
 .proj-card:hover .proj-del{opacity:1;pointer-events:auto}
-.proj-head{display:flex;align-items:center;gap:.7rem}
-/* Card image = the WORK (favorite render > newest approved > reference
-   photo fallback), not the client's flat source photo (Owner call,
-   2026-07-10). The reference photo stays visible as a small corner inset
-   so similar campaigns are still tellable apart by product. */
-.proj-banner{position:relative;width:100%;aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:var(--chip);margin-bottom:.2rem}
-.proj-banner img.main{width:100%;height:100%;object-fit:cover;display:block}
-.proj-banner.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.4rem;opacity:.5}
-.proj-banner .ref-inset{position:absolute;bottom:.5rem;left:.5rem;width:34px;height:34px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 4px rgba(0,0,0,.35);background:var(--chip)}
-.proj-banner .ref-inset img{width:100%;height:100%;object-fit:cover;display:block}
-.proj-name{font-weight:600;font-size:1rem}
-.proj-product{font-size:.82rem;color:var(--muted)}
-.proj-del{position:absolute;top:.6rem;right:.6rem;opacity:0;pointer-events:none;transition:opacity .15s;padding:.3rem .6rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.72rem;font-weight:600;line-height:1;cursor:pointer}
+/* Reference photo the Owner likes, now at a usable size (was a 34px inset). */
+.proj-thumb{flex:0 0 auto;width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--chip);border:1px solid var(--line)}
+.proj-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.proj-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.4rem;opacity:.5}
+.proj-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:.2rem}
+.proj-name{font-family:var(--font-display);font-weight:700;font-size:1.15rem;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-product{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-del{position:absolute;top:.5rem;right:.5rem;opacity:0;pointer-events:none;transition:opacity .15s;padding:.28rem .55rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.7rem;font-weight:600;line-height:1;cursor:pointer}
 .proj-del:hover{color:#a33;background:var(--accent-wash);border-color:#a33}
-.proj-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
-.proj-date{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
-.proj-counts{display:inline-flex;align-items:center;gap:.8rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+.proj-meta{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin-top:.2rem}
+.proj-date{font-family:var(--font-mono);font-size:.7rem;color:var(--muted)}
+.proj-counts{display:inline-flex;align-items:center;gap:.7rem;font-family:var(--font-mono);font-size:.7rem;color:var(--muted)}
 
-.new-card{border:1.5px dashed var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;font-weight:500;min-height:120px;background:transparent}
+.new-card{border:1.5px dashed var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;font-weight:500;min-height:98px;background:transparent}
 .new-card:hover{color:var(--ink);border-color:var(--ink)}
 
 /* ---------- new-project modal ---------- */
@@ -145,10 +144,10 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 let allProjects = [];
 // Signed URLs resolved once when the list loads (not per-render — render()
 // fires on every search keystroke, so it has to stay synchronous).
-// thumbCache = the card's main image: best render per project (favorite >
-// newest approved > reference photo fallback — Owner call, 2026-07-10).
-// refInsetCache = the small reference-photo inset, only shown when the main
-// image is a render (a reference inset on top of itself is noise).
+// thumbCache = a render thumbnail per project (favorite > newest approved),
+// or the reference photo when there's no render yet.
+// refInsetCache = the client reference photo. The card prefers this (the
+// Owner recognizes a project by its reference), falling back to thumbCache.
 const thumbCache = {};
 const refInsetCache = {};
 async function resolveThumbnails(projs){
@@ -216,25 +215,24 @@ function render(){
   groups.innerHTML = Object.keys(byClient).sort().map(cname => {
     const projs = byClient[cname];
     const cards = projs.map(p => {
-      const thumbUrl = thumbCache[p.id];
-      const insetUrl = refInsetCache[p.id];
-      const inset = insetUrl
-        ? `<span class="ref-inset" title="Client reference photo"><img src="${esc(insetUrl)}" loading="lazy"></span>`
-        : '';
-      const banner = thumbUrl
-        ? `<div class="proj-banner"><img class="main" src="${esc(thumbUrl)}" loading="lazy">${inset}</div>`
-        : `<div class="proj-banner empty">◇</div>`;
+      // Prefer the client's reference photo (what the Owner recognizes a
+      // project by); fall back to a render thumbnail, else a placeholder.
+      const thumbUrl = refInsetCache[p.id] || thumbCache[p.id];
+      const thumb = thumbUrl
+        ? `<div class="proj-thumb"><img src="${esc(thumbUrl)}" loading="lazy" alt=""></div>`
+        : `<div class="proj-thumb empty">◇</div>`;
       return `<a class="proj-card" href="3-project-view.html?project=${esc(p.id)}">
-        ${banner}
-        <div class="proj-head">
-          <div><div class="proj-name">${esc(p.name)}</div>
-          <div class="proj-product">${esc(p.product || '')}</div></div>
-          <button type="button" class="proj-del" title="Delete project" onclick="return deleteProjectCard(event,'${esc(p.id)}')">Delete</button>
+        ${thumb}
+        <div class="proj-body">
+          <div class="proj-name">${esc(p.name)}</div>
+          <div class="proj-product">${esc(p.product || '')}</div>
+          <div class="proj-meta">
+            ${p.pipeline === 'pro' ? '<span class="proj-mode-chip">Exact</span>' : ''}
+            <span class="proj-counts"><span>${(counts[p.id]||{}).total||0} image${((counts[p.id]||{}).total||0)===1?'':'s'}</span><span>${(counts[p.id]||{}).favorites||0} ♥</span></span>
+            <span class="proj-date">started ${esc(p.started_on)}</span>
+          </div>
         </div>
-        <div class="proj-meta">
-          <span class="proj-date">started ${esc(p.started_on)}</span>
-          <span class="proj-counts">${p.pipeline === 'pro' ? '<span class="proj-mode-chip">Exact</span>' : ''}<span>${(counts[p.id]||{}).total||0} image${((counts[p.id]||{}).total||0)===1?'':'s'}</span><span>${(counts[p.id]||{}).favorites||0} ♥</span></span>
-        </div>
+        <button type="button" class="proj-del" title="Delete project" onclick="return deleteProjectCard(event,'${esc(p.id)}')">Delete</button>
       </a>`;
     }).join('');
     return `<div class="client-group">

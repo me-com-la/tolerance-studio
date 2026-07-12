@@ -57,9 +57,10 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff}
+.btn-next{background:#fff;color:#111}
+.btn-next:hover{opacity:.9}
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
 
-.toolbar{display:flex;justify-content:flex-end;margin-bottom:1.4rem}
 .tally-bar{display:flex;gap:1.6rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.3rem;margin-bottom:1.6rem}
 .tally-item{display:flex;flex-direction:column}
 .tally-num{font-family:var(--font-mono);font-size:1.5rem;font-weight:600}
@@ -72,9 +73,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
 .card .imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
-.size-toggle{display:inline-flex;gap:.3rem;margin-left:auto}
-.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
-.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
 .imgwrap:hover .fav-btn,.imgwrap:hover .del-btn{opacity:1}
 .fav-btn{top:.4rem;right:.4rem}
@@ -165,19 +163,11 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 </div></div>
 
 <div class="wrap">
-  <div class="toolbar">
-    <div class="size-toggle" id="size-toggle">
-      <button data-size="150" onclick="setThumbSize(150,this)">S</button>
-      <button data-size="230" class="active" onclick="setThumbSize(230,this)">M</button>
-      <button data-size="340" onclick="setThumbSize(340,this)">L</button>
-    </div>
-  </div>
-
   <div class="grid" id="all-grid"></div>
 
   <div class="savebar">
     <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
-    <button class="btn btn-primary" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)">Continue to Text →</button>
+    <button class="btn btn-next" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)">Continue to Text →</button>
   </div>
 </div>
 
@@ -195,11 +185,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 <script>
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
-function setThumbSize(px, btn){
-  document.documentElement.style.setProperty('--thumb', px + 'px');
-  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
 const projectId = qs('project');
 let renders = [];
 let project = null;
@@ -367,7 +352,7 @@ function cardHtml(r){
   // approved. No separate reject button, no "Run checker" — images are scored
   // automatically at generation/edit time. Status slot kept for the auto-check.
   const overrideBlock = `<div class="override-row">
-      <button class="ov-btn approve${verdict === 'approved' ? ' active' : ''}" onclick="toggleApproved('${r.id}')">✓ Approved</button>
+      <button class="ov-btn approve${verdict === 'approved' ? ' active' : ''}" onclick="toggleApproved('${r.id}')">${verdict === 'approved' ? '✓ Approved' : '✕ Not Approved'}</button>
     </div>
     <span class="check-status" id="check-status-${r.id}"></span>`;
 

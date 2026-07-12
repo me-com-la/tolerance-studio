@@ -52,12 +52,15 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff}
+.btn-next{background:#fff;color:#111}
+.btn-next:hover{opacity:.9}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .btn-ai{background:var(--accent);color:#fff}
 
 /* ---------- project brief panel (read-only, locked after creation) ---------- */
-.brief-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1.6rem}
-.brief-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.brief-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.6rem}
+.brief-head{display:flex;align-items:center;margin-bottom:.6rem}
+.brief-head .edit-trigger{margin-left:auto}
 .brief-head h3{font-family:var(--font-display);font-size:1.6rem;font-weight:700;letter-spacing:.02em}
 .brief-grid{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem;margin-bottom:0}
 .brief-grid dt{color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding-top:.15rem}
@@ -128,13 +131,34 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 /* Photo-first flow (2026-07-11): one reference photo drives the whole page —
    add it up top, and the AI's read of it populates the tags below. */
 .photo-capture{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.4rem}
-.photo-capture-head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.photo-capture-head{display:flex;align-items:center;flex-wrap:wrap}
 .photo-capture-head h3{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:0;flex:1;min-width:14rem}
+.photo-capture-head .btn,.photo-capture-head .ai-status{margin-left:.7rem}
 .photo-capture .brief-photos{margin-top:1rem}
 .photo-capture .brief-photos:empty{margin-top:0}
 #photo-read-section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.4rem}
 .read-head{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:0 0 1rem;line-height:1.4}
 #photo-read-section .legend{margin-bottom:0}
+/* Best-results guidance + input-quality warning (2026-07-12): a plain, well-lit,
+   edge-to-edge product shot is what makes Exact render clean — call it out at
+   upload, and flag a photo that likely won't hold up (user can still proceed). */
+/* Upload row: the uploaded photo sits on the left, the best-results note on
+   the right. Before any upload the (empty) photo column collapses and the note
+   takes the full width. */
+.photo-row{display:flex;gap:1.2rem;align-items:flex-start;margin-top:1rem}
+.photo-row .brief-photos{flex:0 0 auto;margin-top:0}
+.photo-row .photo-tips{flex:1;margin-top:0}
+.photo-tips{display:flex;gap:1rem;align-items:flex-start;margin-top:1rem;padding:.9rem 1rem;background:var(--chip);border:1px solid var(--line);border-radius:12px}
+.photo-tips svg{flex:0 0 auto;border-radius:8px;border:1px solid var(--line)}
+.photo-tips .tips-body{font-size:.85rem;color:var(--ink);line-height:1.5}
+.photo-tips .tips-body b{font-weight:700}
+.photo-tips ul{margin:.3rem 0 0;padding-left:1.1rem}
+.photo-tips li{margin:.1rem 0;color:var(--muted)}
+.photo-tips li b{color:var(--ink)}
+.photo-warn{margin-top:.9rem;padding:.75rem .9rem;border-radius:10px;background:rgba(214,158,46,.12);border:1px solid rgba(214,158,46,.5);color:var(--ink);font-size:.83rem;line-height:1.5}
+.photo-warn b{color:#b9791f}
+.photo-warn ul{margin:.35rem 0 0;padding-left:1.1rem}
+.photo-warn li{margin:.12rem 0}
 </style>
 </head>
 <body>
@@ -196,7 +220,28 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
       <span class="ai-status" id="photo-action-status"></span>
     </div>
     <div class="col-body">
-      <div class="brief-photos" id="brief-photos"></div>
+      <div class="photo-row">
+        <div class="brief-photos" id="brief-photos"></div>
+        <div class="photo-tips">
+          <svg width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Example of an ideal product photo: product centered on a plain white background, fully in frame">
+            <rect x="0" y="0" width="96" height="96" rx="8" fill="#ffffff"/>
+            <rect x="7" y="7" width="82" height="82" rx="5" fill="none" stroke="#cbd2da" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <rect x="36" y="26" width="24" height="44" rx="4" fill="#e7ebf0" stroke="#9aa6b2" stroke-width="1.5"/>
+            <rect x="41" y="20" width="14" height="9" rx="2.5" fill="#cdd5de" stroke="#9aa6b2" stroke-width="1.5"/>
+            <ellipse cx="48" cy="76" rx="20" ry="3.4" fill="#e2e7ec"/>
+          </svg>
+          <div class="tips-body">
+            <b>For best results — especially for Exact render:</b>
+            <ul>
+              <li><b>Plain background</b> — white is best</li>
+              <li>Product <b>fully in frame</b>, clear edge to edge (not cut off)</li>
+              <li><b>Higher resolution</b>, sharp focus</li>
+              <li>A good, <b>straight-on angle</b></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="photo-warn" id="photo-warn" style="display:none"></div>
       <div class="more-details">
         <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">add more details</span>
         <div id="more-details-body" style="display:none">
@@ -244,7 +289,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     <button class="btn btn-ghost" id="kit-save-btn" onclick="saveTagsToKit()" title="Save these tags as the client's brand kit — new projects start with them">Save tags to kit</button>
     <button class="btn btn-ghost" id="kit-apply-btn" onclick="applyKitTags()" title="Fill the tags from this client's saved brand kit">Apply brand kit</button>
     <span class="ai-status" id="tag-status" style="margin-right:auto"></span>
-    <button class="btn btn-primary" onclick="saveAndContinue()">Continue</button>
+    <button class="btn btn-next" onclick="saveAndContinue()">Continue</button>
   </div>
 </div>
 <script>
@@ -482,12 +527,55 @@ async function downscaleImageFile(file, maxEdge = 2048){
   const base = file.name.replace(/\.[^.]+$/, '');
   return new File([blob], `${base}.${isPng ? 'png' : 'jpg'}`, { type: outType });
 }
+// ---------- input-quality check (2026-07-12) ----------
+// A plain, well-lit, edge-to-edge product shot is what makes Exact render clean.
+// This is a fast, in-browser heuristic on the ORIGINAL upload (no server call):
+//   - resolution off the real pixel dimensions
+//   - background plainness + brightness by sampling a thin border frame
+//   - product likely bleeding to the frame edge (border not uniform)
+// "Good angle" can't be judged reliably from pixels, so it stays in the tips
+// above, not here. Result is stored on the project so the Scenes step can warn
+// on the Exact card — it never blocks; the user still chooses.
+async function assessPhotoForExact(file){
+  try {
+    const bmp = await createImageBitmap(file);
+    const W = bmp.width, H = bmp.height, longEdge = Math.max(W, H);
+    const AW = Math.min(W, 360), scale = AW / W, AH = Math.max(1, Math.round(H * scale));
+    const c = document.createElement('canvas'); c.width = AW; c.height = AH;
+    const ctx = c.getContext('2d'); ctx.drawImage(bmp, 0, 0, AW, AH);
+    bmp.close && bmp.close();
+    const d = ctx.getImageData(0, 0, AW, AH).data;
+    const luma = (x, y) => { const i = (y * AW + x) * 4; return 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]; };
+    const border = [], step = Math.max(1, Math.floor(AW / 80));
+    for (let x = 0; x < AW; x += step){ border.push(luma(x, 0)); border.push(luma(x, AH-1)); }
+    for (let y = 0; y < AH; y += step){ border.push(luma(0, y)); border.push(luma(AW-1, y)); }
+    const mean = border.reduce((a,b)=>a+b,0) / border.length;
+    const std = Math.sqrt(border.reduce((a,b)=>a+(b-mean)*(b-mean),0) / border.length);
+    const corners = [luma(0,0), luma(AW-1,0), luma(0,AH-1), luma(AW-1,AH-1)];
+    const cornerMean = corners.reduce((a,b)=>a+b,0) / 4;
+    const reasons = [];
+    if (longEdge < 1000) reasons.push('Low resolution — edges may look soft once composited.');
+    if (std > 34) reasons.push('Busy background, or the product runs to the frame edge — a plain, uncluttered backdrop with room around the product composites much cleaner.');
+    else if (cornerMean < 175) reasons.push('Background isn’t light — a white or very light backdrop gives the cleanest cutout.');
+    return { level: reasons.length ? 'weak' : 'good', reasons };
+  } catch (e) {
+    return { level: 'unknown', reasons: [] };
+  }
+}
+function renderPhotoWarn(check){
+  const el = document.getElementById('photo-warn');
+  if (!el) return;
+  if (!check || check.level !== 'weak' || !check.reasons.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.innerHTML = `<b>⚠ This photo may give a weak result</b> — Exact render will be marked “not recommended.” You can still use it.<ul>${check.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>`;
+  el.style.display = '';
+}
 async function addReferencePhoto(file){
   if (!file) return;
   const status = document.getElementById('photo-action-status');
   status.textContent = 'preparing…'; status.classList.remove('err'); status.classList.add('busy');
   try {
     const slug = project.clients && project.clients.slug;
+    const check = await assessPhotoForExact(file); // assess ORIGINAL (true resolution) before downscale
     file = await downscaleImageFile(file);
     status.textContent = 'uploading…';
     const path = db.storagePath(slug, projectId, 'assets', file.name);
@@ -496,11 +584,15 @@ async function addReferencePhoto(file){
       await db.saveReferenceImage(projectId, path);
       project.reference_image = path;
     }
+    // Persist the check so the Scenes step can flag the Exact card. Reference
+    // photo (first one) is what Exact composites, so it drives the verdict.
+    project.settings = Object.assign({}, project.settings || {}, { photo_check: check });
+    try { await db.saveSettings(projectId, project.settings); } catch (e) { /* non-fatal */ }
+    renderPhotoWarn(check);
     document.getElementById('add-photo-input').value = '';
     status.textContent = ''; status.classList.remove('busy');
     await renderBrief();
-    // Photo section answered — collapse it to its header (click to reopen).
-    document.getElementById('photo-box').classList.add('collapsed');
+    // Keep the photo section open so the just-uploaded photo stays visible.
     // New photo in place — let the AI read it and populate the tags (first
     // photo only; won't clobber tags you've already got).
     await maybeAutoDraftFromPhoto();
@@ -557,16 +649,14 @@ async function init(){
   chip.classList.add(isExactMode() ? 'exact' : 'scene');
   fillHeight(tags.placement);
   renderTags();
+  renderPhotoWarn(project.settings?.photo_check);
   await renderBrief();
   // If a photo is already here but tags were never written, read it now so the
   // section lands pre-populated (the "first time it's shown" case).
   await maybeAutoDraftFromPhoto();
-  // Project brief is reference info (set at creation) — start it collapsed. If
-  // a photo's already uploaded, that section's answered too, so collapse it.
+  // Project brief is reference info (set at creation) — start it collapsed. The
+  // photo section stays open so an already-uploaded photo remains visible.
   document.getElementById('brief-box').classList.add('collapsed');
-  if (document.getElementById('photo-read-section').style.display !== 'none') {
-    document.getElementById('photo-box').classList.add('collapsed');
-  }
 }
 init();
 </script>

@@ -55,6 +55,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff}
+.btn-next{background:#fff;color:#111}
+.btn-next:hover{opacity:.9}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .btn-ai{background:var(--accent);color:#fff}
 
@@ -90,14 +92,21 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .model-row label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
 .model-row select{padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--paper);color:var(--ink)}
 .model-row .hint{font-size:.72rem;color:var(--muted);flex-basis:100%}
-.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.1rem}
-@media(max-width:640px){.mode-pick{grid-template-columns:1fr}}
+.mode-pick{display:flex;align-items:center;gap:.7rem;margin-bottom:1.1rem}
+.mode-pick .mode-card{flex:1;min-width:0}
+.mode-or{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:.95rem;color:var(--muted);letter-spacing:.06em}
+@media(max-width:640px){.mode-pick{flex-direction:column;align-items:stretch}}
 .mode-card{position:relative;border:1.5px solid var(--line-2);border-radius:12px;padding:.95rem 1.05rem;cursor:pointer;transition:border-color .15s,background .15s}
 .mode-card:hover{border-color:var(--accent)}
 .mode-card.selected{border-color:var(--accent);background:var(--accent-wash)}
 .mode-card h4{font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:.35rem;display:flex;align-items:center;gap:.45rem}
 .mode-card p{font-size:1rem;color:var(--ink);line-height:1.5}
 .mode-card .pro-pill{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.15rem .45rem;border-radius:100px;color:#7ee2c0;background:rgba(46,180,130,.16)}
+/* "Not recommended" flag on Exact when the source photo failed the input check
+   (2026-07-12). Advisory only — the card stays selectable; the user chooses. */
+.mode-warn{margin-top:.7rem;padding:.55rem .7rem;border-radius:9px;background:rgba(214,158,46,.12);border:1px solid rgba(214,158,46,.5);font-size:.78rem;line-height:1.45;color:var(--ink)}
+.mode-warn b{color:#d69e2e}
+.mode-not-rec{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.15rem .45rem;border-radius:100px;color:#d69e2e;background:rgba(214,158,46,.16);margin-left:.4rem}
 .more-details{margin-top:1.1rem}
 .more-link{font-size:.82rem;color:var(--accent-ink);cursor:pointer;text-decoration:underline}
 .scene-detail-hint{font-size:.78rem;color:var(--muted);margin:.7rem 0 .5rem;line-height:1.5}
@@ -193,9 +202,11 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
             <span class="hint" id="scene-model-hint">Gemini — photoreal · Seedream — hyper-real · GPT Image — strictest product match.</span>
           </div>
         </div>
+        <div class="mode-or">OR</div>
         <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
-          <h4>Exact render <span class="pro-pill">Pro</span></h4>
+          <h4>Exact render <span class="pro-pill">Pro</span><span class="mode-not-rec" id="exact-not-rec" style="display:none">Not recommended</span></h4>
           <p>Your products actual pixels. Zero drift. New image(s) uses exact angle from the image you provided.</p>
+          <div class="mode-warn" id="exact-warn" style="display:none"></div>
         </div>
       </div>
       </div><!-- /step-body -->
@@ -214,7 +225,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 
   <div class="savebar" id="savebar" style="display:none">
     <span class="ai-status" id="generate-status"></span>
-    <button class="btn btn-primary" id="generate-btn" onclick="generateAndCheck()">Make my images</button>
+    <button class="btn btn-next" id="generate-btn" onclick="generateAndCheck()">Make my images</button>
   </div>
 </div>
 <script>
@@ -343,6 +354,22 @@ async function showModeStep(){
 // Standard = Scene render (model picker available); Exact = pixel-lock
 // composite of the real product (no model choice). Persists the moment it's
 // picked so generate reads the right pipeline.
+// Surface the input-quality verdict (written on the Brief page's photo upload)
+// on the Exact card: a "Not recommended" chip + the reasons. Advisory only —
+// pickMode still fires on click, so the user keeps the choice.
+function renderExactRecommendation(){
+  const check = project && project.settings && project.settings.photo_check;
+  const chip = document.getElementById('exact-not-rec');
+  const warn = document.getElementById('exact-warn');
+  if (!chip || !warn) return;
+  if (!check || check.level !== 'weak' || !(check.reasons || []).length){
+    chip.style.display = 'none'; warn.style.display = 'none'; warn.innerHTML = '';
+    return;
+  }
+  chip.style.display = '';
+  warn.innerHTML = `<b>Not recommended for this photo.</b> Exact locks your product’s exact pixels, so it can’t fix these — AI Render handles a rough photo better:<ul style="margin:.35rem 0 0;padding-left:1.1rem">${check.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>`;
+  warn.style.display = '';
+}
 async function pickMode(mode){
   const pipeline = mode === 'pro' ? 'pro' : 'standard';
   document.getElementById('mode-card-standard').classList.toggle('selected', pipeline === 'standard');
@@ -626,6 +653,7 @@ async function init(){
   // Reflect the saved render mode in the cards + chip + model-picker
   // visibility (no re-save, since the value is unchanged).
   pickMode(isExactMode() ? 'pro' : 'standard');
+  renderExactRecommendation();
 
   // Restore where the user left off. wizard_stage is saved as they advance;
   // fall back to "has scenes" so older projects still open past step 1.

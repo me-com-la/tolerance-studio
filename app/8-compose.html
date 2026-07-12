@@ -68,7 +68,7 @@ a{color:inherit;text-decoration:none}
 h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
 .sub{color:var(--muted);font-size:.9rem;margin-bottom:1.4rem;max-width:70ch;line-height:1.6}
 
-.section-h{font-family:var(--font-display);font-size:1.1rem;font-weight:700;text-transform:uppercase;margin:1.8rem 0 .8rem}
+.section-h{font-family:var(--font-display);font-size:1.35rem;font-weight:700;text-transform:uppercase;margin:1.8rem 0 .8rem}
 
 /* selects strip — approved renders as compose candidates */
 .select-strip{display:flex;gap:.8rem;overflow-x:auto;padding-bottom:.4rem}
@@ -89,6 +89,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff}
+.btn-next{background:#fff;color:#111}
+.btn-next:hover{opacity:.9}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
 .btn-ai{background:var(--accent);color:#fff}
@@ -104,6 +106,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .opt-card .body{color:var(--muted);line-height:1.4;margin-bottom:.4rem}
 .opt-card button{font-size:.72rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;color:var(--ink)}
 .opt-card button:hover{background:var(--chip)}
+.add-own-row{margin:.1rem 0 .9rem}
+.add-own-link{color:var(--accent-ink);cursor:pointer;text-decoration:underline;font-size:.8rem}
 .opt-more{border:1px dashed var(--line-2);border-radius:10px;padding:.7rem;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:.78rem}
 .opt-more:hover{color:var(--ink);background:var(--chip)}
 
@@ -137,9 +141,9 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .preview-canvas-wrap canvas{max-width:100%;max-height:72vh;display:block;cursor:grab;touch-action:none}
 /* canvas cheat sheet — three scannable chips instead of a prose paragraph */
 .hint-chips{display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap}
-.hint-chip{flex:1;min-width:140px;display:flex;gap:.5rem;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem;font-size:.72rem;line-height:1.45;color:var(--muted)}
-.hint-chip .ic{font-size:.95rem;line-height:1.3;flex:0 0 auto}
-.hint-chip b{color:var(--ink);display:block;font-size:.74rem}
+.hint-chip{flex:1;min-width:120px;display:flex;gap:.45rem;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.5rem .7rem;font-size:.72rem;line-height:1.3;color:var(--muted)}
+.hint-chip .ic{font-size:.95rem;line-height:1;flex:0 0 auto}
+.hint-chip b{color:var(--ink);font-size:.74rem}
 /* faint always-on 3×3 zone grid — an HTML overlay glued to the canvas box,
    so it guides the eye on screen but can never end up in the saved PNG
    (saveComposed reads the canvas, not the DOM). The brighter in-canvas grid
@@ -147,15 +151,12 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 /* paired dark+light hairlines so the grid stays visible on light AND dark
    photos (a white-only line vanished on a white product shot) */
 .zone-overlay{position:absolute;pointer-events:none;display:none;z-index:1;background-image:linear-gradient(rgba(0,0,0,.20) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.20) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.16) 1px,transparent 1px);background-size:33.4% 33.4%;background-position:-1px -1px,-1px -1px,0 0,0 0}
-/* one-time first-visit callout, dismiss remembered in localStorage */
-.first-tip{display:none;align-items:flex-start;gap:.6rem;background:var(--accent-wash);border:1px solid rgba(157,122,255,.35);color:var(--accent-ink);border-radius:10px;padding:.7rem .9rem;font-size:.8rem;line-height:1.5;margin-bottom:.8rem}
-.first-tip button{margin-left:auto;background:transparent;border:none;color:var(--accent-ink);cursor:pointer;font-size:.9rem;padding:0 .2rem;flex:0 0 auto;font-family:inherit}
 /* numbered step badges — the page reads as a 1-2-3 recipe */
 .step-h{display:flex;align-items:center;gap:.55rem}
 .step-h .sn,.acc-h .sn{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600;flex:0 0 auto}
 /* collapsible step sections — arrow toggles, only step 1 open on load */
 .acc{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-bottom:1rem;overflow:hidden}
-.acc-h{display:flex;align-items:center;gap:.55rem;padding:.85rem 1.1rem;cursor:pointer;user-select:none;font-family:var(--font-display);font-size:1.05rem;font-weight:700;text-transform:uppercase}
+.acc-h{display:flex;align-items:center;gap:.55rem;padding:.85rem 1.1rem;cursor:pointer;user-select:none;font-family:var(--font-display);font-size:1.35rem;font-weight:700;text-transform:uppercase}
 .acc-h:hover{background:var(--chip)}
 .acc-h .cnt{font-family:var(--font-body);font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)}
 .acc-h .chev{margin-left:auto;color:var(--muted);font-size:.85rem;transition:transform .2s}
@@ -170,9 +171,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .render-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
 .render-card .imgwrap{aspect-ratio:1/1;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
 .render-card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;cursor:pointer;display:block}
-.size-toggle{display:inline-flex;gap:.3rem;margin-left:.6rem}
-.size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
-.size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
 .render-card .body{padding:.6rem .7rem;display:flex;flex-direction:column;gap:.4rem}
 .render-card .fn{font-size:.68rem;color:var(--muted);font-family:var(--font-mono);word-break:break-all}
 .render-card .plat{font-size:.68rem;background:var(--chip);padding:.15rem .5rem;border-radius:100px;width:fit-content}
@@ -258,33 +256,25 @@ img.lb-thumb{cursor:pointer}
             <span class="ai-status" id="copy-status"></span>
             <button class="btn btn-ai" id="copy-draft-btn" onclick="draftCopy()">Generate copy</button>
           </div>
-          <div class="copy-options" id="copy-options" style="margin-bottom:.9rem"></div>
-          <div class="field">
-            <label for="cmp-eyebrow">Eyebrow</label>
-            <input type="text" id="cmp-eyebrow" placeholder="small kicker, optional" oninput="renderPreview()">
-          </div>
-          <div class="field">
-            <label for="cmp-headline">Headline *</label>
-            <input type="text" id="cmp-headline" placeholder="the dominant line" oninput="renderPreview()">
-          </div>
-          <div class="field">
-            <label for="cmp-body">Body</label>
-            <textarea id="cmp-body" placeholder="one or two supporting sentences" oninput="renderPreview()"></textarea>
-          </div>
-          <div class="field">
-            <label for="cmp-cta">CTA</label>
-            <input type="text" id="cmp-cta" placeholder="button text, optional" oninput="renderPreview()">
-          </div>
-          <div class="field">
-            <label for="cmp-cta-color">CTA color <button type="button" class="color-reset" onclick="resetCtaColor()">Reset</button></label>
-            <div class="color-row">
-              <input type="color" id="cmp-cta-color" value="#d8502d" oninput="setCtaColor(this.value)">
-              <span class="ai-status" id="cta-color-hint" style="color:var(--muted)">Label text auto-switches dark or light to stay readable.</span>
+          <div class="copy-options" id="copy-options" style="margin-bottom:.6rem"></div>
+          <div class="add-own-row"><a class="add-own-link" id="add-own-link" onclick="revealCustomText()">✎ add your own text</a></div>
+          <div id="custom-text-fields" style="display:none">
+            <div class="field">
+              <label for="cmp-eyebrow">Eyebrow</label>
+              <input type="text" id="cmp-eyebrow" placeholder="small kicker, optional" oninput="renderPreview()">
             </div>
-          </div>
-          <div class="field">
-            <label for="cmp-tscale">Text size <span id="tscale-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
-            <input type="range" id="cmp-tscale" min="70" max="140" step="5" value="100" oninput="setTextScale(this.value)">
+            <div class="field">
+              <label for="cmp-headline">Headline *</label>
+              <input type="text" id="cmp-headline" placeholder="the dominant line" oninput="renderPreview()">
+            </div>
+            <div class="field">
+              <label for="cmp-body">Body</label>
+              <textarea id="cmp-body" placeholder="one or two supporting sentences" oninput="renderPreview()"></textarea>
+            </div>
+            <div class="field">
+              <label for="cmp-cta">CTA</label>
+              <input type="text" id="cmp-cta" placeholder="button text, optional" oninput="renderPreview()">
+            </div>
           </div>
           <div class="field">
             <label for="cmp-font">Font</label>
@@ -293,6 +283,23 @@ img.lb-thumb{cursor:pointer}
               <option>Lora</option><option>Playfair Display</option><option>Poppins</option>
               <option>Oswald</option><option>Roboto</option><option>Lato</option>
             </select>
+          </div>
+          <div class="field">
+            <label for="cmp-tscale">Text size <span id="tscale-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
+            <input type="range" id="cmp-tscale" min="70" max="140" step="5" value="100" oninput="setTextScale(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <div class="acc collapsed" id="acc-4">
+        <div class="acc-h" onclick="toggleAcc(4)"><span class="sn">4</span>Colors<span class="chev">▾</span></div>
+        <div class="acc-b">
+          <div class="field">
+            <label for="cmp-cta-color">CTA color <button type="button" class="color-reset" onclick="resetCtaColor()">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="cmp-cta-color" value="#d8502d" oninput="setCtaColor(this.value)">
+              <span class="ai-status" id="cta-color-hint" style="color:var(--muted)">Label text auto-switches dark or light to stay readable.</span>
+            </div>
           </div>
           <div class="field">
             <label for="cmp-text-color">Text color <button type="button" class="color-reset" onclick="resetTextColor()">Auto</button></label>
@@ -308,11 +315,6 @@ img.lb-thumb{cursor:pointer}
               <span class="ai-status" id="scrim-color-hint" style="color:var(--muted)">Auto uses a painted panel's color or near-black — pick a color to override.</span>
             </div>
           </div>
-          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.4rem">
-            <button type="button" class="btn btn-ghost" style="padding:.4rem .8rem;font-size:.75rem" onclick="applyKitStyle(true)" title="Set font, colors and text size from this client's brand kit">Apply brand kit</button>
-            <button type="button" class="btn btn-ghost" style="padding:.4rem .8rem;font-size:.75rem" onclick="saveStyleToKit()" title="Font, colors and text size become this client's defaults on every new project">Save style to kit</button>
-            <span class="ai-status" id="kit-status"></span>
-          </div>
         </div>
       </div>
 
@@ -323,14 +325,13 @@ img.lb-thumb{cursor:pointer}
         <div class="section-h" style="margin:0">Preview</div>
         <button type="button" class="btn btn-ghost" id="start-over-btn" style="padding:.3rem .65rem;font-size:.7rem" onclick="startOver()">↺ Start over</button>
       </div>
-      <div class="first-tip" id="first-tip"><span>👋</span><span><b>New here?</b> The preview is hands-on — drag the photo, the words, and the button right on the image below.</span><button onclick="dismissTip()" title="Got it">✕</button></div>
+      <div class="hint-chips">
+        <div class="hint-chip"><span class="ic">✋</span><b>Drag the photo</b></div>
+        <div class="hint-chip"><span class="ic">✦</span><b>Push it past an edge</b></div>
+        <div class="hint-chip"><span class="ic">⠿</span><b>Drag words or button</b></div>
+      </div>
       <div class="preview-canvas-wrap" id="preview-canvas-wrap">
         <p class="preview-empty">Pick an approved render above to start.</p>
-      </div>
-      <div class="hint-chips">
-        <div class="hint-chip"><span class="ic">✋</span><span><b>Drag the photo</b>to place it in the frame</span></div>
-        <div class="hint-chip"><span class="ic">✦</span><span><b>Push it past an edge</b>opens space AI paints with more photo (~2¢)</span></div>
-        <div class="hint-chip"><span class="ic">⠿</span><span><b>Drag words or button</b>they snap to one of 9 zones</span></div>
       </div>
       <div class="ai-status" id="save-status" style="margin-top:.7rem"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:.5rem" onclick="saveComposed()">Save image</button>
@@ -338,19 +339,15 @@ img.lb-thumb{cursor:pointer}
     </div>
   </div>
 
-  <div class="section-h">Saved <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span>
-    <span class="size-toggle" id="size-toggle">
-      <button data-size="120" onclick="setThumbSize(120,this)">S</button>
-      <button data-size="180" class="active" onclick="setThumbSize(180,this)">M</button>
-      <button data-size="260" onclick="setThumbSize(260,this)">L</button>
-    </span>
-  </div>
+  <div class="section-h">Saved <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span></div>
   <div class="grid" id="rendered-grid"></div>
 
   <div class="savebar">
-    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
-    <button class="btn btn-ghost" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)" title="Skip typesetting — your approved images still show up in Review">Skip this step →</button>
-    <button class="btn btn-primary" onclick="saveAndContinue()">Save and continue →</button>
+    <a class="btn btn-ghost" href="../full-service.html" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
+    <button type="button" class="btn btn-ghost" onclick="applyKitStyle(true)" title="Set font, colors and text size from this client's brand kit">Apply brand kit</button>
+    <button type="button" class="btn btn-ghost" onclick="saveStyleToKit()" title="Font, colors and text size become this client's defaults on every new project">Save brand kit</button>
+    <span class="ai-status" id="kit-status" style="margin-right:auto"></span>
+    <button class="btn btn-next" onclick="saveAndContinue()">Continue</button>
   </div>
 </div>
 
@@ -369,23 +366,10 @@ img.lb-thumb{cursor:pointer}
 <script>
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
-function setThumbSize(px, btn){
-  document.documentElement.style.setProperty('--thumb', px + 'px');
-  btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
 // collapsible step sections — only step 1 open on load; picking a photo
 // auto-opens step 2 so a new user gets walked forward
 function toggleAcc(n){ document.getElementById('acc-' + n).classList.toggle('collapsed'); }
 function openAcc(n){ document.getElementById('acc-' + n).classList.remove('collapsed'); }
-
-// first-visit callout — shown once, dismiss remembered per browser
-const TIP_KEY = 'ts-compose-tip-dismissed';
-function dismissTip(){
-  localStorage.setItem(TIP_KEY, '1');
-  document.getElementById('first-tip').style.display = 'none';
-}
-if (!localStorage.getItem(TIP_KEY)) document.getElementById('first-tip').style.display = 'flex';
 
 const projectId = qs('project');
 let project = null, renders = [];
@@ -840,6 +824,16 @@ async function renderSelectStrip(){
     return;
   }
   const urls = await Promise.all(approved.map(r => resolveUrl(r.storage_path)));
+  // auto-load the first approved render into the preview on landing, so the
+  // page isn't empty — the user can still click another photo to switch.
+  if (!selectedRenderId){
+    selectedRenderId = approved[0].id;
+    resetLayout();
+    selectedImg = new Image();
+    selectedImg.crossOrigin = 'anonymous';
+    selectedImg.onload = () => renderPreview();
+    selectedImg.src = urls[0];
+  }
   document.getElementById('select-strip').innerHTML = approved.map((r, i) => `
     <div class="select-card ${r.id===selectedRenderId?'active':''}" onclick="pickRender('${r.id}','${esc(urls[i])}')">
       <img src="${esc(urls[i])}">
@@ -891,6 +885,19 @@ function useCopy(i){
   document.getElementById('cmp-body').value = o.body || '';
   document.getElementById('cmp-cta').value = o.cta || '';
   renderPreview();
+}
+// The AI copy is the default path: on load, draft options automatically and
+// apply the first so the preview reads real copy. "add your own text" reveals
+// the manual fields for anyone who'd rather write their own.
+function revealCustomText(){
+  document.getElementById('custom-text-fields').style.display = '';
+  document.getElementById('add-own-link').style.display = 'none';
+}
+async function autoDraftCopy(){
+  if ((window._copyOptions || []).length) return;                 // already drafted
+  if (document.getElementById('cmp-headline').value.trim()) return; // copy already present
+  await draftCopy();
+  if ((window._copyOptions || []).length && !document.getElementById('cmp-headline').value.trim()) useCopy(0);
 }
 
 // ---------- real canvas compositing: gradient scrim + typesetting ----------
@@ -1301,8 +1308,8 @@ async function saveComposed(){
 // Continue from the savebar saves whatever's laid out first (if anything),
 // so leaving the page never silently drops a layout the Owner forgot to hit
 // "Save image" on. Nothing to save (no photo picked, no headline) just
-// continues — that's what "Skip this step" is already for. A real save
-// error keeps the Owner on the page instead of navigating past it unseen.
+// continues on to Review. A real save error keeps the Owner on the page
+// instead of navigating past it unseen.
 async function saveAndContinue(){
   const canvas = document.querySelector('#preview-canvas-wrap canvas');
   const headline = document.getElementById('cmp-headline').value.trim();
@@ -1368,6 +1375,7 @@ async function init(){
   renders = await db.listRenders(projectId);
   await renderSelectStrip();
   await loadRendered();
+  autoDraftCopy(); // auto-generate AI copy (non-blocking; preview fills when it lands)
 }
 init();
 </script>

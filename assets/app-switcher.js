@@ -52,8 +52,8 @@
     '<div class="ts-switch-menu">' +
       '<div class="ts-menu-user"><div class="ts-menu-avatar" id="ts-menu-av">O</div><span id="ts-menu-name">…</span></div>' +
       '<hr>' +
-      '<a href="' + prefix + 'my-images.html" class="' + (isFiles ? 'on' : '') + '">Files</a>' +
       '<a href="' + prefix + 'app/2-project-list.html" class="' + (!isFiles && !isFullService && !isAccount ? 'on' : '') + '">Projects</a>' +
+      '<a href="' + prefix + 'my-images.html" class="' + (isFiles ? 'on' : '') + '">Files</a>' +
       '<a href="' + prefix + 'full-service.html" class="' + (isFullService ? 'on' : '') + '">Service <span class="soon">Coming soon</span></a>' +
       '<hr>' +
       '<a href="' + prefix + 'account.html">Account</a>' +
@@ -151,8 +151,8 @@
     // crumbs container it starts in is replaced by this main nav.
     ['#crumb-proj', '#crumb-client', '#mode-chip'].forEach(function (sel) { var el = nav.querySelector(sel); if (el) keep.push(el); });
     nav.innerHTML =
-      '<a class="ts-mainnav' + (isFiles ? ' on' : '') + '" href="' + prefix + 'my-images.html">Files</a>' +
       '<a class="ts-mainnav' + (!isFiles && !isFullService && !isAccount ? ' on' : '') + '" href="' + prefix + 'app/2-project-list.html">Projects</a>' +
+      '<a class="ts-mainnav' + (isFiles ? ' on' : '') + '" href="' + prefix + 'my-images.html">Files</a>' +
       '<a class="ts-mainnav' + (isFullService ? ' on' : '') + '" href="' + prefix + 'full-service.html">Service</a>';
     if (keep.length) {
       var hold = document.createElement('span'); hold.style.display = 'none';
