@@ -222,6 +222,20 @@
     return data;
   }
 
+  // Render mode picked on the Scenes page (2026-07-12): 'standard' = Scene
+  // render, 'pro' = Exact render. Kept as its own tiny updater so the mode
+  // choice can persist the moment the user makes it.
+  async function savePipeline(projectId, pipeline) {
+    const { data, error } = await client()
+      .from('projects')
+      .update({ pipeline: pipeline === 'pro' ? 'pro' : 'standard' })
+      .eq('id', projectId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
   // Deletes a project and everything under it: the projects row (cascades
   // to renders + run_log per 001_init.sql's `on delete cascade`), plus every
   // file in storage under <slug>/<projectId>/ — the cascade only clears
@@ -397,6 +411,7 @@
     saveProjectDetails,
     saveReferenceImage,
     saveSettings,
+    savePipeline,
     listSiblingProjects,
     listRenders,
     upsertRender,

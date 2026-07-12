@@ -21,7 +21,9 @@
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono','Courier New',monospace;
-  --ok:#2e7d32; --ok-wash:#e8f5e9; --bad:#a33; --bad-wash:#fbe9e7; --warn:#b45309; --warn-wash:#fff3e0;
+  --ok:#2e7d32; --ok-wash:rgba(46,180,130,.16); --ok-ink:#7ee2c0;
+  --bad:#a33; --bad-wash:rgba(180,70,70,.18); --bad-ink:#f0a0a0;
+  --warn:#b45309; --warn-wash:rgba(180,110,30,.2); --warn-ink:#f0b878;
   --thumb:230px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -57,6 +59,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .btn-primary{background:var(--accent);color:#fff}
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
 
+.toolbar{display:flex;justify-content:flex-end;margin-bottom:1.4rem}
 .tally-bar{display:flex;gap:1.6rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.3rem;margin-bottom:1.6rem}
 .tally-item{display:flex;flex-direction:column}
 .tally-num{font-family:var(--font-mono);font-size:1.5rem;font-weight:600}
@@ -82,16 +85,17 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .card img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block}
 .card .body{padding:.8rem .9rem 1rem;display:flex;flex-direction:column;gap:.5rem}
 .verdict-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;padding:.25rem .6rem;border-radius:100px;width:fit-content}
-.v-checker-pass{color:var(--ok);background:var(--ok-wash)}
-.v-checker-fail{color:var(--bad);background:var(--bad-wash)}
-.v-checker-review{color:var(--warn);background:var(--warn-wash)}
+.v-checker-pass{color:var(--ok-ink);background:var(--ok-wash)}
+.v-checker-fail{color:var(--bad-ink);background:var(--bad-wash)}
+.v-checker-review{color:var(--warn-ink);background:var(--warn-wash)}
 .check-summary{font-size:.8rem;color:var(--muted);line-height:1.5;background:var(--chip);border-radius:8px;padding:.5rem .6rem}
 .override-row{display:flex;gap:.5rem;margin-top:.2rem}
 .ov-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;font-size:.78rem;font-weight:600;padding:.5rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit}
-.ov-btn.approve{color:var(--ok)}.ov-btn.approve:hover{background:var(--ok-wash);border-color:var(--ok)}
-.ov-btn.reject{color:var(--bad)}.ov-btn.reject:hover{background:var(--bad-wash);border-color:var(--bad)}
+/* Two clean states only: neutral (not approved) and solid green (approved). */
+.ov-btn.approve{color:var(--muted)}
+.ov-btn.approve:hover{background:var(--chip);border-color:var(--line-2)}
 .ov-btn.approve.active{background:var(--ok);border-color:var(--ok);color:#fff}
-.ov-btn.reject.active{background:var(--bad);border-color:var(--bad);color:#fff}
+.ov-btn.approve.active:hover{background:var(--ok);opacity:.9}
 .override-badge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;padding:.3rem .6rem;border-radius:8px}
 .override-badge.approved{color:var(--ok);background:var(--ok-wash)}
 .override-badge.rejected{color:var(--bad);background:var(--bad-wash)}
@@ -100,24 +104,15 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .check-status.busy{font-style:italic}
 .check-status.err{color:var(--bad);font-style:normal}
 /* ---------- 7-point inspection (checker v8, 2026-07-10) ---------- */
-.insp-score{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.2rem}
-.insp-score-num{font-family:var(--font-display);font-weight:700;font-size:1.8rem;line-height:1}
-.insp-score-num small{font-size:.85rem;font-weight:600;opacity:.7;margin-left:1px}
-.insp-score-lbl{font-size:.76rem;color:var(--muted)}
-.insp-score.sc-good .insp-score-num{color:var(--ok)}
-.insp-score.sc-mid .insp-score-num{color:var(--warn)}
-.insp-score.sc-bad .insp-score-num{color:var(--bad)}
-.insp-headline{font-family:var(--font-display);font-weight:700;font-size:1.02rem;text-transform:uppercase;letter-spacing:.01em;margin-bottom:.5rem}
-.insp-headline.hl-pass{color:var(--ok)}
-.insp-headline.hl-attn{color:var(--warn)}
-.insp-headline.hl-fail{color:var(--bad)}
-.insp-points{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.2rem}
-.insp-pt{font-family:var(--font-mono);font-size:.66rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:.28rem .55rem;border-radius:100px;border:none;cursor:pointer;background:var(--chip);color:var(--muted);transition:transform .1s}
-.insp-pt:hover{transform:translateY(-1px)}
-.insp-pt.pt-pass{background:var(--ok-wash);color:var(--ok)}
-.insp-pt.pt-attn{background:var(--warn-wash);color:var(--warn)}
-.insp-pt.pt-fail{background:var(--bad-wash);color:var(--bad)}
-.insp-pt.pt-na{opacity:.45}
+.insp-points{display:flex;flex-direction:column;margin:.3rem 0}
+.insp-pt{display:flex;align-items:center;gap:.5rem;width:100%;font-family:inherit;font-size:.8rem;font-weight:600;padding:.18rem .5rem;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--ink);text-align:left;transition:background .1s}
+.insp-pt:hover{background:var(--chip)}
+.insp-pt-name{flex:1}
+.insp-pt-badge{font-family:var(--font-mono);font-size:.68rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+.insp-pt.pt-pass .insp-pt-badge{color:var(--ok)}
+.insp-pt.pt-attn .insp-pt-badge{color:var(--warn)}
+.insp-pt.pt-fail .insp-pt-badge{color:var(--bad)}
+.insp-pt.pt-na .insp-pt-badge{color:var(--muted)}
 .insp-detail{font-size:.78rem;color:var(--ink);background:var(--chip);border-radius:8px;padding:.55rem .7rem;margin:.1rem 0 .6rem;line-height:1.55}
 .ov-btn.redo{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .ov-btn.redo:hover{opacity:.88;background:var(--accent)}
@@ -170,13 +165,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 </div></div>
 
 <div class="wrap">
-  <p class="sub">AI Vision check complete. Approved images move on to the Text step next.</p>
-
-  <div class="tally-bar">
-    <div class="tally-item"><span class="tally-num" id="tally-approved">0</span><span class="tally-label">approved</span></div>
-    <div class="tally-item"><span class="tally-num" id="tally-rejected">0</span><span class="tally-label">not approved</span></div>
-    <div class="tally-item"><span class="tally-num" id="tally-flagged">0</span><span class="tally-label">human-review flagged</span></div>
-    <div class="tally-item"><span class="tally-num" id="tally-overrides">0</span><span class="tally-label">owner overrides so far</span></div>
+  <div class="toolbar">
     <div class="size-toggle" id="size-toggle">
       <button data-size="150" onclick="setThumbSize(150,this)">S</button>
       <button data-size="230" class="active" onclick="setThumbSize(230,this)">M</button>
@@ -184,11 +173,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     </div>
   </div>
 
-  <div class="section-h"><h2>Approved</h2><span class="count" id="approved-count"></span></div>
-  <div class="grid" id="approved-grid"></div>
-
-  <div class="section-h"><h2>Not approved</h2><span class="count" id="rejected-count"></span></div>
-  <div class="grid" id="rejected-grid"></div>
+  <div class="grid" id="all-grid"></div>
 
   <div class="savebar">
     <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
@@ -308,7 +293,7 @@ function scoreBadge(r){
   const score = r.checker && typeof r.checker.score === 'number' ? r.checker.score : null;
   if (score === null) return '';
   const cls = score >= 80 ? 'v-checker-pass' : score >= 50 ? 'v-checker-review' : 'v-checker-fail';
-  return `<span class="verdict-pill ${cls}">Check score: ${score}</span>`;
+  return `<span class="verdict-pill ${cls}">Score: ${score}</span>`;
 }
 
 // ---- 7-point inspection (checker v8) — the public, countable score. ----
@@ -319,36 +304,23 @@ function scoreBadge(r){
 function scoreRow(r){
   const c = r.checker;
   if (typeof c.score !== 'number') return '';
-  const cls = c.score >= 85 ? 'sc-good' : c.score >= 60 ? 'sc-mid' : 'sc-bad';
-  const count = (typeof c.verified === 'number' && typeof c.applicable === 'number')
-    ? `${c.verified} of ${c.applicable} verified` : 'verified accuracy';
-  return `<div class="insp-score ${cls}">
-      <span class="insp-score-num">${c.score}<small>%</small></span>
-      <span class="insp-score-lbl">${esc(count)}</span>
-    </div>`;
+  const cls = c.score >= 80 ? 'v-checker-pass' : c.score >= 50 ? 'v-checker-review' : 'v-checker-fail';
+  return `<span class="verdict-pill ${cls}">Score: ${c.score}</span>`;
 }
 
-function headlineBlock(r){
-  const c = r.checker;
-  const tier = c.stage2_verdict;
-  const cls = tier === 'REJECT' ? 'hl-fail' : tier === 'HUMAN_REVIEW' ? 'hl-attn' : 'hl-pass';
-  const headline = c.headline || (tier === 'REJECT' ? 'Hold — off-brand' : tier === 'HUMAN_REVIEW' ? 'One fix from ready' : 'Send-ready');
-  return `<div class="insp-headline ${cls}">${esc(headline)}</div>`;
-}
-
-// Name-only pills on the live card (Owner call: full blurb lives on the info
-// toggle and the downloadable report, not cluttering the working view).
+// Each of the 7 points as a scannable row: name + numeric score, so issues
+// are visible at a glance instead of buried in a prose summary. Click a row
+// to expand its blurb + the model's specific reason underneath.
 function pointsRow(r){
   const pts = r.checker.points.map(p => {
     const cls = p.verdict === 'pass' ? 'pt-pass' : p.verdict === 'attention' ? 'pt-attn' : p.verdict === 'fail' ? 'pt-fail' : 'pt-na';
-    return `<button type="button" class="insp-pt ${cls}" onclick="togglePointDetail(event,'${r.id}','${p.key}')">${esc(p.name)}</button>`;
+    const badge = typeof p.score === 'number' ? p.score : '–';
+    return `<button type="button" class="insp-pt ${cls}" onclick="togglePointDetail(event,'${r.id}','${p.key}')">
+        <span class="insp-pt-name">${esc(p.name)}</span>
+        <span class="insp-pt-badge">${esc(String(badge))}</span>
+      </button>`;
   }).join('');
   return `<div class="insp-points">${pts}</div><div class="insp-detail" id="insp-detail-${r.id}" hidden></div>`;
-}
-
-function noteBlock(r){
-  const note = (r.checker.note || r.checker.overall_notes || '').trim();
-  return note ? `<p class="check-summary">${esc(note)}</p>` : '';
 }
 
 // "Redo with this fix" — reuses the existing manual edit-render flow (not a
@@ -391,24 +363,18 @@ function cardHtml(r){
   const verdict = effectiveVerdict(r);
   const hasInspection = !!(r.checker && Array.isArray(r.checker.points));
 
-  // Owner call, 2026-07-09: every card always offers BOTH directions (not
-  // just "move to the other bucket"), and doesn't wait on "Run checker"
-  // first — a manual approve/reject call is valid with or without an
-  // automated read. The active one is highlighted so the card's own status
-  // is legible without needing separate badge text.
-  let overrideBlock = `<div class="override-row">
-      <button class="ov-btn approve${verdict === 'approved' ? ' active' : ''}" onclick="setVerdict('${r.id}','approved')">✓ Approved</button>
-      <button class="ov-btn reject${verdict === 'rejected' ? ' active' : ''}" onclick="setVerdict('${r.id}','rejected')">✗ Not approved</button>
-    </div>`;
-  if (!r.checker) {
-    overrideBlock += `<div class="override-row"><button class="ov-btn run" onclick="runChecker('${r.id}')">▶ Run checker</button></div>
-      <span class="check-status" id="check-status-${r.id}"></span>`;
-  }
+  // One toggle (Owner call, 2026-07-12): green = approved, not-green = not
+  // approved. No separate reject button, no "Run checker" — images are scored
+  // automatically at generation/edit time. Status slot kept for the auto-check.
+  const overrideBlock = `<div class="override-row">
+      <button class="ov-btn approve${verdict === 'approved' ? ' active' : ''}" onclick="toggleApproved('${r.id}')">✓ Approved</button>
+    </div>
+    <span class="check-status" id="check-status-${r.id}"></span>`;
 
   let checkBlock;
   if (hasInspection) {
     // Current (v8) shape — the 7-point inspection.
-    checkBlock = `${scoreRow(r)}${headlineBlock(r)}${pointsRow(r)}${noteBlock(r)}`;
+    checkBlock = `${scoreRow(r)}${pointsRow(r)}`;
   } else if (r.checker) {
     // Legacy shape — renders checked before the v8 rebuild.
     const summary = checkSummary(r);
@@ -448,26 +414,17 @@ function cardHtml(r){
 
 async function render(){
   await resolveSignedUrls(renders);
-  const approved = renders.filter(r => effectiveVerdict(r) === 'approved' || !effectiveVerdict(r));
-  const rejected = renders.filter(r => effectiveVerdict(r) === 'rejected');
-  const flagged = renders.filter(r => r.checker && r.checker.stage2_verdict === 'HUMAN_REVIEW' && !r.human_override);
-  const overrides = renders.filter(r => r.human_override);
-
-  document.getElementById('tally-approved').textContent = approved.length;
-  document.getElementById('tally-rejected').textContent = rejected.length;
-  document.getElementById('tally-flagged').textContent = flagged.length;
-  document.getElementById('tally-overrides').textContent = overrides.length;
-  document.getElementById('approved-count').textContent = `${approved.length} — human-review flagged before client send`;
-  document.getElementById('rejected-count').textContent = `${rejected.length} — checker rejects, correction notes queue a rerun`;
-  document.getElementById('approved-grid').innerHTML = approved.map(cardHtml).join('') || '<p style="color:var(--muted)">None yet.</p>';
-  document.getElementById('rejected-grid').innerHTML = rejected.map(cardHtml).join('') || '<p style="color:var(--muted)">None yet.</p>';
+  // One grid — every render, newest as loaded. Approval is a per-card toggle.
+  document.getElementById('all-grid').innerHTML = renders.map(cardHtml).join('') || '<p style="color:var(--muted)">No images yet.</p>';
 }
 
-// Owner's step-3 approve/reject call — final and sticky, same rule as
-// server.py's POST /checker-verdict. db.setVerdict() is the ONLY function
-// allowed to write human_override (see lib/db.js).
-async function setVerdict(renderId, verdict){
-  await db.setVerdict(renderId, verdict);
+// Approval toggle (Owner call, 2026-07-12): green = approved, click to flip to
+// not-approved and back. Sticky, same human_override write as before.
+async function toggleApproved(renderId){
+  const r = renders.find(x => x.id === renderId);
+  if (!r) return;
+  const next = effectiveVerdict(r) === 'approved' ? 'rejected' : 'approved';
+  await db.setVerdict(renderId, next);
   renders = await loadRenders();
   await render();
 }
@@ -570,9 +527,13 @@ async function editRender(renderId){
     await db.createRunLogEntry(projectId, 'generate', `edited "${r.filename}" -> "${filename}": ${instruction}`);
 
     input.value = '';
-    statusEl.textContent = ''; statusEl.classList.remove('busy');
+    statusEl.textContent = 'scoring…';
     renders = await loadRenders();
     await render();
+    // Regenerated image gets scored right away — no manual checker step.
+    const newR = renders.find(x => x.filename === filename);
+    if (newR) { try { await runChecker(newR.id); } catch (e) { /* per-card status shows it */ } }
+    statusEl.textContent = ''; statusEl.classList.remove('busy');
   } catch (e) {
     statusEl.textContent = e.message || String(e); statusEl.classList.remove('busy'); statusEl.classList.add('err');
   }
@@ -594,15 +555,13 @@ async function init(){
   else { chip.textContent = 'Scene render'; chip.classList.add('scene'); }
   renders = await loadRenders();
   await render();
-  // ?autocheck=1 (set by the Scenes page after an Exact-mode composite run,
-  // where the checker doesn't run inside `generate`): score everything that
-  // arrived unchecked, one at a time so per-card status stays readable.
-  // Sticky human overrides are respected by setCheckerResult regardless.
-  if (new URLSearchParams(location.search).get('autocheck') === '1') {
-    const unchecked = renders.filter(r => !r.checker);
-    for (const r of unchecked) {
-      try { await runChecker(r.id); } catch (e) { /* per-card status already shows it */ }
-    }
+  // Every image should already be scored — Scene renders are checked inside
+  // `generate`, but Exact composites and AI edits arrive unchecked. Score any
+  // that are still unchecked here so there's never a manual "run checker" step.
+  // Sticky human overrides are respected regardless.
+  const unchecked = renders.filter(r => !r.checker);
+  for (const r of unchecked) {
+    try { await runChecker(r.id); } catch (e) { /* per-card status already shows it */ }
   }
 }
 init();

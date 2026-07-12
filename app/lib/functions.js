@@ -37,7 +37,19 @@ async function callFunction(name, body) {
   let json;
   try { json = await res.json(); }
   catch (e) { throw new Error(`${name}: HTTP ${res.status}, no JSON body`); }
-  if (!res.ok || json.ok === false) throw new Error(json.error || `${name} failed (HTTP ${res.status})`);
+  // Partial-failure case (e.g. generate: some shots ok, some failed) comes
+  // back HTTP 200 with ok:false but NO `error` field — the real per-shot
+  // reasons live in `summary`/`failed`. Surface those instead of the
+  // useless "failed (HTTP 200)" fallback.
+  if (!res.ok || json.ok === false) {
+    const detail = json.error
+      || (Array.isArray(json.failed) && json.failed.length
+        ? json.failed.map((f) => `${f.file || 'shot'}: ${f.error || 'unknown error'}`).join('; ')
+        : null)
+      || json.summary
+      || `${name} failed (HTTP ${res.status})`;
+    throw new Error(detail);
+  }
   return json;
 }
 

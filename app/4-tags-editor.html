@@ -46,9 +46,6 @@ a{color:inherit;text-decoration:none}
 h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
 .sub{color:var(--muted);font-size:.85rem;margin-bottom:1.4rem}
 
-.ai-bar{display:flex;align-items:center;gap:.7rem;background:var(--card);border:1px dashed var(--line-2);border-radius:var(--radius);padding:.9rem 1.1rem;margin-bottom:1.6rem}
-.ai-bar .lbl{font-weight:600;font-size:.9rem}
-.ai-bar .desc{font-size:.76rem;color:var(--muted);flex:1;line-height:1.5}
 .ai-status{font-size:.75rem;color:var(--muted)}
 .ai-status.busy{font-style:italic}
 .ai-status.err{color:#ef5350;font-style:normal}
@@ -61,21 +58,18 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 /* ---------- project brief panel (read-only, locked after creation) ---------- */
 .brief-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1.6rem}
 .brief-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
-.brief-head h3{font-family:var(--font-display);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.brief-head h3{font-family:var(--font-display);font-size:1.6rem;font-weight:700;letter-spacing:.02em}
 .brief-grid{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;font-size:.85rem;margin-bottom:0}
 .brief-grid dt{color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding-top:.15rem}
 .brief-grid dd{margin:0}
 .brief-body{display:flex;gap:1.3rem;align-items:flex-start}
 .brief-fields{flex:1;min-width:0}
-.brief-photos-col{flex:0 0 186px}
-@media(max-width:640px){.brief-body{flex-direction:column}.brief-photos-col{flex:none}}
 .brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
 .brief-photos img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
 .brief-photos .none{font-size:.8rem;color:var(--muted)}
 .brief-photo{position:relative;width:84px;height:84px}
 .brief-photo .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.7rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .brief-photo .rm:hover{color:#a33;border-color:#a33}
-.brief-photo-actions{margin-top:.7rem;display:flex;align-items:center;gap:.7rem}
 .brief-lock-inline{font-size:.68rem;color:var(--muted);background:var(--chip);padding:.1rem .5rem;border-radius:100px;margin-left:.4rem;vertical-align:1px}
 .edit-trigger{background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;padding:.25rem .6rem;border:1px solid var(--line-2);border-radius:100px;font-family:inherit}
 .edit-trigger:hover{color:var(--ink);border-color:var(--accent-ink)}
@@ -89,13 +83,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .brief-edit .pd-status.err{color:#ef5350}
 .btn-sm{font-size:.72rem;padding:.35rem .7rem}
 
-.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-bottom:1.2rem}
+.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:15px;margin-bottom:1.2rem}
 .legend .sw{width:.7rem;height:.7rem;border-radius:50%;display:inline-block;vertical-align:-1px;margin-right:.35rem}
 .sw-must{background:#c62828}.sw-should{background:#e65100}.sw-flavor{background:#5f5e5a}
 
 .tag-group{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1rem}
-.tag-group h3{font-family:var(--font-display);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem}
-.tag-group .grp-hint{font-size:.75rem;color:var(--muted);margin-bottom:.8rem;line-height:1.5}
+.tag-group h3{font-family:var(--font-display);font-size:1.35rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem}
+.tag-group .grp-hint{font-size:1rem;color:var(--ink);margin-bottom:.8rem;line-height:1.5}
 .tags{display:flex;flex-wrap:wrap;gap:.5rem}
 .tag{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;user-select:none;color:#fff;line-height:1.2;transition:transform .1s}
 .tag:hover{transform:translateY(-1px)}
@@ -108,10 +102,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .add-row input{flex:1;padding:.55rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--ink)}
 .add-row select{padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--card);color:var(--ink)}
 
-.preview{font-family:var(--font-mono);font-size:.78rem;line-height:1.9;background:var(--chip);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin-top:1.2rem}
-.preview b{color:#ef5350}
-.preview b.should{color:#e65100}
-.preview b.flavor{color:#5f5e5a}
 
 .savebar{position:sticky;bottom:0;background:var(--paper);padding:1rem 0 0;display:flex;justify-content:flex-end;gap:.6rem}
 /* Brief & Specs layout (2026-07-11): brief and specs side by side up top,
@@ -126,6 +116,25 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
 .mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
 .mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
+/* Collapsible sections (2026-07-12): click a header to fold/unfold; finished
+   sections collapse to just their header. */
+.col-head{cursor:pointer}
+.col-head::before{content:'▾';font-size:.72rem;color:var(--muted);transition:transform .15s;margin-right:.5rem;display:inline-block}
+.collapsible.collapsed > .col-head::before{transform:rotate(-90deg)}
+.collapsible.collapsed > .col-head{margin-bottom:0}
+.collapsible.collapsed > .col-body{display:none}
+.more-details{margin-top:.9rem}
+.more-link{font-size:.82rem;color:var(--accent-ink);cursor:pointer;text-decoration:underline}
+/* Photo-first flow (2026-07-11): one reference photo drives the whole page —
+   add it up top, and the AI's read of it populates the tags below. */
+.photo-capture{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.4rem}
+.photo-capture-head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.photo-capture-head h3{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:0;flex:1;min-width:14rem}
+.photo-capture .brief-photos{margin-top:1rem}
+.photo-capture .brief-photos:empty{margin-top:0}
+#photo-read-section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.4rem}
+.read-head{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:0 0 1rem;line-height:1.4}
+#photo-read-section .legend{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -146,9 +155,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 <div class="wrap">
   <p class="sub" id="page-sub">Loading…</p>
 
-  <div class="setup-grid">
-    <div class="brief-panel">
-      <div class="brief-head"><h3>Project brief</h3><button type="button" class="edit-trigger" id="brief-edit-btn" onclick="openBriefEdit()">✎ Edit</button></div>
+  <!-- Project brief (collapsible) -->
+  <div class="brief-panel collapsible" id="brief-box">
+    <div class="brief-head col-head" onclick="toggleBox('brief-box')">
+      <h3>Project brief</h3>
+      <button type="button" class="edit-trigger" id="brief-edit-btn" onclick="event.stopPropagation();openBriefEdit()">✎ Edit</button>
+    </div>
+    <div class="col-body">
       <div class="brief-body">
       <div class="brief-fields">
       <dl class="brief-grid" id="brief-view">
@@ -168,54 +181,39 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
         </div>
       </div>
       </div>
-      <div class="brief-photos-col">
-        <div class="brief-photos" id="brief-photos"><span class="none">loading photos…</span></div>
-        <div class="brief-photo-actions">
-          <button class="btn btn-ghost btn-sm" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
-          <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
-          <span class="ai-status" id="photo-action-status"></span>
-        </div>
-      </div>
       </div>
     </div>
+  </div>
 
-    <div class="brief-panel" id="specs-panel">
-      <div class="brief-head"><h3>Specs</h3></div>
-      <!-- Exact mode only (projects.pipeline='pro') — placement constraints for
-           the pixel-lock compositor. In Scene mode the whole Specs card hides
-           (the model picker moved to the Scenes page, 2026-07-11); see init(). -->
-      <div id="placement-group" style="display:none">
-        <h3 style="font-family:var(--font-display);font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem">Placement</h3>
-        <div class="grp-hint">Product size in frame — how tall the product renders as a percentage of the image height. Leave blank to vary per render.</div>
-        <div class="add-row">
-          <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)">
-        </div>
-        <div class="grp-hint" style="margin-top:1rem">Real height, in inches — tells the AI how to scale the room and furniture around the product so it doesn't look shrunk into or blown up past its surroundings. Leave blank to skip.</div>
-        <div class="add-row">
-          <input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)">
+  <!-- Photo capture (collapsible): one reference photo is all the pipeline
+       needs; the AI reads it to populate the tags below. Real-height detail
+       (Exact-mode scaling) is tucked behind an "add more details" link. -->
+  <div class="photo-capture collapsible" id="photo-box">
+    <div class="photo-capture-head col-head" onclick="toggleBox('photo-box')">
+      <h3>One photo is all we need, add it here</h3>
+      <button class="btn btn-primary" id="add-photo-btn" onclick="event.stopPropagation();document.getElementById('add-photo-input').click()">Add photo</button>
+      <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
+      <span class="ai-status" id="photo-action-status"></span>
+    </div>
+    <div class="col-body">
+      <div class="brief-photos" id="brief-photos"></div>
+      <div class="more-details">
+        <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">add more details</span>
+        <div id="more-details-body" style="display:none">
+          <div class="grp-hint" style="margin-top:.8rem">Real height, in inches — helps the AI scale the room and furniture around your product so it doesn't look shrunk or blown up. Leave blank to skip.</div>
+          <div class="add-row"><input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="ai-bar">
-    <span class="lbl">🏷 Tags</span>
-    <span class="desc">Fill them from the brand kit, or let AI draft from this client's previous campaigns — weights are a starting point.</span>
-    <span class="ai-status" id="kit-status"></span>
-    <span class="ai-status" id="ai-status"></span>
-    <button class="btn btn-ghost" id="kit-apply-btn" onclick="applyKitTags()" title="Fill the tags from this client's saved brand kit">Apply brand kit</button>
-    <button class="btn btn-ai" id="ai-draft-btn" onclick="aiDraftTags()">Ask AI to draft tags</button>
-  </div>
-
-  <div class="legend">
-    <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
-    <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
-    <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
-  </div>
+  <!-- Revealed once a photo exists — the AI's read of the product, as tags. -->
+  <div id="photo-read-section" class="collapsible" style="display:none">
+    <h3 class="read-head col-head" onclick="toggleBox('photo-read-section')">We see your photo created some descriptive tags, you can edit them or just continue.</h3>
+    <div class="col-body">
 
   <div class="tag-cols">
     <div class="tag-group">
-      <h3>Product spec</h3>
       <div class="grp-hint">What must be true on the product itself.</div>
       <div class="tags" id="tags-product"></div>
       <div class="add-row">
@@ -225,7 +223,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     </div>
 
     <div class="tag-group">
-      <h3>Creative constants</h3>
       <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
       <div class="tags" id="tags-creative"></div>
       <div class="add-row">
@@ -235,12 +232,19 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
     </div>
   </div>
 
-  <div class="preview" id="preview">(no tags yet)</div>
+  <div class="legend">
+    <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
+    <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
+    <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
+  </div>
+  </div><!-- /col-body -->
+  </div><!-- /photo-read-section -->
 
-  <div class="savebar">
-    <button class="btn btn-ghost" id="kit-save-btn" style="margin-right:auto" onclick="saveTagsToKit()" title="Save these tags as the client's brand kit — new projects start with them">Save tags to kit</button>
-    <button class="btn btn-ghost" onclick="location.reload()">Cancel</button>
-    <button class="btn btn-primary" onclick="saveAndContinue()">Save &amp; continue →</button>
+  <div class="savebar" id="savebar" style="display:none">
+    <button class="btn btn-ghost" id="kit-save-btn" onclick="saveTagsToKit()" title="Save these tags as the client's brand kit — new projects start with them">Save tags to kit</button>
+    <button class="btn btn-ghost" id="kit-apply-btn" onclick="applyKitTags()" title="Fill the tags from this client's saved brand kit">Apply brand kit</button>
+    <span class="ai-status" id="tag-status" style="margin-right:auto"></span>
+    <button class="btn btn-primary" onclick="saveAndContinue()">Continue</button>
   </div>
 </div>
 <script>
@@ -249,17 +253,15 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s??''; ret
 const projectId = qs('project');
 const WEIGHT_CYCLE = ['flavor','should','must'];
 let project = null, tags = { product: [], creative: [] };
+let draftingTags = false; // true while the AI is reading the photo — swaps the empty-state text
 
 function chipHtml(group, i, t){
   return `<span class="tag ${t.w}" onclick="cycleTag('${group}',${i})">${esc(t.t)}<span class="x" onclick="event.stopPropagation();removeTag('${group}',${i})">✕</span></span>`;
 }
 function renderTags(){
-  document.getElementById('tags-product').innerHTML = tags.product.map((t,i)=>chipHtml('product',i,t)).join('') || '<span style="color:var(--muted);font-size:.82rem">no tags yet</span>';
-  document.getElementById('tags-creative').innerHTML = tags.creative.map((t,i)=>chipHtml('creative',i,t)).join('') || '<span style="color:var(--muted);font-size:.82rem">no tags yet</span>';
-  const all = [...tags.product, ...tags.creative];
-  const line = w => all.filter(t=>t.w===w).map(t=>esc(t.t)).join(' · ') || '—';
-  document.getElementById('preview').innerHTML =
-    `<b>ALWAYS:</b> ${line('must')}<br><b class="should">PREFER:</b> ${line('should')}<br><b class="flavor">DETAIL:</b> ${line('flavor')}`;
+  const empty = `<span style="color:var(--muted);font-size:.82rem">${draftingTags ? 'generating tags…' : 'no tags yet'}</span>`;
+  document.getElementById('tags-product').innerHTML = tags.product.map((t,i)=>chipHtml('product',i,t)).join('') || empty;
+  document.getElementById('tags-creative').innerHTML = tags.creative.map((t,i)=>chipHtml('creative',i,t)).join('') || empty;
 }
 function cycleTag(group, i){
   const t = tags[group][i];
@@ -277,31 +279,31 @@ function addTag(group){
 }
 function isExactMode(){ return project && project.pipeline === 'pro'; }
 
-// Exact mode placement (ported from the old Pro app, 2026-07-10 merge) —
-// scale writes straight into tags.placement.scale, the fraction-of-canvas-
-// height the Cloud Run compositor pastes the real product cutout at;
-// realHeightIn becomes a familiar-object comparison sentence in the scene
-// prompt (see 5-scenes-editor.html's sizeComparisonPhrase).
-function readPlacement(){
-  const scaleV = parseFloat(document.getElementById('placement-scale').value);
-  const heightV = parseFloat(document.getElementById('placement-height').value);
-  const scale = Number.isFinite(scaleV) && scaleV > 0 ? Math.min(1, scaleV / 100) : null;
-  const realHeightIn = Number.isFinite(heightV) && heightV > 0 ? heightV : null;
-  if (!scale && !realHeightIn) return null;
-  const p = {};
-  if (scale) p.scale = scale;
-  if (realHeightIn) p.realHeightIn = realHeightIn;
-  return p;
+// Collapse/expand a section box; "add more details" reveals the optional
+// real-height field. Real height (inches) lives on this page now (Exact-mode
+// room scaling — see 5-scenes-editor.html's sizeComparisonPhrase); the
+// size-in-frame % moved to the Scenes page's second section.
+function toggleBox(id){ document.getElementById(id).classList.toggle('collapsed'); }
+function openMoreDetails(){ document.getElementById('more-details-body').style.display = ''; }
+function toggleMoreDetails(){
+  const b = document.getElementById('more-details-body');
+  b.style.display = b.style.display === 'none' ? '' : 'none';
 }
-function fillPlacement(placement){
-  document.getElementById('placement-scale').value = placement?.scale ? Math.round(placement.scale * 100) : '';
+function readHeightInches(){
+  const v = parseFloat(document.getElementById('placement-height').value);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+function fillHeight(placement){
   document.getElementById('placement-height').value = placement?.realHeightIn ?? '';
+  if (placement?.realHeightIn) openMoreDetails();
 }
 async function saveAndContinue(){
-  // Only Exact mode owns tags.placement — in Scene mode the inputs are
-  // hidden/blank, and writing their null here would wipe a value saved
-  // back when the project ran as Exact.
-  if (isExactMode()) tags.placement = readPlacement();
+  // Merge real height into tags.placement without touching scale (the Scenes
+  // page owns scale). Applies in any mode — it's only used when Exact renders.
+  const h = readHeightInches();
+  tags.placement = { ...(tags.placement || {}) };
+  if (h != null) tags.placement.realHeightIn = h; else delete tags.placement.realHeightIn;
+  if (!Object.keys(tags.placement).length) delete tags.placement;
   await db.saveTags(projectId, tags);
   location.href = `5-scenes-editor.html?project=${encodeURIComponent(projectId)}`;
 }
@@ -312,7 +314,7 @@ async function saveAndContinue(){
 // buttons cover the manual paths: forgot / project predates the kit
 // (apply), and capture-while-working (save).
 function kitStatus(msg, err){
-  const el = document.getElementById('kit-status');
+  const el = document.getElementById('tag-status');
   el.textContent = msg;
   el.classList.toggle('err', !!err);
   if (msg && !err) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
@@ -351,14 +353,18 @@ function renderPageMeta(){
   const clientName = project.clients ? project.clients.name : '';
   document.title = `Brief & Specs — ${project.name} — ${clientName} | Tolerance Studio`;
   document.getElementById('crumb-proj').textContent = project.name;
-  document.getElementById('page-sub').textContent =
-    `${clientName} — ${project.name} — ${project.product || ''}. Weight drives both ends of the pipeline: must leads the prompt and auto-rejects in the checker; should is a strong preference the checker flags; flavor is trailing detail, not checked.`;
+  // Subtitle intentionally left blank (2026-07-11): the client/project/product
+  // is already in the crumb + brief panel, and the weight explainer was noise.
+  const sub = document.getElementById('page-sub');
+  sub.textContent = '';
+  sub.style.display = 'none';
 }
 
 // ---------- edit the brief (Campaign/Product/Description only — Client is
 // a real relationship, not a text field, and reference photos have their
 // own add/remove flow below; neither belongs in this generic form) ----------
 function openBriefEdit(){
+  document.getElementById('brief-box').classList.remove('collapsed'); // expand so the form is visible
   document.getElementById('bd-campaign').value = project.name || '';
   document.getElementById('bd-product').value = project.product || '';
   document.getElementById('bd-description').value = project.description || '';
@@ -412,12 +418,19 @@ async function renderBrief(){
   document.getElementById('brief-description').textContent = project.description || '—';
   const photosEl = document.getElementById('brief-photos');
   const addBtn = document.getElementById('add-photo-btn');
+  const readSection = document.getElementById('photo-read-section');
+  const savebar = document.getElementById('savebar');
   try {
     const slug = project.clients && project.clients.slug;
     const files = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
+    addBtn.textContent = files.length ? 'Add another' : 'Add photo';
     addBtn.style.display = files.length >= MAX_REFERENCE_PHOTOS ? 'none' : '';
     if (!files.length){
-      photosEl.innerHTML = '<span class="none">no reference photos uploaded yet — add at least one below.</span>';
+      // No photo yet: nothing to show, and the AI-read section + save bar stay
+      // hidden until one exists (the tags/save only make sense with a photo).
+      photosEl.innerHTML = '';
+      readSection.style.display = 'none';
+      savebar.style.display = 'none';
       return;
     }
     const urls = await Promise.all(files.map(f => db.getSignedUrl(`${slug}/${projectId}/assets/${f.name}`)));
@@ -426,16 +439,57 @@ async function renderBrief(){
         <img src="${esc(u)}" title="${esc(files[i].name)}" onclick="window.open('${esc(u)}','_blank')">
         <button type="button" class="rm" title="Remove photo" onclick="removeReferencePhoto('${esc(files[i].name)}')">✕</button>
       </div>`).join('');
+    readSection.style.display = '';
+    savebar.style.display = '';
   } catch (e) {
     photosEl.innerHTML = `<span class="none">couldn't load photos: ${esc(e.message)}</span>`;
   }
 }
+// First time a photo exists but no tags are written yet, read the photo with
+// AI to fill them in. Skips if tags already exist (returning to the page) or a
+// draft is already running.
+let autoDrafting = false;
+async function maybeAutoDraftFromPhoto(){
+  if (autoDrafting) return;
+  if (document.getElementById('photo-read-section').style.display === 'none') return;
+  if ((tags.product && tags.product.length) || (tags.creative && tags.creative.length)) return;
+  autoDrafting = true;
+  try { await aiDraftTags(); }
+  finally { autoDrafting = false; }
+}
+// Shrink a photo in the browser BEFORE upload — full-res phone shots (10MP+)
+// get rejected by storage and bog down every step that reads them later. Cap
+// the long edge at 2048px (well above the 1536 generate/checker use, so no
+// fidelity loss). PNGs stay PNG to keep transparency (Exact-mode cutouts);
+// everything else re-encodes to JPEG. Any failure falls back to the original.
+async function downscaleImageFile(file, maxEdge = 2048){
+  const isPng = file.type === 'image/png';
+  const isJpeg = file.type === 'image/jpeg' || file.type === 'image/jpg';
+  if (!isPng && !isJpeg) return file; // leave webp/gif/svg/etc untouched
+  let bitmap;
+  try { bitmap = await createImageBitmap(file); } catch(e){ return file; }
+  const longEdge = Math.max(bitmap.width, bitmap.height);
+  if (longEdge <= maxEdge){ bitmap.close && bitmap.close(); return file; }
+  const scale = maxEdge / longEdge;
+  const w = Math.round(bitmap.width * scale), h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  bitmap.close && bitmap.close();
+  const outType = isPng ? 'image/png' : 'image/jpeg';
+  const blob = await new Promise(res => canvas.toBlob(res, outType, isPng ? undefined : 0.9));
+  if (!blob) return file;
+  const base = file.name.replace(/\.[^.]+$/, '');
+  return new File([blob], `${base}.${isPng ? 'png' : 'jpg'}`, { type: outType });
+}
 async function addReferencePhoto(file){
   if (!file) return;
   const status = document.getElementById('photo-action-status');
-  status.textContent = 'uploading…'; status.classList.remove('err'); status.classList.add('busy');
+  status.textContent = 'preparing…'; status.classList.remove('err'); status.classList.add('busy');
   try {
     const slug = project.clients && project.clients.slug;
+    file = await downscaleImageFile(file);
+    status.textContent = 'uploading…';
     const path = db.storagePath(slug, projectId, 'assets', file.name);
     await db.uploadFile(path, file);
     if (!project.reference_image) {
@@ -445,6 +499,11 @@ async function addReferencePhoto(file){
     document.getElementById('add-photo-input').value = '';
     status.textContent = ''; status.classList.remove('busy');
     await renderBrief();
+    // Photo section answered — collapse it to its header (click to reopen).
+    document.getElementById('photo-box').classList.add('collapsed');
+    // New photo in place — let the AI read it and populate the tags (first
+    // photo only; won't clobber tags you've already got).
+    await maybeAutoDraftFromPhoto();
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
   }
@@ -466,15 +525,21 @@ async function removeReferencePhoto(filename){
     status.textContent = e.message || String(e); status.classList.add('err');
   }
 }
+// Reads the photo (ai-draft vision) and fills the tags. Runs automatically the
+// first time a photo lands; status shows next to the Add-photo button.
 async function aiDraftTags(){
-  const btn = document.getElementById('ai-draft-btn');
-  const status = document.getElementById('ai-status');
+  const status = document.getElementById('photo-action-status');
+  status.textContent = 'reading your photo…'; status.classList.remove('err'); status.classList.add('busy');
+  draftingTags = true; renderTags(); // show "generating tags…" in the empty columns
   try {
-    const result = await withBusy(btn, status, 'drafting…', () =>
-      callFunction('ai-draft', { projectId, kind: 'tags' }));
+    const result = await callFunction('ai-draft', { projectId, kind: 'tags' });
     tags = result.tags && (result.tags.product || result.tags.creative) ? result.tags : tags;
-    renderTags();
-  } catch (e) { /* status element already shows the error via withBusy */ }
+    status.textContent = ''; status.classList.remove('busy');
+  } catch (e) {
+    status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
+  } finally {
+    draftingTags = false; renderTags();
+  }
 }
 async function init(){
   const { data: { session } } = await sb.auth.getSession();
@@ -484,23 +549,24 @@ async function init(){
   renderPageMeta();
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
-  // Mode-aware chrome (one app, two render modes — 2026-07-10 merge).
+  // Carry placement over even when there are no tag chips yet, so real height
+  // isn't lost on save.
+  if (project.tags?.placement && !tags.placement) tags.placement = project.tags.placement;
   const chip = document.getElementById('mode-chip');
-  if (isExactMode()) {
-    chip.textContent = 'Exact render';
-    chip.classList.add('exact');
-    document.getElementById('placement-group').style.display = '';
-    fillPlacement(tags.placement);
-  } else {
-    chip.textContent = 'Scene render';
-    chip.classList.add('scene');
-    // Scene mode has no specs left on this page (the model picker lives on
-    // the Scenes page now) — hide the card and let the brief run full width.
-    document.getElementById('specs-panel').style.display = 'none';
-    document.querySelector('.setup-grid').style.gridTemplateColumns = '1fr';
-  }
+  chip.textContent = isExactMode() ? 'Exact render' : 'Scene render';
+  chip.classList.add(isExactMode() ? 'exact' : 'scene');
+  fillHeight(tags.placement);
   renderTags();
-  renderBrief();
+  await renderBrief();
+  // If a photo is already here but tags were never written, read it now so the
+  // section lands pre-populated (the "first time it's shown" case).
+  await maybeAutoDraftFromPhoto();
+  // Project brief is reference info (set at creation) — start it collapsed. If
+  // a photo's already uploaded, that section's answered too, so collapse it.
+  document.getElementById('brief-box').classList.add('collapsed');
+  if (document.getElementById('photo-read-section').style.display !== 'none') {
+    document.getElementById('photo-box').classList.add('collapsed');
+  }
 }
 init();
 </script>

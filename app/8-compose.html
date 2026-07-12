@@ -301,6 +301,13 @@ img.lb-thumb{cursor:pointer}
               <span class="ai-status" id="text-color-hint" style="color:var(--muted)">Auto picks white or dark for you — pick a color to override.</span>
             </div>
           </div>
+          <div class="field">
+            <label for="cmp-scrim-color">Gradient color <button type="button" class="color-reset" onclick="resetScrimColor()">Auto</button></label>
+            <div class="color-row">
+              <input type="color" id="cmp-scrim-color" value="#0a090c" oninput="setScrimColor(this.value)">
+              <span class="ai-status" id="scrim-color-hint" style="color:var(--muted)">Auto uses a painted panel's color or near-black — pick a color to override.</span>
+            </div>
+          </div>
           <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.4rem">
             <button type="button" class="btn btn-ghost" style="padding:.4rem .8rem;font-size:.75rem" onclick="applyKitStyle(true)" title="Set font, colors and text size from this client's brand kit">Apply brand kit</button>
             <button type="button" class="btn btn-ghost" style="padding:.4rem .8rem;font-size:.75rem" onclick="saveStyleToKit()" title="Font, colors and text size become this client's defaults on every new project">Save style to kit</button>
@@ -409,6 +416,9 @@ let ctaColor = '#d8502d';      // the app's own default accent, overridable
 let textColorOverride = null;  // null = automatic (scrimColor()'s luminance
                                 // pick below); a hex string once the Owner
                                 // chooses one explicitly
+let scrimColorOverride = null; // null = automatic (painted-panel color, else
+                                // the near-black default wash); a hex string
+                                // once the Owner chooses one explicitly
 let photoZoom = 1;             // pre-paint photo scale knob — zooming out before painting
                                 // opens more gap on every side at once, without a drag
 // Post-paint zoom (Owner call, 2026-07-10): the outpaint model doesn't
@@ -537,7 +547,7 @@ function pickInk(rgb){
   return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) > 150 ? '#141118' : '#fff';
 }
 // ---------- brand kit (2026-07-11) ----------
-// clients.brand_kit carries { font, text_color, cta_color, text_size }
+// clients.brand_kit carries { font, text_color, cta_color, scrim_color, text_size }
 // across projects. Applied automatically on page load (the kit IS the
 // default — these knobs were never persisted per project), re-appliable and
 // savable from the buttons in the copy section.
@@ -549,13 +559,14 @@ function kitStatus(msg, err){
 }
 function applyKitStyle(manual){
   const kit = project?.clients?.brand_kit;
-  if (!kit || (!kit.font && !kit.text_color && !kit.cta_color && !kit.text_size)){
+  if (!kit || (!kit.font && !kit.text_color && !kit.cta_color && !kit.scrim_color && !kit.text_size)){
     if (manual) kitStatus('no style in the brand kit yet — set it up, then Save style to kit', true);
     return;
   }
   if (kit.font) document.getElementById('cmp-font').value = kit.font;
   if (kit.text_color){ textColorOverride = kit.text_color; document.getElementById('cmp-text-color').value = kit.text_color; }
   if (kit.cta_color){ ctaColor = kit.cta_color; document.getElementById('cmp-cta-color').value = kit.cta_color; }
+  if (kit.scrim_color){ scrimColorOverride = kit.scrim_color; document.getElementById('cmp-scrim-color').value = kit.scrim_color; }
   if (kit.text_size){
     tScale = kit.text_size;
     document.getElementById('cmp-tscale').value = Math.round(tScale * 100);
@@ -569,6 +580,7 @@ async function saveStyleToKit(){
   kit.font = document.getElementById('cmp-font').value;
   kit.text_color = textColorOverride; // null = auto — the kit remembers that choice too
   kit.cta_color = ctaColor;
+  kit.scrim_color = scrimColorOverride; // null = auto — same rule as text_color
   kit.text_size = tScale;
   try {
     await db.saveBrandKit(project.client_id, kit);
@@ -587,6 +599,12 @@ function setTextColor(v){ textColorOverride = v; renderPreview(); }
 function resetTextColor(){
   textColorOverride = null;
   document.getElementById('cmp-text-color').value = '#ffffff';
+  renderPreview();
+}
+function setScrimColor(v){ scrimColorOverride = v; renderPreview(); }
+function resetScrimColor(){
+  scrimColorOverride = null;
+  document.getElementById('cmp-scrim-color').value = '#0a090c';
   renderPreview();
 }
 // Center-anchored (Owner call, 2026-07-10): previously the photo always
@@ -1057,7 +1075,7 @@ function renderPreview(){
   // Scrim behind the words — direction follows the zone: side columns fade
   // horizontally, the center column vertically; panel-colored when the
   // words sit on a painted extension.
-  const sc = scrimColor();
+  const sc = scrimColorOverride ? hexToRgb(scrimColorOverride) : scrimColor();
   const col = sc ? (a) => `rgba(${sc.r},${sc.g},${sc.b},${a})` : (a) => `rgba(10,9,12,${a})`;
   let grad;
   if (tCol === 'left'){
@@ -1244,6 +1262,11 @@ async function saveComposed(){
   if (!selectedRenderId || !selectedImg){ status.textContent = 'pick an approved render first'; status.classList.add('err'); return; }
   const headline = document.getElementById('cmp-headline').value.trim();
   if (!headline){ status.textContent = 'headline is required'; status.classList.add('err'); return; }
+  // Force a fresh paint right before export — saveComposed() has no
+  // rendering logic of its own, it just serializes whatever pixels are
+  // already on the canvas, so any style change (gradient color, etc.) that
+  // didn't repaint for some reason would otherwise silently export stale.
+  renderPreview();
   const canvas = document.querySelector('#preview-canvas-wrap canvas');
   if (!canvas){ status.textContent = 'nothing to save yet'; status.classList.add('err'); return; }
 

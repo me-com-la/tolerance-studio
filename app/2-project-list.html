@@ -83,25 +83,11 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 .field input[type=text],.field input[type=date],.field select,.field textarea{padding:.6rem .8rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--card);color:var(--ink)}
 .field textarea{resize:vertical;min-height:4rem}
 .field-hint{font-size:.76rem;color:var(--muted)}
-.file-drop{border:1.5px dashed var(--line-2);border-radius:10px;padding:1rem;text-align:center;font-size:.82rem;color:var(--muted);cursor:pointer}
-.file-drop:hover{border-color:var(--accent);color:var(--ink)}
-.file-list{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
-.file-chip{font-size:.75rem;background:var(--chip);padding:.3rem .6rem;border-radius:100px}
 .modal-actions{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1.4rem;align-items:center}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
 .modal-status{font-size:.8rem;color:var(--muted)}
 .modal-status.busy{font-style:italic}
 .modal-status.err{color:#ef5350;font-style:normal}
-/* ---------- render-mode picker (one app, two modes — 2026-07-10 merge) ---------- */
-.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.1rem}
-.mode-card{position:relative;border:1.5px solid var(--line-2);border-radius:12px;padding:.85rem .95rem;cursor:pointer;transition:border-color .15s,background .15s}
-.mode-card:hover{border-color:var(--accent)}
-.mode-card.selected{border-color:var(--accent);background:var(--accent-wash)}
-.mode-card h4{font-size:.92rem;font-weight:600;margin-bottom:.25rem;display:flex;align-items:center;gap:.45rem}
-.mode-card p{font-size:.76rem;color:var(--muted);line-height:1.45}
-.mode-card .pro-pill{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.15rem .45rem;border-radius:100px;color:#7ee2c0;background:rgba(46,180,130,.16)}
-.mode-card.locked{opacity:.55;cursor:not-allowed}
-.mode-card.locked:hover{border-color:var(--line-2)}
 .proj-mode-chip{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.16rem .5rem;border-radius:100px;white-space:nowrap;color:#7ee2c0;background:rgba(46,180,130,.16)}
 </style>
 </head>
@@ -130,20 +116,8 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 <div class="modal-backdrop" id="new-project-backdrop">
   <div class="modal">
     <h2>New Project</h2>
-    <p class="modal-sub">Pick how this project renders, name the campaign, and drop in 1-3 real
-      product photos — the checker compares every render against whichever photo becomes the
-      reference.</p>
-
-    <div class="mode-pick">
-      <div class="mode-card" id="mode-card-standard" onclick="pickMode('standard')">
-        <h4>Scene render</h4>
-        <p>AI redraws your product into each scene. Fast drafts, any angle — small drift risk on fine detail. Every image gets an accuracy score.</p>
-      </div>
-      <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
-        <h4>Exact render <span class="pro-pill">Pro</span></h4>
-        <p>Your photo's actual pixels, pixel-locked into AI-built scenes. Zero drift — best for listings and ads. Scored by the same checker.</p>
-      </div>
-    </div>
+    <p class="modal-sub">Just name the client and the campaign — that's all it takes to start.
+      You'll add the product, reference photos, and render mode on the next screen.</p>
 
     <div class="field">
       <label for="np-client">Client</label>
@@ -157,22 +131,6 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
     <div class="field">
       <label for="np-name">Campaign name</label>
       <input type="text" id="np-name" placeholder="e.g. Summer Promotion">
-    </div>
-    <div class="field">
-      <label for="np-product">Product</label>
-      <input type="text" id="np-product" placeholder="e.g. PAWD Crate">
-    </div>
-    <div class="field">
-      <label for="np-description">Description</label>
-      <textarea id="np-description" placeholder="What's this campaign about — product, mood, key facts."></textarea>
-    </div>
-
-    <div class="field">
-      <label for="np-files">Client reference photos</label>
-      <div class="file-drop" onclick="document.getElementById('np-files').click()">Click to choose 1-3 real product photos</div>
-      <input type="file" id="np-files" accept="image/*" multiple style="display:none" onchange="renderFileList()">
-      <div class="file-list" id="np-file-list"></div>
-      <span class="field-hint" id="np-photo-hint">The first photo becomes the checker's reference image (projects.reference_image).</span>
     </div>
 
     <div class="modal-actions">
@@ -314,25 +272,12 @@ async function deleteProjectCard(event, projectId){
 // "1-Client-Assets" step). Every project in the database before this was
 // seeded by hand — this is the first real creation path.
 let cachedClients = [];
-let selectedFiles = [];
 
-// ---------- render mode (one app, two modes — 2026-07-10 merge) ----------
-// Everything is unlocked during beta. At paid launch, wire this to the real
-// per-user entitlements (Supabase) so Exact render gates on the Pro plan —
-// the locked-card UI below already handles hasProAccess() === false.
-const BETA_ALL_ACCESS = true;
-function hasProAccess(){ return BETA_ALL_ACCESS; }
-let selectedMode = 'standard';
-function pickMode(mode){
-  if (mode === 'pro' && !hasProAccess()) return;
-  selectedMode = mode;
-  document.getElementById('mode-card-standard').classList.toggle('selected', mode === 'standard');
-  document.getElementById('mode-card-pro').classList.toggle('selected', mode === 'pro');
-  document.getElementById('np-photo-hint').textContent = mode === 'pro'
-    ? 'The first photo is what your product gets cut out from and pixel-locked into every scene — a pre-made cutout (transparent PNG with "cutout" in the filename, added to the project\'s assets later) holds fine detail even better.'
-    : 'The first photo becomes the checker\'s reference image (projects.reference_image).';
-}
-
+// New Project is intentionally minimal (2026-07-11): only the two things the
+// DB actually requires to create a project — client + campaign name. Product,
+// description, reference photos, and render mode (Scene/Exact) are all filled
+// in afterward on the Brief & Specs / Scenes pages. Every project starts in
+// Scene ('standard') mode; the Scenes page flips it to Exact when wanted.
 async function openNewProject(){
   cachedClients = await db.listClients();
   const sel = document.getElementById('np-client');
@@ -340,16 +285,8 @@ async function openNewProject(){
     + '<option value="__new__">+ New client…</option>';
   document.getElementById('np-new-client-name').value = '';
   document.getElementById('np-name').value = '';
-  document.getElementById('np-product').value = '';
-  document.getElementById('np-description').value = '';
-  document.getElementById('np-files').value = '';
-  selectedFiles = [];
-  renderFileList();
   document.getElementById('np-status').textContent = '';
   onClientSelectChange();
-  // Locked state for Exact render once entitlements are real (no-op in beta).
-  document.getElementById('mode-card-pro').classList.toggle('locked', !hasProAccess());
-  pickMode(selectedMode);
   document.getElementById('new-project-backdrop').classList.add('open');
 }
 function closeNewProject(){
@@ -359,48 +296,28 @@ function onClientSelectChange(){
   const isNew = document.getElementById('np-client').value === '__new__';
   document.getElementById('np-new-client-field').style.display = isNew ? 'flex' : 'none';
 }
-function renderFileList(){
-  selectedFiles = Array.from(document.getElementById('np-files').files || []);
-  document.getElementById('np-file-list').innerHTML =
-    selectedFiles.map(f => `<span class="file-chip">${esc(f.name)}</span>`).join('')
-    || '<span class="field-hint">no photos chosen yet</span>';
-}
-function slugify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
 
 async function submitNewProject(){
   const btn = document.getElementById('np-submit-btn');
   const status = document.getElementById('np-status');
   const name = document.getElementById('np-name').value.trim();
-  const product = document.getElementById('np-product').value.trim();
-  const description = document.getElementById('np-description').value.trim();
   const clientSel = document.getElementById('np-client').value;
   const newClientName = document.getElementById('np-new-client-name').value.trim();
 
   if (!name){ status.textContent = 'campaign name required'; status.classList.add('err'); return; }
   if (clientSel === '__new__' && !newClientName){ status.textContent = 'new client name required'; status.classList.add('err'); return; }
-  if (!selectedFiles.length){ status.textContent = 'add at least one reference photo first'; status.classList.add('err'); return; }
 
   try {
     const project = await withBusy(btn, status, 'creating…', async () => {
-      let clientId, clientSlug;
+      let clientId;
       if (clientSel === '__new__') {
         const c = await db.createClient(newClientName);
-        clientId = c.id; clientSlug = c.slug;
+        clientId = c.id;
       } else {
-        const c = cachedClients.find(c => c.id === clientSel);
-        clientId = c.id; clientSlug = c.slug;
+        clientId = cachedClients.find(c => c.id === clientSel).id;
       }
-
-      const proj = await db.createProject({ clientId, name, product, description, pipeline: selectedMode });
-
-      let referencePath = null;
-      for (const file of selectedFiles) {
-        const path = db.storagePath(clientSlug, proj.id, 'assets', file.name);
-        await db.uploadFile(path, file);
-        if (!referencePath) referencePath = path;
-      }
-      await db.saveReferenceImage(proj.id, referencePath);
-      return proj;
+      // Defaults to Scene mode; reference photos are added on the next screen.
+      return await db.createProject({ clientId, name, pipeline: 'standard' });
     });
     location.href = `4-tags-editor.html?project=${encodeURIComponent(project.id)}`;
   } catch (e) { /* status element already shows the error via withBusy */ }
@@ -422,11 +339,9 @@ async function submitNewProject(){
   render();
 
   // Files page's "New Project" card CTAs link here with ?new=1 to jump
-  // straight into project creation instead of landing on an empty list
-  // first; ?mode=pro|standard preselects the render-mode card.
+  // straight into project creation instead of landing on an empty list first.
+  // (Render mode is no longer chosen here — it's set later on the Scenes page.)
   const params = new URLSearchParams(location.search);
-  const preMode = params.get('mode');
-  if (preMode === 'pro' || preMode === 'standard') selectedMode = preMode;
   if (params.get('new') === '1') openNewProject();
 })();
 </script>

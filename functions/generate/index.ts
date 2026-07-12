@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { Image } from 'https://deno.land/x/imagescript@1.2.15/mod.ts';
 // Lowered from 4 -> 2 (2026-07-10): each lane also chains a checker call, so
 // 4 lanes meant up to ~8 concurrent requests against the same fal key, which
 // was tripping fal's rate limit (HTTP 429) on batches of any real size.
@@ -40,6 +41,28 @@ function bytesToBase64(bytes) {
   let binary = '';
   for(let i = 0; i < bytes.length; i++)binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
+}
+// Reference photos come straight from the user's uploads and are often
+// full-resolution phone shots (10MP+). Decoding and base64-ing several of
+// those at once is what pushes this function past Supabase's 512MB limit,
+// which comes back as HTTP 546 ("WORKER_LIMIT"). Shrink the long edge to
+// <=1536px BEFORE we ever hold the base64 in memory or send it to fal —
+// that's plenty of detail to ground the edit, at a fraction of the size.
+// One image at a time (callers loop sequentially), and on ANY failure we
+// fall back to the original bytes: a big reference beats a broken run.
+async function downscaleForModel(bytes, mimeType, maxEdge = 1536) {
+  try {
+    const img = await Image.decode(bytes);
+    const longEdge = Math.max(img.width, img.height);
+    if (longEdge <= maxEdge) return { bytes, mimeType };
+    if (img.width >= img.height) img.resize(maxEdge, Image.RESIZE_AUTO);
+    else img.resize(Image.RESIZE_AUTO, maxEdge);
+    const isPng = (mimeType || '').includes('png');
+    const out = isPng ? await img.encode() : await img.encodeJPEG(85);
+    return { bytes: out, mimeType: isPng ? 'image/png' : 'image/jpeg' };
+  } catch (_e) {
+    return { bytes, mimeType };
+  }
 }
 async function mapWithConcurrency(items, limit, worker) {
   const results = new Array(items.length);
@@ -261,53 +284,99 @@ async function callFalVision(falKey, sourceImage, candidateImage, instructions) 
   if (!text) throw new Error(`fal returned no text: ${JSON.stringify(resp).slice(0, 300)}`);
   return text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
 }
+// The seven fixed inspection points — constant across every brand and both
+// modes. Kept in sync by hand with the standalone checker's POINTS so a render
+// checked inline (Scene mode) and one checked via the checker function (Exact /
+// edits) render identically on the gallery's 7-point card.
+const POINTS = [
+  { key: 'shape', name: 'Shape', blurb: 'Silhouette, structure, and proportions match your product.' },
+  { key: 'color', name: 'Color', blurb: 'Colors match the real thing.' },
+  { key: 'materials', name: 'Materials', blurb: 'Surface, texture, sheen, and pattern read true.' },
+  { key: 'details', name: 'Details', blurb: 'Logos, hardware, closures, seams, and text are correct and undistorted.' },
+  { key: 'clarity', name: 'Clarity', blurb: 'Sharp and clean — no artifacts or warping.' },
+  { key: 'lighting', name: 'Lighting', blurb: 'Believable light direction, shadows, and reflections.' },
+  { key: 'scene', name: 'Scene', blurb: 'The product sits naturally in its setting, not pasted on.' }
+];
+function fallbackHeadline(tier) {
+  if (tier === 'REJECT') return 'Hold — off-brand';
+  if (tier === 'HUMAN_REVIEW') return 'One fix from ready';
+  return 'Send-ready';
+}
 async function runCheckerInline(falKey, spec, sourceImage, candidateImage) {
-  const checks = spec.vision_checks;
-  const instructions = `You are a spec-accuracy QA inspector for AI-generated product imagery.
-IMAGE 1 is the REAL product (ground truth). IMAGE 2 is an AI-generated candidate.
-Judge IMAGE 2 against IMAGE 1 for each checklist item. The product must match
-the real one exactly; scene/background/lighting style differences are allowed
-unless an item says otherwise. Items have a "when_visible" condition: if the
-relevant feature is not visible in IMAGE 2, return "n/a" for that item.
-Be strict: subtle branding moves, invented hardware, warped pattern cells,
-and color shifts are exactly what you exist to catch.
-Checklist (JSON): ${JSON.stringify(checks)}
-Respond with ONLY a JSON object:
-{"items": [{"id": "...", "verdict": "pass|fail|n/a", "confidence": 0-100,
-"reason": "one line"}], "overall_notes": "one or two lines",
-"score": 0-100 
- a single overall fidelity score for how closely IMAGE 2 — matches IMAGE 1 against this checklist (100 = perfect match, 0 = completely
-wrong product)}`;
+  const truths = spec.vision_checks || [];
+  const instructions = `You are a working creative director reviewing an AI-generated product image before it goes to a client. You are direct and specific — never gushing, never padding.
+
+IMAGE 1 is the REAL product (ground truth). IMAGE 2 is the AI-generated candidate. The product in IMAGE 2 must match the real one; scene and lighting *style* may differ unless a brand truth says otherwise.
+
+Run a fixed 7-POINT INSPECTION. Judge each point against IMAGE 1:
+${POINTS.map((p)=>`- ${p.name}: ${p.blurb}`).join('\n')}
+
+This brand's declared truths (use them as the specific standard for the points they touch): ${JSON.stringify(truths)}
+
+For each point give a "score" 0-100 for how closely it matches IMAGE 1 (100 = perfect match, 0 = completely wrong), plus a "verdict" derived from that score: "pass" (score 85+), "attention" (score 50-84), "fail" (score below 50), or "na" (can't be judged in this shot, no score). Be strict — subtle color shifts, warped patterns, garbled text, invented hardware, and pasted-on lighting are exactly what you catch.
+
+Also rule on each declared truth: "pass", "fail", or "na".
+
+Then speak to the brand owner like their creative director: name the specific thing that's off (or confirm it's right), in plain words. If a fix is needed, write a one-line redo instruction they could hand straight to the generator.
+
+Respond with ONLY this JSON:
+{
+  "points": [{"key": "shape|color|materials|details|clarity|lighting|scene", "verdict": "pass|attention|fail|na", "score": 0-100 or null if na, "reason": "one short line"}],
+  "truths": [{"id": "...", "verdict": "pass|fail|na"}],
+  "headline": "at most 6 words, e.g. 'Send-ready' or 'One fix: color'",
+  "note": "2-3 sentences, first person, direct",
+  "suggested_fix": "one-line redo instruction, or empty string"
+}`;
   const text = await callFalVision(falKey, sourceImage, candidateImage, instructions);
   const result = JSON.parse(text);
+  const byKey = {};
+  for (const p of Array.isArray(result.points) ? result.points : [])byKey[p.key] = p;
+  const points = POINTS.map((p)=>{
+    const got = byKey[p.key] || {};
+    const v = ['pass', 'attention', 'fail', 'na'].includes(got.verdict) ? got.verdict : 'na';
+    const score = typeof got.score === 'number' ? Math.max(0, Math.min(100, Math.round(got.score))) : null;
+    return { key: p.key, name: p.name, blurb: p.blurb, verdict: v, score, reason: (got.reason || '').trim() };
+  });
+  const applicableP = points.filter((p)=>p.verdict !== 'na');
+  const verified = applicableP.filter((p)=>p.verdict === 'pass').length;
+  const applicable = applicableP.length;
+  const score = applicable > 0 ? Math.round(verified / applicable * 100) : null;
   const sev = {};
-  for (const c of checks)sev[c.id] = c.severity;
-  const threshold = spec.rules && spec.rules.confidence_below || 80;
+  const truthText = {};
+  for (const t of truths){ sev[t.id] = t.severity; truthText[t.id] = t.item; }
+  const truthResults = Array.isArray(result.truths) ? result.truths : [];
+  const items = truthResults.map((t)=>({
+    id: t.id,
+    item: truthText[t.id] || t.id,
+    verdict: ['pass', 'fail', 'na'].includes(t.verdict) ? t.verdict : 'na',
+    reason: ''
+  }));
   let stage2Verdict = 'PASS';
-  for (const it of result.items){
-    if (it.verdict === 'fail' && sev[it.id] === 'reject') {
-      stage2Verdict = 'REJECT';
-      break;
+  if (items.length > 0) {
+    for (const it of items){ if (it.verdict === 'fail' && sev[it.id] === 'reject') stage2Verdict = 'REJECT'; }
+    if (stage2Verdict === 'PASS') {
+      for (const it of items){ if (it.verdict === 'fail' && sev[it.id] === 'flag') stage2Verdict = 'HUMAN_REVIEW'; }
     }
+  } else {
+    if (points.some((p)=>p.verdict === 'fail')) stage2Verdict = 'HUMAN_REVIEW';
   }
-  if (stage2Verdict === 'PASS') {
-    for (const it of result.items){
-      if (it.verdict === 'n/a') continue;
-      if (it.confidence < threshold || it.verdict === 'fail' && sev[it.id] === 'flag') {
-        stage2Verdict = 'HUMAN_REVIEW';
-      }
-    }
-  }
+  let headline = typeof result.headline === 'string' ? result.headline.trim() : '';
+  if (!headline || headline.length > 42) headline = fallbackHeadline(stage2Verdict);
+  const note = typeof result.note === 'string' ? result.note.trim() : '';
+  const suggested_fix = typeof result.suggested_fix === 'string' ? result.suggested_fix.trim() : '';
   const checkerResult = {
     spec: `${spec.sku}/${spec.variant}`,
     model: CHECKER_MODEL,
     stage2_verdict: stage2Verdict,
-    items: result.items,
-    overall_notes: result.overall_notes || '',
-    // Single 0-100 fidelity number (Owner call 2026-07-09) 
-    //the checker
-    // gallery shows this as a one-number badge, no per-item breakdown.
-    score: typeof result.score === 'number' ? Math.max(0, Math.min(100, Math.round(result.score))) : null
+    score,
+    verified,
+    applicable,
+    points,
+    headline,
+    note,
+    suggested_fix,
+    items,
+    overall_notes: note
   };
   const verdict = stage2Verdict === 'REJECT' ? 'rejected' : 'approved';
   return {
@@ -414,9 +483,10 @@ Deno.serve(async (req)=>{
       for (const f of realFiles){
         const { data: blob, error: dlErr } = await supabase.storage.from('projects').download(`${clientSlug}/${project.id}/assets/${f.name}`);
         if (!dlErr && blob) {
-          const bytes = new Uint8Array(await blob.arrayBuffer());
+          const rawBytes = new Uint8Array(await blob.arrayBuffer());
+          const { bytes, mimeType } = await downscaleForModel(rawBytes, blob.type || 'image/jpeg');
           referenceImages.push({
-            mimeType: blob.type || 'image/jpeg',
+            mimeType,
             base64: bytesToBase64(bytes)
           });
         }
@@ -435,9 +505,10 @@ Deno.serve(async (req)=>{
         if (refErr) checkerRefDiagnostic = `download error: ${refErr.message || JSON.stringify(refErr)}`;
         else if (!refBlob) checkerRefDiagnostic = 'download returned no blob';
         else {
-          const refBytes = new Uint8Array(await refBlob.arrayBuffer());
+          const rawRefBytes = new Uint8Array(await refBlob.arrayBuffer());
+          const { bytes: refBytes, mimeType: refMime } = await downscaleForModel(rawRefBytes, refBlob.type || 'image/jpeg');
           checkerReferenceImage = {
-            mediaType: refBlob.type || 'image/jpeg',
+            mediaType: refMime,
             base64: bytesToBase64(refBytes)
           };
         }
@@ -484,9 +555,16 @@ Deno.serve(async (req)=>{
       let checkNote = `not checked (${checkerRefDiagnostic || 'unknown reason'})`;
       if (checkerReferenceImage) {
         try {
+          // Downscale the render before base64-ing it for the checker. The
+          // checker only judges product fidelity, so 1024px is plenty — and
+          // base64-ing a full 2K Gemini output (its native size; Seedream/GPT
+          // return smaller) across 2 concurrent lanes is what tripped the
+          // 512MB/CPU worker limit (HTTP 546), which is why it only showed up
+          // on Gemini. The stored render (uploaded above) stays full-res.
+          const { bytes: checkBytes, mimeType: checkMime } = await downscaleForModel(bytes, mimeType, 1024);
           const candidateImage = {
-            mediaType: mimeType,
-            base64: bytesToBase64(bytes)
+            mediaType: checkMime,
+            base64: bytesToBase64(checkBytes)
           };
           const { checker, verdict } = await runCheckerInline(falKey, spec, checkerReferenceImage, candidateImage);
           renderFields.checker = checker;

@@ -1,5 +1,52 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { Image } from 'https://deno.land/x/imagescript@1.2.15/mod.ts';
 const DRAFT_MODEL = Deno.env.get('DRAFT_MODEL') || 'anthropic/claude-haiku-4.5';
+function bytesToBase64(bytes) {
+  let binary = '';
+  for(let i = 0; i < bytes.length; i++)binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+// Shrink the reference photo before we base64 it into the chat request — the
+// tag read only needs to recognize the product, not fine detail, and a raw
+// 10MP phone photo bloats the request (and risks the 512MB worker limit).
+// Any failure falls back to the original bytes. Same helper proven in generate.
+async function downscaleForModel(bytes, mimeType, maxEdge = 1024) {
+  try {
+    const img = await Image.decode(bytes);
+    const longEdge = Math.max(img.width, img.height);
+    if (longEdge <= maxEdge) return { bytes, mimeType };
+    if (img.width >= img.height) img.resize(maxEdge, Image.RESIZE_AUTO);
+    else img.resize(Image.RESIZE_AUTO, maxEdge);
+    const isPng = (mimeType || '').includes('png');
+    const out = isPng ? await img.encode() : await img.encodeJPEG(85);
+    return { bytes: out, mimeType: isPng ? 'image/png' : 'image/jpeg' };
+  } catch (_e) {
+    return { bytes, mimeType };
+  }
+}
+// Builds a multimodal image part from the project's reference photo (or the
+// first uploaded asset) so the tag draft can actually SEE the product.
+// Returns null if there's no photo yet — callers then fall back to text only.
+async function referenceImagePart(supabase, project) {
+  try {
+    let path = project.reference_image;
+    if (!path) {
+      const slug = project.clients?.slug;
+      if (!slug) return null;
+      const { data: files } = await supabase.storage.from('projects').list(`${slug}/${project.id}/assets`, { limit: 5 });
+      const real = (files || []).find((f)=>f.id);
+      if (!real) return null;
+      path = `${slug}/${project.id}/assets/${real.name}`;
+    }
+    const { data: blob, error } = await supabase.storage.from('projects').download(path);
+    if (error || !blob) return null;
+    const raw = new Uint8Array(await blob.arrayBuffer());
+    const { bytes, mimeType } = await downscaleForModel(raw, blob.type || 'image/jpeg');
+    return { type: 'image_url', image_url: { url: `data:${mimeType};base64,${bytesToBase64(bytes)}` } };
+  } catch (_e) {
+    return null;
+  }
+}
 async function callFal(apiKey, system, user) {
   const res = await fetch('https://fal.run/openrouter/router/openai/v1/chat/completions', {
     method: 'POST',
@@ -80,12 +127,19 @@ Deno.serve(async (req)=>{
       const siblings = await listSiblings(2);
       const prevTxt = siblings.filter((s)=>s.tags).map((s)=>`--- from previous campaign ${s.name} ---\n${JSON.stringify(s.tags, null, 2)}`).join('\n\n') || '(no previous campaigns)';
       const cur = project.tags ? JSON.stringify(project.tags, null, 2) : null;
-      const system = 'You draft the weighted brief tags for an AI product-imagery pipeline. Respond with ONLY a JSON ' + 'object: {"product":[{"t":"tag text","w":"must|should|flavor"}, ...], "creative":[...same shape...]}. ' + 'product = what must be true on the product itself (type, shape, colors, materials, finish, ' + 'branding, proportions, condition); creative = scene/palette/light/mood/camera constants locked ' + 'for the whole batch. Each tag is 1-4 words, keyword style. Weights drive both ends of the ' + 'pipeline: must = non-negotiable (leads the generation prompt AND auto-rejects in the checker), ' + 'should = strong preference (mid-prompt, checker flags), flavor = trailing detail (not checked). ' + 'Be sparing with must — only true product-correctness facts earn it.';
-      const user = `${briefLine}\n\nPrevious campaigns' tags from this client (reuse facts that still apply, drop ` + `campaign-specific ones):\n${prevTxt}\n\n` + (cur ? `Existing tags for this project (refine/extend; keep the Owner's weights unless clearly wrong):\n${cur}\n\n` : '') + (direction ? `Owner direction: ${direction}\n\n` : '') + 'Respond with the JSON object only.';
+      const system = 'You draft the weighted brief tags for an AI product-imagery pipeline. You are given a REAL ' + 'photo of the product — look at it and read the product from the image itself (type, shape, ' + 'colors, materials, finish, branding, proportions, condition), using the text brief only as ' + 'supporting context. Respond with ONLY a JSON ' + 'object: {"product":[{"t":"tag text","w":"must|should|flavor"}, ...], "creative":[...same shape...]}. ' + 'product = what must be true on the product itself (type, shape, colors, materials, finish, ' + 'branding, proportions, condition); creative = scene/palette/light/mood/camera constants locked ' + 'for the whole batch. Each tag is 1-4 words, keyword style. Weights drive both ends of the ' + 'pipeline: must = non-negotiable (leads the generation prompt AND auto-rejects in the checker), ' + 'should = strong preference (mid-prompt, checker flags), flavor = trailing detail (not checked). ' + 'Be sparing with must — only true product-correctness facts earn it.';
+      const userText = `${briefLine}\n\nPrevious campaigns' tags from this client (reuse facts that still apply, drop ` + `campaign-specific ones):\n${prevTxt}\n\n` + (cur ? `Existing tags for this project (refine/extend; keep the Owner's weights unless clearly wrong):\n${cur}\n\n` : '') + (direction ? `Owner direction: ${direction}\n\n` : '') + 'Respond with the JSON object only.';
+      // Feed the actual product photo (vision) when one exists; otherwise the
+      // model still drafts from the text brief alone.
+      const imagePart = await referenceImagePart(supabase, project);
+      const user = imagePart
+        ? [ { type: 'text', text: 'Real product photo — read the product from THIS image:' }, imagePart, { type: 'text', text: userText } ]
+        : userText;
       const text = await callFal(falKey, system, user);
       result = {
         ok: true,
-        tags: JSON.parse(extractJsonObject(text))
+        tags: JSON.parse(extractJsonObject(text)),
+        sawPhoto: !!imagePart
       };
     } else if (kind === 'scenes') {
       const brief = project.tags ? JSON.stringify(project.tags, null, 2) : '(not written yet)';
