@@ -379,7 +379,18 @@ function openAcc(n){ document.getElementById('acc-' + n).classList.remove('colla
 const projectId = qs('project');
 let project = null, renders = [];
 let selectedRenderId = null, selectedImg = null; // selectedImg = HTMLImageElement, loaded once per pick
+// Size-first flow (Owner call, 2026-07-14): nothing auto-paints or drafts copy
+// until a size is chosen. The render still loads on entry (so it's ready), but
+// auto-layout + auto-paint + copy draft only fire once sizeChosen flips true —
+// via pickPlatform/applyCustomSize. Stops the old load-time paint of the
+// default square (which flashed the paint/copy overlays before any choice).
+let sizeChosen = false;
 const signedUrlCache = {};
+// Lay out for the current size, but only when the image has actually decoded;
+// otherwise its onload handler runs it (sizeChosen is already true by then).
+function layoutForCurrentSize(){
+  if (selectedImg && selectedImg.complete && selectedImg.naturalWidth) autoLayoutForPlatform();
+}
 
 // ---- three draggable layers on one canvas ----
 // The preview is direct manipulation now: drag the PHOTO to place it (push
@@ -505,7 +516,10 @@ function pickPlatform(key){
   if (main) main.style.display = '';
   const after = document.getElementById('after-compose');
   if (after) after.style.display = '';
-  autoLayoutForPlatform();
+  // Size chosen → NOW lay out + auto-paint the gap, and draft copy (once).
+  sizeChosen = true;
+  layoutForCurrentSize();
+  autoDraftCopy();
 }
 function applyCustomSize(){
   const w = Math.max(200, Math.min(4096, parseInt(document.getElementById('cmp-cw').value, 10) || 1080));
@@ -520,7 +534,9 @@ function applyCustomSize(){
   if (main) main.style.display = '';
   const after = document.getElementById('after-compose');
   if (after) after.style.display = '';
-  autoLayoutForPlatform();
+  sizeChosen = true;
+  layoutForCurrentSize();
+  autoDraftCopy();
 }
 
 // Back to the untouched render, default zones, no pan, no zoom. Called on
@@ -926,7 +942,7 @@ async function renderSelectStrip(){
     resetLayout();
     selectedImg = new Image();
     selectedImg.crossOrigin = 'anonymous';
-    selectedImg.onload = () => autoLayoutForPlatform();
+    selectedImg.onload = () => { if (sizeChosen) autoLayoutForPlatform(); };
     selectedImg.src = urls[0];
   }
 }
@@ -1514,15 +1530,33 @@ function padToSupportedRatio(frame){
 // Motion prompt — fixed house rules (subtle, ambient, locked camera), plus
 // one spatial hint: keep the side the words will sit on calm, since the text
 // is stamped back over the video afterward.
-function buildMotionPrompt(){
+// Motion prompt — house rules, in the Owner's priority order (2026-07-14):
+//   1. WIND first: only what's already in frame moves — flowers/leaves/fabric
+//      sway gently, existing shadows drift as if a cloud passes.
+//   2. LIGHT second: a slow, subtle shift in the existing light and its warmth.
+// Nothing is ever ADDED (the old prompt's "steam / dust motes" is what drew
+// the smoke; the phantom window came from not locking existing architecture).
+// Everything stays subtle, product locked, camera locked. Edit THIS to retune
+// what kind of motion the whole app produces — one place, ripples everywhere.
+// A per-run correction note (Try again) is appended verbatim after this.
+function buildMotionPrompt(extraNote){
   const zone = tCol === 'left' ? 'left side' : tCol === 'right' ? 'right side'
     : tRow === 'top' ? 'top' : 'bottom';
-  return 'Subtle ambient environmental motion only: gentle light shifts, soft drifting ' +
-    'shadows, faint atmospheric movement like steam, dust motes or softly moving foliage ' +
-    'where natural. The camera is completely locked — no zoom, no pan, no rotation. ' +
-    'The product and all objects keep their exact position, shape and detail. ' +
+  const base =
+    'Bring this product photo to life with subtle, natural motion. Nothing is added or ' +
+    'removed — only what is already in the frame moves, and only a little. ' +
+    'Primary motion, a soft breeze: any flowers, leaves, plants or fabric sway slowly and ' +
+    'gently, and existing shadows drift a touch as if a cloud passes the light. ' +
+    'Secondary motion: a slow, gentle shift in the existing light and its warmth. ' +
+    'The product itself stays perfectly still — exact shape, position, colour and detail. ' +
+    'Existing architecture (windows, walls, frames, surfaces) stays fixed and unchanged; ' +
+    'only soft shadows, light and plants move. ' +
+    'The camera is completely locked: no zoom, no pan, no rotation. ' +
     `Keep the ${zone} of the frame especially calm and nearly still. ` +
-    'Seamless, loopable, calm, premium product-film feel.';
+    'Very subtle, calm, premium product-film feel. Seamless and loopable.';
+  // Owner's redo rule ([[redo-keeps-exact-prompt]]): append the correction
+  // note verbatim, never rewrite the base prompt around it.
+  return extraNote && extraNote.trim() ? `${base}\n\nAlso: ${extraNote.trim()}` : base;
 }
 
 async function animateComposed(){
@@ -1554,13 +1588,16 @@ async function animateComposed(){
         await db.uploadFile(textPath, new Blob([textBytes], { type: 'image/png' }));
       }
       // 3. Submit to fal via the animate Edge Function (fast — no waiting here).
+      // base_prompt is the house prompt with no correction note; Review's Try
+      // again rebuilds from base_prompt + the Owner's verbatim note so notes
+      // never stack across retries ([[redo-keeps-exact-prompt]]).
       const prompt = buildMotionPrompt();
       const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt, duration: '5' });
       // 4. Record the job — the Review page picks it up from settings.
       const job = {
         id: `anim-${Date.now()}`,
         request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
-        frame_path: framePath, text_path: textPath, prompt, duration: '5',
+        frame_path: framePath, text_path: textPath, prompt, base_prompt: prompt, note: null, duration: '5',
         w: frame.width, h: frame.height,
         padW: padded.padW, padH: padded.padH, offX: padded.offX, offY: padded.offY,
         sizeKey, baseName, created_at: new Date().toISOString(), status: 'pending',
@@ -1648,7 +1685,8 @@ async function init(){
   renders = await db.listRenders(projectId);
   await renderSelectStrip();
   await loadRendered();
-  autoDraftCopy(); // auto-generate AI copy (non-blocking; preview fills when it lands)
+  // Copy drafting + auto-paint now wait for a size choice (pickPlatform),
+  // so nothing runs against the default square before the Owner picks one.
 }
 init();
 </script>

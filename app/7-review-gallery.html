@@ -257,7 +257,8 @@ async function renderAnimations(){
   section.style.display = jobs.length ? '' : 'none';
   if (!jobs.length) return;
   const cards = await Promise.all(jobs.map(async j => {
-    const meta = `${esc(j.baseName || '')} · ${esc(j.sizeKey || '')} · ${j.w}×${j.h} · ${fmtWhen(j.created_at)}`;
+    const meta = `${esc(j.baseName || '')} · ${esc(j.sizeKey || '')} · ${j.w}×${j.h} · ${fmtWhen(j.created_at)}`
+      + (j.note ? ` · <span style="color:var(--accent-ink)">“${esc(j.note)}”</span>` : '');
     if (j.status === 'done' && (j.final_path || j.storage_path)){
       // Finished clip is already the exact composed size — plays as-is. A
       // raw clip (finish failed) is the padded frame, so CSS-crop it back.
@@ -276,7 +277,9 @@ async function renderAnimations(){
           })();
       const finishNote = j.finish_error
         ? `<span class="anim-err">Finishing failed (${esc(j.finish_error)}) — showing the raw clip, words not stamped yet.</span>`
-        : '';
+        : (!j.text_path
+          ? `<span class="anim-meta">No words on this clip — none were captured when it was animated. Animate again from Size and Text with your copy in place.</span>`
+          : '');
       const finishBtns = j.finish_error
         ? `<button class="btn btn-ghost" onclick="animRefinish('${j.id}')" title="Re-run crop + loop + words — no new generation cost">↻ Retry finish</button>`
         : (j.gif_path ? `<button class="btn btn-ghost" onclick="animDownload('${j.id}','gif')">⬇ Email GIF</button>` : '');
@@ -441,14 +444,27 @@ async function animTryAgain(jobId){
   const j = animJobs().find(x => x.id === jobId);
   if (!j) return;
   if (!j.frame_path){ alert('The original frame for this animation is gone — re-run Animate from Size and Text.'); return; }
+  // Optional correction, like the Check page's redo box. Appended verbatim to
+  // the house prompt ([[redo-keeps-exact-prompt]]); blank = plain fresh take.
+  // Cancel aborts. Rebuilds from base_prompt so notes never stack.
+  const note = window.prompt(
+    'Try again — describe what to change (optional), then OK.\n' +
+    "e.g. “less movement”, “no smoke”, “flowers sway a bit more”, “only light, no wind”.\n" +
+    'Leave blank for a fresh take with the same settings.',
+    j.note || '');
+  if (note === null) return; // cancelled
+  const base = j.base_prompt || j.prompt;
+  const trimmed = note.trim();
+  const newPrompt = trimmed ? `${base}\n\nAlso: ${trimmed}` : base;
   try {
     const frameUrl = await db.getSignedUrl(j.frame_path);
-    const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt: j.prompt, duration: j.duration || '5' });
+    const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt: newPrompt, duration: j.duration || '5' });
     const fresh = Object.assign({}, j, {
       id: `anim-${Date.now()}`,
       request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
-      status: 'pending', storage_path: null, error: null,
-      created_at: new Date().toISOString(),
+      prompt: newPrompt, base_prompt: base, note: trimmed || null,
+      status: 'pending', storage_path: null, final_path: null, gif_path: null,
+      error: null, finish_error: null, created_at: new Date().toISOString(),
     });
     project.settings.animation_jobs = [...animJobs(), fresh];
     await saveAnimJobs();

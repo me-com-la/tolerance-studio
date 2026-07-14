@@ -61,9 +61,18 @@ async function submit(imageUrl: string, prompt: string, duration: string) {
       prompt,
       image_url: imageUrl,
       duration: duration === "10" ? "10" : "5",
-      negative_prompt: "text, letters, captions, watermark, camera movement, zoom, pan, " +
-        "morphing, warping, distortion, blur, low quality",
-      cfg_scale: 0.5,
+      // Forbids the two failure modes seen on the first clips: ADDED elements
+      // (smoke came from the old prompt's "steam"; the phantom window from
+      // nothing locking architecture) and any product/scene distortion.
+      negative_prompt: "smoke, steam, fog, mist, haze, dust, particles, sparks, " +
+        "new objects, added objects, extra objects, added windows, moving architecture, " +
+        "people, hands, birds, animals, floating objects, " +
+        "text, letters, captions, watermark, " +
+        "camera movement, zoom, pan, rotation, shaking, " +
+        "morphing, warping, distortion, deformation, flicker, blur, low quality",
+      // cfg_scale: higher = obey the prompt (and its "nothing added" rules)
+      // more strictly, less improvising. Nudged 0.5 -> 0.7 for tighter control.
+      cfg_scale: 0.7,
     }),
   });
   const out = await res.json();
