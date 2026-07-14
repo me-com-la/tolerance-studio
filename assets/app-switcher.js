@@ -123,13 +123,12 @@
   var st2 = document.createElement('style'); st2.textContent = chromeCss; document.head.appendChild(st2);
   document.body.classList.add('pro-dark');
 
-  // (1) Brand: drop the logo image, collapse the label to "TS", and always
-  // point it at the Files page (not "whichever app you're in" — the Files
-  // page is the one shared home base for the whole app).
+  // (1) Brand: drop the logo image, collapse the label to "TS", and point it
+  // at the Projects list — the all-projects page is the app's home base.
   var brand = document.querySelector('.topbar .brand');
   if (brand) {
     brand.innerHTML = '<picture><source srcset="' + prefix + 'images/ts-logo-white-sm.png" media="(max-width:480px)"><img src="' + prefix + 'images/ts-logo_white.png" alt="Tolerance Studio" style="height:15px;width:auto;display:block;"></picture><span style="font-family:\'IBM Plex Mono\',monospace;font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);border:1px solid var(--accent-ink);border-radius:4px;padding:.1rem .35rem;opacity:.85">Beta</span>';
-    brand.setAttribute('href', prefix + 'my-images.html');
+    brand.setAttribute('href', prefix + 'app/2-project-list.html');
     brand.style.display = 'flex';
     brand.style.alignItems = 'center';
     brand.style.gap = '.5rem';

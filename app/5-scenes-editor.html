@@ -5,9 +5,9 @@
 <title>Scenes — Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="lib/db.js"></script>
-<script src="lib/functions.js"></script>
+<script src="lib/supabase.js?v=20260714"></script>
+<script src="lib/db.js?v=20260714"></script>
+<script src="lib/functions.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -72,8 +72,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .scene input:focus{outline:none;border-bottom:1px solid var(--accent)}
 .scene .rm{color:var(--muted);cursor:pointer;font-size:.85rem;padding:.2rem}
 .scene .rm:hover{color:#a33}
-.add-scene{display:flex;gap:.5rem}
-.add-scene input{flex:1;padding:.6rem .85rem;border:1px dashed var(--line-2);border-radius:10px;font-family:inherit;font-size:.85rem;background:var(--chip);color:var(--ink)}
+/* "+" row (2026-07-12): appends one AI-drafted scene, replacing the old
+   numeric "how many images" input — scene count now just follows how many
+   scene rows exist. */
+.add-scene-btn{display:flex;align-items:center;gap:.8rem;width:100%;text-align:left;background:transparent;border:1.5px dashed var(--line-2);border-radius:12px;padding:.8rem 1rem;color:var(--muted);font-family:inherit;font-size:.92rem;cursor:pointer;transition:border-color .15s,color .15s}
+.add-scene-btn:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+.add-scene-btn:disabled{cursor:default;opacity:.55}
+.add-scene-btn .num{font-family:var(--font-mono);font-weight:600;color:var(--accent);min-width:1.6rem}
 
 .section-h{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:1.8rem 0 .5rem;line-height:1.3}
 /* Each step wrapped in its own card, like the Brief page's sections. */
@@ -85,8 +90,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .step-box.collapsed .step-head::before{transform:rotate(-90deg)}
 .step-box.collapsed .section-h{margin-bottom:0}
 .step-box.collapsed .step-body{display:none}
-.count-row{display:flex;align-items:center;gap:.8rem}
-.num-input{width:5rem;padding:.55rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:var(--font-mono);font-size:1.05rem;text-align:center;background:var(--paper);color:var(--ink)}
 .step-actions{display:flex;align-items:center;gap:.7rem;margin-top:1.3rem}
 /* Model choice as three selectable mini cards (each with its own blurb),
    not a dropdown, so the tradeoffs are visible up front. */
@@ -97,12 +100,22 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .model-mini.selected{border-color:var(--accent);background:var(--accent-wash)}
 .model-mini .mm-name{font-weight:700;font-size:.86rem}
 .model-mini .mm-desc{font-size:.72rem;color:var(--muted);line-height:1.35;margin-top:.15rem}
+/* Large model cards — side-by-side in the render step */
+.model-row{display:flex;align-items:stretch;gap:0;margin-bottom:.8rem}
+.model-row .mode-or{align-self:center;padding:0 .6rem;flex:0 0 auto}
+.model-card-lg{flex:1;min-width:0;border:1.5px solid var(--line-2);border-radius:12px;padding:1.3rem 1.1rem;display:flex;flex-direction:column;gap:.25rem}
+.model-card-lg .logo-box{height:52px;display:flex;align-items:center;overflow:hidden;margin-bottom:.6rem}
+.model-card-lg .mm-name{font-weight:700;font-size:.95rem}
+.model-card-lg .mm-desc{font-size:1rem;font-weight:700;color:var(--ink);line-height:1.4;flex:1;margin-bottom:.6rem}
+.model-card-lg .btn{width:100%;justify-content:center}
+@media(max-width:640px){.model-row{flex-direction:column}.model-row .mode-or{align-self:flex-start;padding:.2rem 0}}
 .mode-pick{display:flex;align-items:center;gap:.7rem;margin-bottom:1.1rem}
 .mode-pick .mode-card{flex:1;min-width:0}
 .mode-or{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:.95rem;color:var(--muted);letter-spacing:.06em}
 @media(max-width:640px){.mode-pick{flex-direction:column;align-items:stretch}}
 .mode-card{position:relative;border:1.5px solid var(--line-2);border-radius:12px;padding:.95rem 1.05rem;cursor:pointer;transition:border-color .15s,background .15s}
 .mode-card:hover{border-color:var(--accent)}
+#mode-card-pro:hover{border-color:var(--line-2);background:transparent;cursor:default}
 .mode-card.selected{border-color:var(--accent);background:var(--accent-wash)}
 .mode-card h4{font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:.35rem;display:flex;align-items:center;gap:.45rem}
 .mode-card p{font-size:1rem;color:var(--ink);line-height:1.5}
@@ -154,35 +167,26 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 </div></div>
 
 <div class="wrap">
-  <!-- Step 1 — how many images -->
-  <div class="step-box" id="step1-box">
-    <div class="section-h step-head" onclick="toggleStep('step1-box')">How many images do you want to make?</div>
-    <div class="step-body">
-      <div class="count-row">
-        <input type="number" id="batch-size" class="num-input" min="1" max="5" onchange="saveBatchSize()">
-        <button class="btn btn-primary" id="count-next-btn" onclick="startScenes()">Next →</button>
-        <span style="font-size:.78rem;color:var(--muted)">Beta limit: 3 images per project</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 2 — scenes (revealed once a count is chosen) -->
-  <div id="scenes-step" style="display:none">
+  <!-- Scenes is the entry point now (2026-07-12) — auto-drafted from the
+       brief, always visible and open by default; scene count just follows
+       how many rows exist (the "+" row appends one more AI-drafted scene). -->
+  <div id="scenes-step">
     <div class="step-box" id="step2-box">
-      <div class="section-h step-head" onclick="toggleStep('step2-box')">We think these scenes will be cool. Click them to edit or leave them.</div>
+      <div class="section-h step-head" onclick="toggleStep('step2-box')">Try this/these scene(s). Click the text to edit or leave it.</div>
       <div class="step-body">
         <div class="scene-list" id="scene-list"></div>
-        <div class="more-details">
-          <span class="more-link" id="scene-detail-link" onclick="toggleSceneDetail()">add more detail</span>
-          <div id="scene-detail-body" style="display:none">
-            <div class="scene-detail-hint">Size in frame — how tall the product renders as a % of the image height (used for Exact render). Leave blank to vary per image.</div>
-            <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)" onchange="saveSizeInFrame()">
-          </div>
-        </div>
+        <button type="button" class="add-scene-btn" id="add-scene-btn" onclick="addSceneViaAI()">
+          <span class="num">＋</span><span id="add-scene-label">Add a scene — AI drafts one</span>
+        </button>
         <div class="step-actions">
-          <button class="btn btn-ghost" id="ai-draft-btn" onclick="aiDraftScenes()">Redraft scenes</button>
-          <button class="btn btn-primary" id="scenes-next-btn" onclick="showModeStep()">These look good →</button>
+          <span class="more-link" id="scene-detail-link" onclick="toggleSceneDetail()">Add more detail</span>
+          <span class="more-link" id="ai-draft-btn" onclick="aiDraftScenes()">Redraft scenes</span>
           <span class="ai-status" id="ai-status"></span>
+          <button class="btn btn-primary" id="scenes-next-btn" onclick="showModeStep()" style="margin-left:auto">Looks good →</button>
+        </div>
+        <div id="scene-detail-body" style="display:none">
+          <div class="scene-detail-hint">Size in frame — how tall the product renders as a % of the image height (used for Exact render). Leave blank to vary per image.</div>
+          <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)" onchange="saveSizeInFrame()">
         </div>
       </div>
     </div>
@@ -191,35 +195,65 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
   <!-- Step 3 — render mode (revealed once scenes are OK'd) -->
   <div id="mode-step" style="display:none">
     <div class="step-box" id="step3-box">
-      <div class="section-h step-head" onclick="toggleStep('step3-box')">How do you want to render these?</div>
-      <div class="step-body">
-      <div class="mode-pick">
-        <div class="mode-card" id="mode-card-standard" onclick="pickMode('standard')">
-          <h4>AI Render</h4>
-          <p>AI redraws your product in any angle but there may be accuracy risks.</p>
-          <div class="model-picker" id="scene-model-wrap">
-            <div class="model-mini" data-model="default" onclick="pickSceneModel(event,'default')">
-              <div class="mm-name">Gemini</div>
-              <div class="mm-desc">Photoreal, natural lighting.</div>
-            </div>
-            <div class="model-mini" data-model="seedream" onclick="pickSceneModel(event,'seedream')">
-              <div class="mm-name">Seedream</div>
-              <div class="mm-desc">Hyper-real, glossier finish.</div>
-            </div>
-            <div class="model-mini" data-model="gpt" onclick="pickSceneModel(event,'gpt')">
-              <div class="mm-name">GPT Image</div>
-              <div class="mm-desc">Strictest product match, softer scenes.</div>
-            </div>
+      <div class="section-h step-head" onclick="toggleStep('step3-box')" style="margin-bottom:.25rem">Choose your AI Gen Model</div>
+      <p class="sub" style="margin-bottom:1.2rem">Each has it's own unique look. Since your image is redrawn in AI, there may be accuracy risks.</p>
+      <div class="model-row" id="scene-model-wrap">
+
+        <div class="model-card-lg" data-model="default">
+          <div class="logo-box">
+            <svg width="120" height="36" viewBox="0 0 120 36" fill="none">
+              <defs>
+                <linearGradient id="gm-g" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#4285F4"/>
+                  <stop offset="35%" stop-color="#34A853"/>
+                  <stop offset="68%" stop-color="#FBBC05"/>
+                  <stop offset="100%" stop-color="#EA4335"/>
+                </linearGradient>
+              </defs>
+              <path d="M18 1C18 1 20.5 12 35 18C20.5 24 18 35 18 35C18 35 15.5 24 1 18C15.5 12 18 1 18 1Z" fill="url(#gm-g)"/>
+              <text x="42" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="18" fill="white">Gemini</text>
+            </svg>
           </div>
+          <div class="mm-desc">Photoreal, natural lighting.</div>
+          <button class="btn btn-primary" onclick="useModel('default')">Use Gemini</button>
         </div>
+
         <div class="mode-or">OR</div>
-        <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
-          <h4>Exact render <span class="pro-pill">Pro</span><span class="mode-not-rec" id="exact-not-rec" style="display:none">Not recommended</span></h4>
-          <p>Your products actual pixels. Zero drift. New image(s) uses exact angle from the image you provided.</p>
-          <div class="mode-warn" id="exact-warn" style="display:none"></div>
+
+        <div class="model-card-lg" data-model="seedream">
+          <div class="logo-box">
+            <svg width="140" height="36" viewBox="0 0 140 36" fill="none">
+              <text x="0" y="27" font-family="'Arial Black','Helvetica Neue',sans-serif" font-weight="900" font-size="24" fill="white">Seedream</text>
+              <text x="1" y="36" font-family="'IBM Plex Sans',sans-serif" font-weight="400" font-size="11" fill="rgba(255,255,255,.55)">4.0</text>
+            </svg>
+          </div>
+          <div class="mm-desc">Hyper-real, glossier finish.</div>
+          <button class="btn btn-primary" onclick="useModel('seedream')">Use Seedream</button>
         </div>
+
+        <div class="mode-or">OR</div>
+
+        <div class="model-card-lg" data-model="gpt">
+          <div class="logo-box">
+            <svg width="140" height="36" viewBox="0 0 140 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#10A37F"/>
+              <g transform="translate(18,18)">
+                <ellipse rx="6.5" ry="11" fill="none" stroke="white" stroke-width="1.8" transform="rotate(0)"/>
+                <ellipse rx="6.5" ry="11" fill="none" stroke="white" stroke-width="1.8" transform="rotate(60)"/>
+                <ellipse rx="6.5" ry="11" fill="none" stroke="white" stroke-width="1.8" transform="rotate(120)"/>
+              </g>
+              <text x="44" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="18" fill="white">ChatGPT</text>
+            </svg>
+          </div>
+          <div class="mm-desc">Strictest product match, softer scenes.</div>
+          <button class="btn btn-primary" onclick="useModel('gpt')">Use GPT Image</button>
+        </div>
+
       </div>
-      </div><!-- /step-body -->
+      <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
+        <p>If your product is noticeably inaccurate, you can try our Exact Render, which will use your exact image with no angle change.</p>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.8rem" onclick="event.stopPropagation();useExact()">Use Exact Render</button>
+      </div>
     </div>
   </div>
 
@@ -233,16 +267,14 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
     </div>
   </div>
 
-  <div class="savebar" id="savebar" style="display:none">
-    <span class="ai-status" id="generate-status"></span>
-    <button class="btn btn-next" id="generate-btn" onclick="generateAndCheck()">Make my images</button>
-  </div>
 </div>
 <script>
 function qs(k){ return new URLSearchParams(location.search).get(k); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 const projectId = qs('project');
 let project = null, scenes = [];
+const DEFAULT_SCENE_COUNT = 1;
+const MAX_SCENE_COUNT = 5;
 
 // Each scene is {t: text, src: 'owner'|'ai'} (Owner call, 2026-07-06):
 // your lines and Claude's lines live in visually separate sections so an AI
@@ -266,13 +298,17 @@ function renderScenes(){
   document.getElementById('scene-list').innerHTML =
     scenes.map((s,i) => row(s, i)).join('')
     || '<p style="color:var(--muted);font-size:.85rem">No scenes yet.</p>';
-
-  // Batch size follows the scene list: one scene = one image, so
-  // adding/removing a description moves the number with it.
-  if (scenes.length) {
-    document.getElementById('batch-size').value = scenes.length;
-    updateDraftDesc(scenes.length);
-  }
+  updateAddSceneBtn();
+}
+// Scene count just follows how many rows exist now — no separate "how many
+// images" input. The "+" row disables itself at the beta cap instead.
+function updateAddSceneBtn(){
+  const btn = document.getElementById('add-scene-btn');
+  const label = document.getElementById('add-scene-label');
+  if (!btn) return;
+  const atLimit = scenes.length >= MAX_SCENE_COUNT;
+  btn.disabled = atLimit;
+  label.textContent = atLimit ? `Beta limit: ${MAX_SCENE_COUNT} images per project` : 'Add a scene — AI drafts one';
 }
 // Editing an AI line makes it yours, so a Redraft won't overwrite it.
 function markOwner(i){
@@ -294,13 +330,11 @@ function parseScenesText(text){
       ? { t: l.replace(/^\*\s*/, ''), src: 'owner' }
       : { t: l, src: 'ai' });
 }
-// The AI-draft description box was removed (scenes speak for themselves); kept
-// as a no-op so the existing call sites don't need touching.
-function updateDraftDesc(n){ /* no-op */ }
 // ---------- guided step reveal (2026-07-12) ----------
-// Step 1 (image count) -> Step 2 (scenes, auto-drafted) -> Step 3 (render
-// mode) -> Make my images. Each step reveals the next; a returning project
-// with scenes already saved shows every step at once (see init()).
+// Scenes (auto-drafted, always open) -> render mode -> Make my images. The
+// scenes step is the entry point now — no more "how many images" gate ahead
+// of it — and it stays open through the rest of the wizard; only a manual
+// click on its header collapses it.
 // Collapse a step down to just its header; the header stays clickable to reopen.
 function toggleStep(id){ document.getElementById(id).classList.toggle('collapsed'); }
 
@@ -326,16 +360,12 @@ function fillSizeInFrame(){
   if (scale) document.getElementById('scene-detail-body').style.display = '';
 }
 
-// Pure reveals (no persistence) — used both by the buttons and by init() when
-// restoring where the user left off.
-function revealScenesStep(){
-  document.getElementById('scenes-step').style.display = '';
-  document.getElementById('step1-box').classList.add('collapsed');
-}
+// Pure reveal (no persistence) — used both by the "These look good" button
+// and by init() when restoring where the user left off. Scenes stays open —
+// it's no longer auto-collapsed when the mode step appears (Owner call,
+// 2026-07-12: it should stay open unless the user closes it themselves).
 function revealModeStep(){
   document.getElementById('mode-step').style.display = '';
-  document.getElementById('savebar').style.display = '';
-  document.getElementById('step2-box').classList.add('collapsed');
 }
 // Persist how far through the wizard the user got (+ their scenes), so leaving
 // and coming back lands them on the same step instead of resetting to step 1.
@@ -348,14 +378,6 @@ async function persistStage(stage){
   } catch (e) { /* non-fatal */ }
 }
 
-async function startScenes(){
-  await saveBatchSize();
-  revealScenesStep();
-  // First time through, fill the scenes automatically from the brief.
-  if (!scenes.length) await aiDraftScenes();
-  await persistStage(2);
-  document.getElementById('scenes-step').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 async function showModeStep(){
   revealModeStep();
   await persistStage(3);
@@ -367,22 +389,10 @@ async function showModeStep(){
 // Surface the input-quality verdict (written on the Brief page's photo upload)
 // on the Exact card: a "Not recommended" chip + the reasons. Advisory only —
 // pickMode still fires on click, so the user keeps the choice.
-function renderExactRecommendation(){
-  const check = project && project.settings && project.settings.photo_check;
-  const chip = document.getElementById('exact-not-rec');
-  const warn = document.getElementById('exact-warn');
-  if (!chip || !warn) return;
-  if (!check || check.level !== 'weak' || !(check.reasons || []).length){
-    chip.style.display = 'none'; warn.style.display = 'none'; warn.innerHTML = '';
-    return;
-  }
-  chip.style.display = '';
-  warn.innerHTML = `<b>Not recommended for this photo.</b> Exact locks your product’s exact pixels, so it can’t fix these — AI Render handles a rough photo better:<ul style="margin:.35rem 0 0;padding-left:1.1rem">${check.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>`;
-  warn.style.display = '';
-}
 async function pickMode(mode){
   const pipeline = mode === 'pro' ? 'pro' : 'standard';
-  document.getElementById('mode-card-standard').classList.toggle('selected', pipeline === 'standard');
+  const stdCard = document.getElementById('mode-card-standard');
+  if (stdCard) stdCard.classList.toggle('selected', pipeline === 'standard');
   document.getElementById('mode-card-pro').classList.toggle('selected', pipeline === 'pro');
   const chip = document.getElementById('mode-chip');
   chip.className = 'mode-chip ' + (pipeline === 'pro' ? 'exact' : 'scene');
@@ -415,15 +425,18 @@ function pickSceneModel(e, v){
   saveSceneModel(v);
   pickMode('standard');
 }
-
-async function saveBatchSize(){
-  const n = Math.max(1, Math.min(5, parseInt(document.getElementById('batch-size').value, 10) || 3));
-  document.getElementById('batch-size').value = n;
-  const settings = Object.assign({}, project.settings || {}, { batch_size: n });
-  await db.saveSettings(projectId, settings);
-  project.settings = settings;
-  updateDraftDesc(n);
+// Per-card CTAs: select model + pipeline, then generate immediately.
+async function useModel(model){
+  markSceneModel(model);
+  await saveSceneModel(model);
+  await pickMode('standard');
+  generateAndCheck();
 }
+async function useExact(){
+  await pickMode('pro');
+  generateAndCheck();
+}
+
 // The one CTA runs the whole invisible middle of the pipeline (Owner call,
 // 2026-07-06: the shot-expansion machinery is internal, users think in
 // scenes). It forks on the project's render mode (projects.pipeline, merged
@@ -598,7 +611,6 @@ async function generateAndCheck(){
   overlay.classList.add('open');
   try {
     await db.saveScenes(projectId, scenesText());
-    await saveBatchSize();
 
     if (isExactMode()) {
       await generateExact(note);
@@ -620,32 +632,52 @@ async function generateAndCheck(){
     errEl.innerHTML = `${esc(e.message || String(e))}<br><br><button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="document.getElementById('gen-overlay').classList.remove('open')">Close</button>`;
   }
 }
-async function aiDraftScenes(){
+// Redraft: replaces the AI-authored lines, keeping anything you wrote.
+// Target count defaults to however many scenes are already on the page (or
+// DEFAULT_SCENE_COUNT the very first time, when there are none yet) — there's
+// no separate "how many images" input anymore, the scene list IS the count.
+async function aiDraftScenes(targetCount){
   const btn = document.getElementById('ai-draft-btn');
   const status = document.getElementById('ai-status');
-  // Send the live input value, not the stored setting — a just-typed batch
-  // size is honored even if its onchange save hasn't fired/landed yet. Also
-  // persist it so the two can't drift.
-  await saveBatchSize();
-  const n = parseInt(document.getElementById('batch-size').value, 10) || 3;
-  // Your lines survive a re-draft: only Claude's lines get replaced, and
-  // the draft tops the list up to the batch size around what you wrote.
   const ownerScenes = scenes.filter(s => s.src === 'owner');
+  const n = Math.min(MAX_SCENE_COUNT, targetCount ?? Math.max(scenes.length, DEFAULT_SCENE_COUNT));
   const draftCount = n - ownerScenes.length;
   if (draftCount < 1){
-    status.textContent = `batch size (${n}) is already filled by your own scenes — raise it to draft more`;
+    status.textContent = `already filled by your own ${ownerScenes.length} scene${ownerScenes.length===1?'':'s'} — add more with the + row to draft around them`;
     status.classList.add('err');
     return;
   }
   try {
-    const result = await withBusy(btn, status, 'drafting…', () =>
-      callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: draftCount }));
+    const result = await withBusyOverlay('Drafting scenes…', 'Writing scene ideas from your brief…', () =>
+      withBusy(btn, status, 'drafting…', () =>
+        callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: draftCount })));
     const drafted = (result.text || '').split('\n')
       .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean)
       .slice(0, draftCount)
       .map(t => ({ t, src: 'ai' }));
     scenes = [...drafted, ...ownerScenes];
     renderScenes();
+  } catch (e) { /* status element already shows the error via withBusy */ }
+}
+// "+" row — appends exactly one new AI-drafted scene without touching the
+// existing rows (unlike Redraft, which replaces all the AI-authored ones).
+async function addSceneViaAI(){
+  if (scenes.length >= MAX_SCENE_COUNT) return;
+  const btn = document.getElementById('add-scene-btn');
+  const status = document.getElementById('ai-status');
+  try {
+    const result = await withBusyOverlay('Drafting a scene…', 'Writing one more scene idea…', () =>
+      withBusy(btn, status, 'drafting…', () =>
+        callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: 1 })));
+    const drafted = (result.text || '').split('\n')
+      .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean)
+      .slice(0, 1)
+      .map(t => ({ t, src: 'ai' }));
+    if (drafted.length) {
+      scenes = [...scenes, ...drafted];
+      renderScenes();
+      await persistStage(project.settings?.wizard_stage || 2);
+    }
   } catch (e) { /* status element already shows the error via withBusy */ }
 }
 async function init(){
@@ -659,10 +691,7 @@ async function init(){
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
 
   const settings = project.settings || {};
-  const batchSize = settings.batch_size ?? 3;
-  document.getElementById('batch-size').value = batchSize;
   markSceneModel(['seedream','gpt'].includes(settings.image_model) ? settings.image_model : 'default');
-  updateDraftDesc(batchSize);
   scenes = parseScenesText(project.scenes);
   renderScenes();
   fillSizeInFrame();
@@ -670,16 +699,19 @@ async function init(){
   // Reflect the saved render mode in the cards + chip + model-picker
   // visibility (no re-save, since the value is unchanged).
   pickMode(isExactMode() ? 'pro' : 'standard');
-  renderExactRecommendation();
+
+  // Scenes is the entry point now — always open. First time through (nothing
+  // saved yet), auto-draft a starting batch from the brief so it lands
+  // pre-populated instead of empty.
+  if (!scenes.length) await aiDraftScenes(DEFAULT_SCENE_COUNT);
 
   // Restore where the user left off. wizard_stage is saved as they advance;
   // fall back to "has scenes" so older projects still open past step 1.
   const stage = project.settings?.wizard_stage || (scenes.length ? 2 : 1);
-  if (stage >= 2) revealScenesStep();
   if (stage >= 3) revealModeStep();
 }
 init();
 </script>
-<script src="../assets/app-switcher.js"></script>
+<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>

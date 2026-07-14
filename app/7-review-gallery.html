@@ -5,9 +5,10 @@
 <title>Santa-Barbara-July-2026 — Wingstudio review | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="lib/db.js"></script>
-<script src="lib/lightbox.js"></script>
+<script src="lib/supabase.js?v=20260714"></script>
+<script src="lib/db.js?v=20260714"></script>
+<script src="lib/functions.js?v=20260714"></script>
+<script src="lib/lightbox.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -71,6 +72,25 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 
 .footnote{text-align:center;color:var(--muted);font-size:.82rem;padding:2rem 1.6rem 3rem}
 
+/* ---------- animations (video clips) ---------- */
+.anim-section{margin:0 0 2.2rem}
+.anim-h{font-family:var(--font-display);font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:.9rem}
+.anim-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.2rem}
+.anim-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+/* The video comes back padded to a ratio the model speaks; the crop-frame
+   clips it back to the user's exact composed size. Inner video is % sized
+   off the stored pad math. */
+.anim-frame{position:relative;overflow:hidden;background:var(--chip);width:100%}
+.anim-frame video{position:absolute;display:block}
+.anim-body{padding:.8rem 1rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.anim-meta{font-size:.75rem;color:var(--muted)}
+.anim-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.anim-actions .btn{padding:.42rem .8rem;font-size:.78rem}
+.anim-pending{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2.2rem 1rem;color:var(--muted);font-size:.85rem}
+.anim-spin{width:30px;height:30px;border:3px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:anim-spin 1s linear infinite}
+@keyframes anim-spin{to{transform:rotate(360deg)}}
+.anim-err{color:#e08a7a;font-size:.8rem}
+
 /* ---------- lightbox: zoom + prev/next, ported as-is from tools/control.html ---------- */
 #lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
 #lightbox .lb-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -114,10 +134,15 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 </div>
 
 <div class="wrap">
+  <div class="anim-section" id="anim-section" style="display:none">
+    <div class="anim-h">Animations</div>
+    <div class="anim-grid" id="anim-grid"></div>
+  </div>
+
   <div class="grid" id="grid"></div>
 
   <div class="savebar">
-    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
+    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Ask a Creative Director for help</a>
     <a class="btn btn-ghost" id="email-link-btn" style="display:none">✉ Email</a>
     <button class="btn btn-primary" onclick="downloadZip()">⬇ Download all as zip</button>
   </div>
@@ -207,6 +232,168 @@ async function deleteRenderInline(event, renderId, storagePath){
 }
 
 let renders = [];
+let project = null;
+
+// ---------- animations (video clips — first iteration, 2026-07-14 R&D) ----------
+// Jobs are created on the Compose page (Animate button) and live in
+// project.settings.animation_jobs — Compose only SUBMITS to fal (video takes
+// minutes), this page finishes the story: poll pending jobs, download the
+// result through the animate Edge Function (fal storage has no browser CORS),
+// store the mp4 in the private bucket, and show it cropped back to the exact
+// size the user composed (the model only speaks 1:1/16:9/9:16, so Compose
+// padded the frame and recorded the math on the job).
+let animPollTimer = null;
+const animBusy = new Set(); // job ids mid-download/upload — a poll tick must not double-handle
+
+function animJobs(){ return (project && project.settings && project.settings.animation_jobs) || []; }
+async function saveAnimJobs(){
+  await db.saveSettings(projectId, Object.assign({}, project.settings || {}, { animation_jobs: animJobs() }));
+}
+function fmtWhen(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return ''; } }
+
+async function renderAnimations(){
+  const jobs = animJobs();
+  const section = document.getElementById('anim-section');
+  section.style.display = jobs.length ? '' : 'none';
+  if (!jobs.length) return;
+  const cards = await Promise.all(jobs.map(async j => {
+    const meta = `${esc(j.baseName || '')} · ${esc(j.sizeKey || '')} · ${j.w}×${j.h} · ${fmtWhen(j.created_at)}`;
+    if (j.status === 'done' && j.storage_path){
+      if (!signedUrlCache[j.storage_path]) {
+        try { signedUrlCache[j.storage_path] = await db.getSignedUrl(j.storage_path); } catch (e) { signedUrlCache[j.storage_path] = ''; }
+      }
+      const url = signedUrlCache[j.storage_path];
+      // Crop the padded video back to the composed size: the wrapper clips at
+      // the user's aspect; the video is %-scaled and offset off the pad math.
+      const vidW = (j.padW / j.w) * 100;
+      const left = -(j.offX / j.w) * 100;
+      const top = -(j.offY / j.h) * 100;
+      return `<div class="anim-card">
+        <div class="anim-frame" style="aspect-ratio:${j.w}/${j.h}">
+          <video src="${esc(url)}" autoplay muted loop playsinline style="width:${vidW}%;left:${left}%;top:${top}%"></video>
+        </div>
+        <div class="anim-body">
+          <span class="anim-meta">${meta}</span>
+          <div class="anim-actions">
+            <button class="btn btn-ghost" onclick="animDownload('${j.id}')">⬇ Download</button>
+            <button class="btn btn-ghost" onclick="animTryAgain('${j.id}')" title="Same image, a fresh take — results vary run to run">↻ Try again</button>
+            <button class="btn btn-ghost" onclick="animDelete('${j.id}')">✕ Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    if (j.status === 'failed'){
+      return `<div class="anim-card">
+        <div class="anim-pending"><span class="anim-err">Animation failed${j.error ? ` — ${esc(j.error)}` : ''}</span></div>
+        <div class="anim-body">
+          <span class="anim-meta">${meta}</span>
+          <div class="anim-actions">
+            <button class="btn btn-ghost" onclick="animTryAgain('${j.id}')">↻ Try again</button>
+            <button class="btn btn-ghost" onclick="animDelete('${j.id}')">✕ Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return `<div class="anim-card">
+      <div class="anim-pending"><span class="anim-spin"></span>Animating — usually a minute or two…</div>
+      <div class="anim-body"><span class="anim-meta">${meta}</span></div>
+    </div>`;
+  }));
+  document.getElementById('anim-grid').innerHTML = cards.join('');
+}
+
+async function pollAnimations(){
+  const pending = animJobs().filter(j => j.status === 'pending');
+  if (!pending.length){
+    if (animPollTimer) { clearInterval(animPollTimer); animPollTimer = null; }
+    return;
+  }
+  for (const j of pending){
+    if (animBusy.has(j.id)) continue;
+    try {
+      const s = await callFunction('animate', { action: 'status', status_url: j.status_url });
+      if (s.status === 'COMPLETED'){
+        animBusy.add(j.id);
+        const r = await callFunction('animate', { action: 'result', response_url: j.response_url });
+        const dl = await callFunction('animate', { action: 'download', video_url: r.video_url });
+        const bytes = Uint8Array.from(atob(dl.video_b64), ch => ch.charCodeAt(0));
+        const filename = `${j.baseName || 'clip'}-${j.sizeKey}-${j.id}.mp4`;
+        const path = db.storagePath(project.clients.slug, projectId, 'video', filename);
+        await db.uploadFile(path, new Blob([bytes], { type: dl.mime_type || 'video/mp4' }));
+        j.status = 'done'; j.storage_path = path;
+        await saveAnimJobs();
+        await db.createRunLogEntry(projectId, 'generate', `animation finished: ${filename}`);
+        animBusy.delete(j.id);
+        await renderAnimations();
+      } else if (s.status === 'ERROR' || s.status === 'FAILED'){
+        j.status = 'failed'; j.error = 'the video model rejected this run';
+        await saveAnimJobs();
+        await renderAnimations();
+      }
+    } catch (e) {
+      // Transient (network, signed-url expiry) — leave the job pending, the
+      // next tick retries. Only a fal FAILED status marks it failed for good.
+      animBusy.delete(j.id);
+    }
+  }
+}
+
+function startAnimPolling(){
+  if (animPollTimer) return;
+  pollAnimations();
+  animPollTimer = setInterval(pollAnimations, 6000);
+}
+
+// Signed URLs are cross-origin, so a plain <a download> is ignored by the
+// browser — fetch the bytes and hand over a local blob instead.
+async function animDownload(jobId){
+  const j = animJobs().find(x => x.id === jobId);
+  if (!j || !j.storage_path) return;
+  try {
+    const url = signedUrlCache[j.storage_path] || await db.getSignedUrl(j.storage_path);
+    const blob = await (await fetch(url)).blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${j.baseName || 'clip'}-${j.sizeKey || 'anim'}.mp4`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) { alert('Download failed: ' + (e.message || e)); }
+}
+
+// Fresh take from the SAME stored clean frame — no need to rebuild the
+// Compose layout. Old result stays so takes can be compared side by side.
+async function animTryAgain(jobId){
+  const j = animJobs().find(x => x.id === jobId);
+  if (!j) return;
+  if (!j.frame_path){ alert('The original frame for this animation is gone — re-run Animate from Size and Text.'); return; }
+  try {
+    const frameUrl = await db.getSignedUrl(j.frame_path);
+    const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt: j.prompt, duration: j.duration || '5' });
+    const fresh = Object.assign({}, j, {
+      id: `anim-${Date.now()}`,
+      request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
+      status: 'pending', storage_path: null, error: null,
+      created_at: new Date().toISOString(),
+    });
+    project.settings.animation_jobs = [...animJobs(), fresh];
+    await saveAnimJobs();
+    await renderAnimations();
+    startAnimPolling();
+  } catch (e) { alert('Could not resubmit: ' + (e.message || e)); }
+}
+
+async function animDelete(jobId){
+  const j = animJobs().find(x => x.id === jobId);
+  if (!j) return;
+  if (!confirm('Remove this animation? This cannot be undone.')) return;
+  try {
+    if (j.storage_path) await db.removeFiles([j.storage_path]);
+    project.settings.animation_jobs = animJobs().filter(x => x.id !== jobId);
+    await saveAnimJobs();
+    await renderAnimations();
+  } catch (e) { alert('Remove failed: ' + (e.message || e)); }
+}
+
 async function render(){
   await resolveSignedUrls(renders);
   document.getElementById('img-count').textContent = `${renders.length} image${renders.length===1?'':'s'}`;
@@ -253,7 +440,7 @@ function wireEmailLinkButton(project, clientName){
 async function init(){
   if (!projectId) { document.getElementById('proj-title').textContent = 'No project specified'; return; }
   try {
-    const project = await db.getProject(projectId);
+    project = await db.getProject(projectId);
     document.title = `${project.name} — Review | Tolerance Studio`;
     document.getElementById('proj-title').textContent = project.name;
     var crumbProj = document.getElementById('crumb-proj');
@@ -268,6 +455,10 @@ async function init(){
     // a skipped project's approved work just vanished from the client's view.
     renders = renders.filter(r => r.stage === 'composed' || (r.human_override || r.verdict) === 'approved');
     await render();
+    // Animations: show finished clips, and pick up any still-cooking jobs
+    // the Compose page submitted (this page owns the poll → store → show).
+    await renderAnimations();
+    if (animJobs().some(j => j.status === 'pending')) startAnimPolling();
   } catch (e) {
     // RLS denies (not signed in as this client, or project not at review/delivered
     // stage yet) surfaces as an empty/failed read, not a leak.
@@ -276,6 +467,6 @@ async function init(){
 }
 init();
 </script>
-<script src="../assets/app-switcher.js"></script>
+<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>

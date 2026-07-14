@@ -5,10 +5,10 @@
 <title>Checker — Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="lib/db.js"></script>
-<script src="lib/functions.js"></script>
-<script src="lib/lightbox.js"></script>
+<script src="lib/supabase.js?v=20260714"></script>
+<script src="lib/db.js?v=20260714"></script>
+<script src="lib/functions.js?v=20260714"></script>
+<script src="lib/lightbox.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -112,12 +112,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .insp-pt.pt-fail .insp-pt-badge{color:var(--bad)}
 .insp-pt.pt-na .insp-pt-badge{color:var(--muted)}
 .insp-detail{font-size:.78rem;color:var(--ink);background:var(--chip);border-radius:8px;padding:.55rem .7rem;margin:.1rem 0 .6rem;line-height:1.55}
-.ov-btn.redo{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
-.ov-btn.redo:hover{opacity:.88;background:var(--accent)}
 .edit-row{display:flex;gap:.4rem;margin-top:.3rem}
 .edit-row input{flex:1;min-width:0;padding:.4rem .55rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.76rem;background:var(--card);color:var(--ink)}
 .edit-row button{font-size:.76rem;font-weight:600;padding:.4rem .7rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);cursor:pointer;font-family:inherit;white-space:nowrap;color:var(--ink)}
 .edit-row button:hover{background:var(--accent-wash);border-color:var(--accent)}
+/* once the fix field has text, the button goes solid purple to invite the click */
+.edit-row button.filled{background:var(--accent);border-color:var(--accent);color:#fff}
+.edit-row button.filled:hover{background:var(--accent);opacity:.9}
 .edit-hint{font-size:.68rem;color:var(--muted)}
 /* ---------- lightbox: zoom + prev/next over whichever .grid the click came from ---------- */
 /* Ported as-is from tools/control.html so the interaction matches exactly. */
@@ -166,7 +167,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
   <div class="grid" id="all-grid"></div>
 
   <div class="savebar">
-    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
+    <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Ask a Creative Director for help</a>
     <button class="btn btn-next" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)">Continue to Text →</button>
   </div>
 </div>
@@ -308,13 +309,13 @@ function pointsRow(r){
   return `<div class="insp-points">${pts}</div><div class="insp-detail" id="insp-detail-${r.id}" hidden></div>`;
 }
 
-// "Redo with this fix" — reuses the existing manual edit-render flow (not a
-// new backend call): pre-fills the edit box with the checker's own
-// suggested_fix so the correction is already written, the user just confirms.
-function redoBlock(r){
-  const fix = r.checker && r.checker.suggested_fix;
-  if (!fix) return '';
-  return `<div class="override-row"><button type="button" class="ov-btn redo" onclick="prefillRedo('${r.id}')">↻ Redo with this fix</button></div>`;
+// The "Fix now" button goes solid purple the moment the fix field has any
+// text, so a written correction visibly invites the click.
+function toggleFixBtn(renderId){
+  const input = document.getElementById(`edit-instr-${renderId}`);
+  const btn = document.getElementById(`fix-btn-${renderId}`);
+  if (!input || !btn) return;
+  btn.classList.toggle('filled', input.value.trim().length > 0);
 }
 
 // Click a point pill to see its blurb + the model's specific reason — one
@@ -332,16 +333,6 @@ function togglePointDetail(event, renderId, key){
   el.innerHTML = `<b>${esc(p.name)}.</b> ${esc(p.blurb)}${p.reason ? ` — ${esc(p.reason)}` : ''}`;
 }
 
-// Drops the checker's suggested_fix straight into the existing edit-row
-// input — the user still reviews/edits it and clicks Edit themselves; this
-// never calls edit-render on its own.
-function prefillRedo(renderId){
-  const r = renders.find(x => x.id === renderId);
-  const input = document.getElementById(`edit-instr-${renderId}`);
-  if (!r || !r.checker || !input) return;
-  input.value = r.checker.suggested_fix || '';
-  input.focus();
-}
 
 function cardHtml(r){
   const url = signedUrlCache[r.storage_path] || '';
@@ -372,7 +363,7 @@ function cardHtml(r){
   const lockBreakChip = (isExactProject() && isAiEdited(r))
     ? '<span class="lockbreak-chip" title="This copy was edited with AI, so the product is no longer a pixel-exact match to your photo.">Not pixel-locked</span>'
     : '';
-  const editWarn = isExactProject()
+  const editWarn = (isExactProject() && !isAiEdited(r))
     ? '<div class="edit-warn">Editing redraws the product with AI — the result won\'t be pixel-locked. For a different scene, re-run from Scenes instead.</div>'
     : '';
 
@@ -386,10 +377,9 @@ function cardHtml(r){
     <div class="body">
       ${checkBlock}
       ${overrideBlock}
-      ${hasInspection ? redoBlock(r) : ''}
       <div class="edit-row">
-        <input type="text" id="edit-instr-${r.id}" placeholder="e.g. change the bowl color to blue">
-        <button onclick="editRender('${r.id}')">✎ Edit</button>
+        <input type="text" id="edit-instr-${r.id}" placeholder="e.g. change the bowl color to blue" oninput="toggleFixBtn('${r.id}')">
+        <button id="fix-btn-${r.id}" onclick="editRender('${r.id}')">Fix now</button>
       </div>
       ${editWarn}
       <span class="edit-hint" id="edit-status-${r.id}"></span>
@@ -408,8 +398,15 @@ async function render(){
 async function toggleApproved(renderId){
   const r = renders.find(x => x.id === renderId);
   if (!r) return;
-  const next = effectiveVerdict(r) === 'approved' ? 'rejected' : 'approved';
-  await db.setVerdict(renderId, next);
+  if (effectiveVerdict(r) === 'approved') {
+    // Un-approve this one (no auto-reselect — user made an explicit choice)
+    await db.setVerdict(renderId, 'rejected');
+  } else {
+    // Approve this one exclusively — clear approval on all others first
+    const others = renders.filter(x => x.id !== renderId && effectiveVerdict(x) === 'approved');
+    await Promise.all(others.map(x => db.setVerdict(x.id, 'rejected')));
+    await db.setVerdict(renderId, 'approved');
+  }
   renders = await loadRenders();
   await render();
 }
@@ -493,6 +490,7 @@ async function editRender(renderId){
     return;
   }
   statusEl.textContent = 'editing…'; statusEl.classList.remove('err'); statusEl.classList.add('busy');
+  showBusyOverlay('Editing your image…', 'Redrawing with your change, then scoring…');
   try {
     const sourceUrl = signedUrlCache[r.storage_path] || await db.getSignedUrl(r.storage_path);
     const { mediaType, base64 } = await toBase64Image(sourceUrl);
@@ -517,11 +515,47 @@ async function editRender(renderId){
     await render();
     // Regenerated image gets scored right away — no manual checker step.
     const newR = renders.find(x => x.filename === filename);
-    if (newR) { try { await runChecker(newR.id); } catch (e) { /* per-card status shows it */ } }
+    if (newR) {
+      try { await runChecker(newR.id); } catch (e) { /* per-card status shows it */ }
+      // New render is the only approved image — reject all others unconditionally.
+      await Promise.all(renders.filter(x => x.id !== newR.id).map(x => db.setVerdict(x.id, 'rejected')));
+      await db.setVerdict(newR.id, 'approved');
+      renders = await loadRenders();
+      await render();
+    }
     statusEl.textContent = ''; statusEl.classList.remove('busy');
   } catch (e) {
     statusEl.textContent = e.message || String(e); statusEl.classList.remove('busy'); statusEl.classList.add('err');
+  } finally {
+    hideBusyOverlay();
   }
+}
+
+// Enforce exclusive approval: at most one render can be approved at a time.
+// Uses effectiveVerdict so a checker-set verdict on a new render can't silently
+// co-exist with a human_override approval on an older one. An explicit human
+// approval (human_override === 'approved') always wins the tie; otherwise the
+// newest render is kept. Returns true if it changed anything (so callers can
+// reload). Reused on load AND after auto-scoring unchecked renders, because the
+// checker can flip an Exact composite to 'approved' after the load-time pass has
+// already run — without a second pass that leaves two images approved at once.
+async function enforceExclusiveApproval(){
+  const approved = renders.filter(r => effectiveVerdict(r) === 'approved');
+  if (approved.length === 0) {
+    // Nothing approved yet — approve the newest so there's always a selection.
+    if (renders.length === 0) return false;
+    const latest = renders.reduce((a, b) => new Date(a.created_at) > new Date(b.created_at) ? a : b);
+    await db.setVerdict(latest.id, 'approved');
+    return true;
+  }
+  if (approved.length === 1) return false;
+  // More than one approved — keep exactly one. Prefer an explicit human pick,
+  // else the newest, then reject every other approved render.
+  const humanPicks = approved.filter(r => r.human_override === 'approved');
+  const pool = humanPicks.length > 0 ? humanPicks : approved;
+  const keep = pool.reduce((a, b) => new Date(a.created_at) > new Date(b.created_at) ? a : b);
+  await Promise.all(approved.filter(r => r.id !== keep.id).map(r => db.setVerdict(r.id, 'rejected')));
+  return true;
 }
 
 async function init(){
@@ -539,6 +573,7 @@ async function init(){
   if (project.pipeline === 'pro') { chip.textContent = 'Exact render'; chip.classList.add('exact'); }
   else { chip.textContent = 'Scene render'; chip.classList.add('scene'); }
   renders = await loadRenders();
+  if (await enforceExclusiveApproval()) renders = await loadRenders();
   await render();
   // Every image should already be scored — Scene renders are checked inside
   // `generate`, but Exact composites and AI edits arrive unchecked. Score any
@@ -548,9 +583,17 @@ async function init(){
   for (const r of unchecked) {
     try { await runChecker(r.id); } catch (e) { /* per-card status already shows it */ }
   }
+  // The checker may have just approved a freshly-scored render (e.g. an Exact
+  // composite) on top of an already-approved one. Re-run the exclusivity pass
+  // so only one stays approved.
+  if (unchecked.length > 0) {
+    renders = await loadRenders();
+    if (await enforceExclusiveApproval()) renders = await loadRenders();
+    await render();
+  }
 }
 init();
 </script>
-<script src="../assets/app-switcher.js"></script>
+<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>

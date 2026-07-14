@@ -5,9 +5,9 @@
 <title>Brief &amp; Specs — Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="lib/db.js"></script>
-<script src="lib/functions.js"></script>
+<script src="lib/supabase.js?v=20260714"></script>
+<script src="lib/db.js?v=20260714"></script>
+<script src="lib/functions.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -68,9 +68,9 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .brief-body{display:flex;gap:1.3rem;align-items:flex-start}
 .brief-fields{flex:1;min-width:0}
 .brief-photos{display:flex;gap:.6rem;flex-wrap:wrap}
-.brief-photos img{width:101px;height:101px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.brief-photos img{width:202px;height:202px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
 .brief-photos .none{font-size:.8rem;color:var(--muted)}
-.brief-photo{position:relative;width:101px;height:101px}
+.brief-photo{position:relative;width:202px;height:202px}
 .brief-photo .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-2);background:var(--card);color:var(--muted);font-size:.7rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .brief-photo .rm:hover{color:#a33;border-color:#a33}
 .brief-lock-inline{font-size:.68rem;color:var(--muted);background:var(--chip);padding:.1rem .5rem;border-radius:100px;margin-left:.4rem;vertical-align:1px}
@@ -128,6 +128,11 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .collapsible.collapsed > .col-body{display:none}
 .more-details{margin-top:.9rem}
 .more-link{font-size:.82rem;color:var(--accent-ink);cursor:pointer;text-decoration:underline}
+/* AI tags live inside Additional Information, under the real-height field
+   (2026-07-12) — the expand sits below the photo row, full width, so the
+   two-column tag tables (.tag-cols, defined above) stretch all the way
+   across the panel instead of being squeezed into the photo column. */
+#more-details-body{margin-top:1rem}
 /* Photo-first flow (2026-07-11): one reference photo drives the whole page —
    add it up top, and the AI's read of it populates the tags below. */
 .photo-capture{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.4rem}
@@ -136,8 +141,6 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .photo-capture-head .btn,.photo-capture-head .ai-status{margin-left:.7rem}
 .photo-capture .brief-photos{margin-top:1rem}
 .photo-capture .brief-photos:empty{margin-top:0}
-#photo-read-section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.4rem}
-.read-head{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:0 0 1rem;line-height:1.4}
 #photo-read-section .legend{margin-bottom:0}
 /* Best-results guidance + input-quality warning (2026-07-12): a plain, well-lit,
    edge-to-edge product shot is what makes Exact render clean — call it out at
@@ -147,6 +150,9 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
    takes the full width. */
 /* image + "add more details" on the left, weak-photo warning beside it, and
    the "for best results" card pushed to the right. */
+/* Pre-photo state: the Add photo button is the only action, so center it as
+   a prominent CTA in the middle of the section. */
+.add-photo-cta{display:block;margin:2.5rem auto;padding:.9rem 2rem;font-size:1rem}
 .photo-row{display:flex;gap:1.2rem;align-items:flex-start;margin-top:1rem;flex-wrap:wrap}
 .photo-left{flex:0 0 auto}
 .photo-left .brief-photos{margin-top:0}
@@ -194,14 +200,12 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
       <div class="brief-fields">
       <dl class="brief-grid" id="brief-view">
         <dt>Client</dt><dd id="brief-client">… <span class="brief-lock-inline">locked</span></dd>
-        <dt>Campaign</dt><dd id="brief-campaign">…</dd>
         <dt>Product</dt><dd id="brief-product">…</dd>
         <dt>Description</dt><dd id="brief-description">…</dd>
       </dl>
       <div class="brief-edit" id="brief-edit" style="display:none">
-        <div class="field"><label for="bd-campaign">Campaign</label><input type="text" id="bd-campaign"></div>
         <div class="field"><label for="bd-product">Product</label><input type="text" id="bd-product" placeholder="e.g. PAWD Crate"></div>
-        <div class="field"><label for="bd-description">Description</label><textarea id="bd-description" placeholder="What's this campaign about — product, mood, key facts."></textarea></div>
+        <div class="field"><label for="bd-description">Description</label><textarea id="bd-description" placeholder="What's this about — product, mood, key facts."></textarea></div>
         <div class="edit-actions">
           <button class="btn btn-primary btn-sm" onclick="saveBriefEdit()">Save</button>
           <button class="btn btn-ghost btn-sm" onclick="cancelBriefEdit()">Cancel</button>
@@ -219,20 +223,19 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
   <div class="photo-capture collapsible" id="photo-box">
     <div class="photo-capture-head col-head" onclick="toggleBox('photo-box')">
       <h3>One photo is all we need, add it here</h3>
-      <button class="btn btn-primary" id="add-photo-btn" onclick="event.stopPropagation();document.getElementById('add-photo-input').click()">Add photo</button>
-      <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
       <span class="ai-status" id="photo-action-status"></span>
     </div>
     <div class="col-body">
+      <input type="file" id="add-photo-input" accept="image/*" style="display:none" onchange="addReferencePhoto(this.files[0])">
+      <!-- Add photo lives under the header; once a photo exists it's replaced
+           by the Additional Information + Replace photo text links below. -->
+      <button class="btn btn-primary add-photo-cta" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
       <div class="photo-row">
         <div class="photo-left">
           <div class="brief-photos" id="brief-photos"></div>
-          <div class="more-details">
-            <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">add more details</span>
-            <div id="more-details-body" style="display:none">
-              <div class="grp-hint" style="margin-top:.8rem">Real height, in inches — helps the AI scale the room and furniture around your product so it doesn't look shrunk or blown up. Leave blank to skip.</div>
-              <div class="add-row"><input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)"></div>
-            </div>
+          <div class="more-details" id="photo-links" style="display:none">
+            <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">Additional Information</span>
+            <span class="more-link" id="replace-photo-link" onclick="replacePhoto()" style="margin-left:1.1rem">Replace photo</span>
           </div>
         </div>
         <div class="photo-warn" id="photo-warn" style="display:none"></div>
@@ -255,45 +258,52 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Revealed once a photo exists — the AI's read of the product, as tags. -->
-  <div id="photo-read-section" class="collapsible" style="display:none">
-    <h3 class="read-head col-head" onclick="toggleBox('photo-read-section')">We see your photo created some descriptive tags, you can edit them or just continue.</h3>
-    <div class="col-body">
+      <!-- Full-width now (2026-07-12): sits below the photo row instead of
+           squeezed into the narrow photo-left column, so the tag tables get
+           the whole panel to stretch across. -->
+      <div id="more-details-body" style="display:none">
+        <!-- Real height only shows when the Owner opens Additional Information
+             (2026-07-14) — the tags below auto-reveal, but this optional
+             Exact-mode field stays tucked away until asked for. -->
+        <div id="real-height-block" style="display:none">
+          <div class="grp-hint" style="margin-top:.8rem">Add the real height of your product, in inches. Leave blank to skip.</div>
+          <div class="add-row" style="max-width:20rem"><input id="placement-height" type="number" min="0" step="0.5" placeholder="Real height (in)"></div>
+        </div>
 
-  <div class="tag-cols">
-    <div class="tag-group">
-      <div class="grp-hint">What must be true on the product itself.</div>
-      <div class="tags" id="tags-product"></div>
-      <div class="add-row">
-        <input id="add-text-product" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('product')">
-        <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
+        <!-- Revealed once a photo exists — the AI's read of the product, as tags. -->
+        <div id="photo-read-section" style="display:none">
+          <div class="tag-cols">
+            <div class="tag-group">
+              <div class="grp-hint">What must be true on the product itself.</div>
+              <div class="tags" id="tags-product"></div>
+              <div class="add-row">
+                <input id="add-text-product" placeholder="e.g. matte finish, no gloss" onkeydown="if(event.key==='Enter')addTag('product')">
+                <button class="btn btn-ghost" onclick="addTag('product')">Add</button>
+              </div>
+            </div>
+
+            <div class="tag-group">
+              <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
+              <div class="tags" id="tags-creative"></div>
+              <div class="add-row">
+                <input id="add-text-creative" placeholder="e.g. warm morning light" onkeydown="if(event.key==='Enter')addTag('creative')">
+                <button class="btn btn-ghost" onclick="addTag('creative')">Add</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
+            <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
+            <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="tag-group">
-      <div class="grp-hint">Scene, palette, camera — locked for the batch.</div>
-      <div class="tags" id="tags-creative"></div>
-      <div class="add-row">
-        <input id="add-text-creative" placeholder="e.g. warm morning light" onkeydown="if(event.key==='Enter')addTag('creative')">
-        <button class="btn btn-ghost" onclick="addTag('creative')">Add</button>
-      </div>
-    </div>
   </div>
-
-  <div class="legend">
-    <span><span class="sw sw-must"></span>must — leads the prompt, checker auto-rejects</span>
-    <span><span class="sw sw-should"></span>should — strong preference, checker flags</span>
-    <span><span class="sw sw-flavor"></span>flavor — trailing detail, not checked</span>
-  </div>
-  </div><!-- /col-body -->
-  </div><!-- /photo-read-section -->
 
   <div class="savebar" id="savebar" style="display:none">
-    <button class="btn btn-ghost" id="kit-save-btn" onclick="saveTagsToKit()" title="Save these tags as the client's brand kit — new projects start with them">Save tags to kit</button>
-    <button class="btn btn-ghost" id="kit-apply-btn" onclick="applyKitTags()" title="Fill the tags from this client's saved brand kit">Apply brand kit</button>
     <span class="ai-status" id="tag-status" style="margin-right:auto"></span>
     <button class="btn btn-next" onclick="saveAndContinue()">Continue</button>
   </div>
@@ -336,9 +346,13 @@ function isExactMode(){ return project && project.pipeline === 'pro'; }
 // size-in-frame % moved to the Scenes page's second section.
 function toggleBox(id){ document.getElementById(id).classList.toggle('collapsed'); }
 function openMoreDetails(){ document.getElementById('more-details-body').style.display = ''; }
+// "Additional Information" reveals the optional real-height field. The tags
+// container may already be open (they auto-reveal), so also make sure it's
+// shown, then flip just the real-height block.
 function toggleMoreDetails(){
-  const b = document.getElementById('more-details-body');
-  b.style.display = b.style.display === 'none' ? '' : 'none';
+  document.getElementById('more-details-body').style.display = '';
+  const block = document.getElementById('real-height-block');
+  block.style.display = block.style.display === 'none' ? '' : 'none';
 }
 function readHeightInches(){
   const v = parseFloat(document.getElementById('placement-height').value);
@@ -346,7 +360,11 @@ function readHeightInches(){
 }
 function fillHeight(placement){
   document.getElementById('placement-height').value = placement?.realHeightIn ?? '';
-  if (placement?.realHeightIn) openMoreDetails();
+  // A saved height should be visible on return — open the panel AND the block.
+  if (placement?.realHeightIn) {
+    openMoreDetails();
+    document.getElementById('real-height-block').style.display = '';
+  }
 }
 async function saveAndContinue(){
   // Merge real height into tags.placement without touching scale (the Scenes
@@ -411,20 +429,21 @@ function renderPageMeta(){
   sub.style.display = 'none';
 }
 
-// ---------- edit the brief (Campaign/Product/Description only — Client is
-// a real relationship, not a text field, and reference photos have their
-// own add/remove flow below; neither belongs in this generic form) ----------
+// ---------- edit the brief (Product/Description only — Client is a real
+// relationship, not a text field, and reference photos have their own
+// add/remove flow below; neither belongs in this generic form). The Product
+// name IS the project's identity (projects.name) — there's no separate
+// "campaign" concept anymore (2026-07-13). ----------
 function openBriefEdit(){
   document.getElementById('brief-box').classList.remove('collapsed'); // expand so the form is visible
-  document.getElementById('bd-campaign').value = project.name || '';
-  document.getElementById('bd-product').value = project.product || '';
+  document.getElementById('bd-product').value = project.name || '';
   document.getElementById('bd-description').value = project.description || '';
   document.getElementById('bd-status').textContent = '';
   document.getElementById('bd-status').classList.remove('err');
   document.getElementById('brief-view').style.display = 'none';
   document.getElementById('brief-edit-btn').style.display = 'none';
   document.getElementById('brief-edit').style.display = 'flex';
-  document.getElementById('bd-campaign').focus();
+  document.getElementById('bd-product').focus();
 }
 function cancelBriefEdit(){
   document.getElementById('brief-edit').style.display = 'none';
@@ -432,12 +451,13 @@ function cancelBriefEdit(){
   document.getElementById('brief-edit-btn').style.display = '';
 }
 async function saveBriefEdit(){
-  const name = document.getElementById('bd-campaign').value.trim();
+  // Product name is the project identifier — it saves to projects.name.
+  const name = document.getElementById('bd-product').value.trim();
   const statusEl = document.getElementById('bd-status');
-  if (!name){ statusEl.textContent = 'campaign name is required'; statusEl.classList.add('err'); return; }
+  if (!name){ statusEl.textContent = 'product name is required'; statusEl.classList.add('err'); return; }
   const fields = {
     name,
-    product: document.getElementById('bd-product').value.trim(),
+    product: name, // keep the legacy `product` column in step with the name
     description: document.getElementById('bd-description').value.trim(),
     startedOn: project.started_on, // not shown here — preserved as-is
   };
@@ -450,22 +470,21 @@ async function saveBriefEdit(){
     cancelBriefEdit();
   } catch (e) {
     // Most likely real error here: the (client_id, name, started_on) unique
-    // constraint — another project already has this exact campaign name.
+    // constraint — another project already has this exact product name.
     statusEl.textContent = e.message || String(e); statusEl.classList.add('err');
   }
 }
 
 // Fills the brief panel: creation-time client + the uploaded reference
 // photos (everything under <slug>/<projectId>/assets/ in storage), plus
-// whatever Campaign/Product/Description currently hold — either from
-// project creation or a later edit above. Up to MAX_REFERENCE_PHOTOS stay
-// editable via add/remove — matches generate/index.ts's own cap on how
-// many reference photos it feeds the model (MAX_REFERENCE_IMAGES).
+// the Product name (projects.name) and Description — either from project
+// creation or a later edit above. Up to MAX_REFERENCE_PHOTOS stay editable
+// via add/remove — matches generate/index.ts's own cap on how many
+// reference photos it feeds the model (MAX_REFERENCE_IMAGES).
 const MAX_REFERENCE_PHOTOS = 3;
 async function renderBrief(){
   document.getElementById('brief-client').textContent = (project.clients && project.clients.name) || '—';
-  document.getElementById('brief-campaign').textContent = project.name || '—';
-  document.getElementById('brief-product').textContent = project.product || '—';
+  document.getElementById('brief-product').textContent = project.name || '—';
   document.getElementById('brief-description').textContent = project.description || '—';
   const photosEl = document.getElementById('brief-photos');
   const addBtn = document.getElementById('add-photo-btn');
@@ -474,14 +493,20 @@ async function renderBrief(){
   try {
     const slug = project.clients && project.clients.slug;
     const files = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
-    addBtn.textContent = files.length ? 'Add another' : 'Add photo';
-    addBtn.style.display = files.length >= MAX_REFERENCE_PHOTOS ? 'none' : '';
+    const links = document.getElementById('photo-links');
+    // Pre-photo: only the Add photo button. Post-photo: hide it and surface
+    // the Additional Information + Replace photo links instead.
+    addBtn.style.display = files.length ? 'none' : '';
+    links.style.display = files.length ? '' : 'none';
     if (!files.length){
       // No photo yet: nothing to show, and the AI-read section + save bar stay
       // hidden until one exists (the tags/save only make sense with a photo).
+      // The weak-photo warning is about a specific photo, so with none present
+      // it must never show — even if a stale judgement lingers in settings.
       photosEl.innerHTML = '';
       readSection.style.display = 'none';
       savebar.style.display = 'none';
+      renderPhotoWarn(null);
       return;
     }
     const urls = await Promise.all(files.map(f => db.getSignedUrl(`${slug}/${projectId}/assets/${f.name}`)));
@@ -492,6 +517,10 @@ async function renderBrief(){
       </div>`).join('');
     readSection.style.display = '';
     savebar.style.display = '';
+    // Tags now live inside Additional Information (2026-07-12) — open it
+    // automatically whenever there's something in there to see, so a
+    // returning visit doesn't hide already-drafted tags behind a click.
+    if ((tags.product && tags.product.length) || (tags.creative && tags.creative.length)) openMoreDetails();
   } catch (e) {
     photosEl.innerHTML = `<span class="none">couldn't load photos: ${esc(e.message)}</span>`;
   }
@@ -572,18 +601,36 @@ function renderPhotoWarn(check){
   const el = document.getElementById('photo-warn');
   if (!el) return;
   if (!check || check.level !== 'weak' || !check.reasons.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
-  el.innerHTML = `<b>⚠ This photo may give a weak result</b> — Exact render will be marked “not recommended.” You can still use it.<ul>${check.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>`;
+  el.innerHTML = `<b>⚠ This photo may give a weak result</b><ul>${check.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>`;
   el.style.display = '';
 }
+// Replace = swap the current photo, not add a second one. Sets a flag, then
+// reuses the same file input; addReferencePhoto clears existing assets first.
+let replaceMode = false;
+function replacePhoto(){
+  replaceMode = true;
+  document.getElementById('add-photo-input').click();
+}
 async function addReferencePhoto(file){
-  if (!file) return;
+  if (!file) { replaceMode = false; return; }
   const status = document.getElementById('photo-action-status');
   status.textContent = 'preparing…'; status.classList.remove('err'); status.classList.add('busy');
+  showBusyOverlay('Adding your photo…', 'Preparing the image…');
   try {
     const slug = project.clients && project.clients.slug;
+    // Replace: drop any existing photo(s) first so the new one is the only one.
+    if (replaceMode){
+      try {
+        const existing = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
+        if (existing.length) await sb.storage.from('projects').remove(existing.map(f => `${slug}/${projectId}/assets/${f.name}`));
+      } catch (e) { /* non-fatal — new upload still lands */ }
+      project.reference_image = null; // let the new upload become the reference
+      replaceMode = false;
+    }
     const check = await assessPhotoForExact(file); // assess ORIGINAL (true resolution) before downscale
     file = await downscaleImageFile(file);
     status.textContent = 'uploading…';
+    setBusyNote('Uploading…');
     const path = db.storagePath(slug, projectId, 'assets', file.name);
     await db.uploadFile(path, file);
     if (!project.reference_image) {
@@ -597,6 +644,7 @@ async function addReferencePhoto(file){
     renderPhotoWarn(check);
     document.getElementById('add-photo-input').value = '';
     status.textContent = ''; status.classList.remove('busy');
+    document.getElementById('photo-box').classList.remove('collapsed'); // stay open after add
     await renderBrief();
     // Keep the photo section open so the just-uploaded photo stays visible.
     // New photo in place — let the AI read it and populate the tags (first
@@ -604,6 +652,8 @@ async function addReferencePhoto(file){
     await maybeAutoDraftFromPhoto();
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
+  } finally {
+    hideBusyOverlay();
   }
 }
 async function removeReferencePhoto(filename){
@@ -617,6 +667,14 @@ async function removeReferencePhoto(filename){
       const nextPath = remaining.length ? `${slug}/${projectId}/assets/${remaining[0].name}` : null;
       await db.saveReferenceImage(projectId, nextPath);
       project.reference_image = nextPath;
+      // The weak-photo judgement belonged to the photo we just removed — drop it
+      // so the warning clears. A fresh judgement is made on the next upload
+      // (addReferencePhoto re-assesses every photo it receives).
+      if (project.settings && 'photo_check' in project.settings) {
+        delete project.settings.photo_check;
+        try { await db.saveSettings(projectId, project.settings); } catch (e) { /* non-fatal */ }
+      }
+      renderPhotoWarn(null);
     }
     await renderBrief();
   } catch (e) {
@@ -629,14 +687,17 @@ async function aiDraftTags(){
   const status = document.getElementById('photo-action-status');
   status.textContent = 'reading your photo…'; status.classList.remove('err'); status.classList.add('busy');
   draftingTags = true; renderTags(); // show "generating tags…" in the empty columns
+  showBusyOverlay('Reading your photo…', 'Generating tags from your product…');
   try {
     const result = await callFunction('ai-draft', { projectId, kind: 'tags' });
     tags = result.tags && (result.tags.product || result.tags.creative) ? result.tags : tags;
     status.textContent = ''; status.classList.remove('busy');
+    if ((tags.product && tags.product.length) || (tags.creative && tags.creative.length)) openMoreDetails();
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
   } finally {
     draftingTags = false; renderTags();
+    hideBusyOverlay();
   }
 }
 async function init(){
@@ -666,6 +727,6 @@ async function init(){
 }
 init();
 </script>
-<script src="../assets/app-switcher.js"></script>
+<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>

@@ -107,8 +107,9 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tab-generations" onclick="switchTab('generations')">Generations<span id="count-generations"></span></button>
+    <button class="tab active" id="tab-saves" onclick="switchTab('saves')">Saves<span id="count-saves"></span></button>
     <button class="tab" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
+    <button class="tab" id="tab-all" onclick="switchTab('all')">All<span id="count-all"></span></button>
     <span class="size-toggle" id="size-toggle">
       <button data-size="130" onclick="setThumbSize(130,this)">S</button>
       <button data-size="190" onclick="setThumbSize(190,this)">M</button>
@@ -116,8 +117,9 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
     </span>
   </div>
 
-  <div class="grid" id="grid-generations"></div>
+  <div class="grid" id="grid-saves"></div>
   <div class="grid" id="grid-favorites" hidden></div>
+  <div class="grid" id="grid-all" hidden></div>
 </div>
 
 <div id="lightbox" onclick="if(event.target===this)closeLightbox()">
@@ -212,12 +214,17 @@ function cardHtml(r){
 }
 
 function renderGrids(){
+  // Saves = images saved from the Size and Text step (8-compose sets
+  // stage:'composed'); Favorites = hearted; All = every render this user owns.
+  const saves = allRenders.filter(r => r.stage === 'composed');
   const favorites = allRenders.filter(r => r.is_favorite);
-  document.getElementById('grid-generations').innerHTML = allRenders.map(cardHtml).join('') || '<p class="empty">No generations yet.</p>';
+  document.getElementById('grid-saves').innerHTML = saves.map(cardHtml).join('') || '<p class="empty">No saved images yet — save some from the Size and Text step.</p>';
   document.getElementById('grid-favorites').innerHTML = favorites.map(cardHtml).join('') || '<p class="empty">No favorites yet.</p>';
-  document.getElementById('count-generations').textContent = ` (${allRenders.length})`;
+  document.getElementById('grid-all').innerHTML = allRenders.map(cardHtml).join('') || '<p class="empty">No images yet.</p>';
+  document.getElementById('count-saves').textContent = ` (${saves.length})`;
   document.getElementById('count-favorites').textContent = ` (${favorites.length})`;
-  document.getElementById('page-sub').textContent = `${allRenders.length} generation${allRenders.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'}`;
+  document.getElementById('count-all').textContent = ` (${allRenders.length})`;
+  document.getElementById('page-sub').textContent = `${saves.length} save${saves.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'} · ${allRenders.length} total`;
 
   // innerHTML above just replaced every <img>, so the observer needs fresh
   // targets — old (now-detached) elements just stop being watched, harmless.
@@ -248,10 +255,10 @@ async function deleteRender(event, id, storagePath){
 }
 
 function switchTab(name){
-  document.getElementById('tab-generations').classList.toggle('active', name === 'generations');
-  document.getElementById('tab-favorites').classList.toggle('active', name === 'favorites');
-  document.getElementById('grid-generations').hidden = name !== 'generations';
-  document.getElementById('grid-favorites').hidden = name !== 'favorites';
+  ['saves','favorites','all'].forEach(n => {
+    document.getElementById('tab-' + n).classList.toggle('active', n === name);
+    document.getElementById('grid-' + n).hidden = n !== name;
+  });
 }
 
 (async function init(){

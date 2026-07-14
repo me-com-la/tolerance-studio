@@ -115,3 +115,66 @@ async function withBusy(button, statusEl, busyLabel, fn) {
     button.textContent = original;
   }
 }
+
+// ---- Shared "Please wait…" overlay + page-leave guard -------------------
+// Any AI generation or upload that isn't already covered by a page's own
+// full-screen takeover (scenes-editor's image-gen has its own #gen-overlay)
+// should run inside withBusyOverlay(): it shows a blocking spinner so the
+// Owner sees that something's happening, and blocks refresh/close/navigate
+// while the call is in flight so a half-finished generation can't be lost.
+// Self-contained (injects its own styles + node) so it works on any page that
+// loads lib/functions.js, with no per-page markup. Nesting-safe via a depth
+// counter — an upload that then auto-drafts tags stays covered throughout.
+let __busyDepth = 0;
+let __busyGuardBound = false;
+function __ensureBusyOverlay() {
+  let el = document.getElementById('busy-overlay');
+  if (el) return el;
+  const style = document.createElement('style');
+  style.textContent =
+    '#busy-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:3000}' +
+    '#busy-overlay.open{display:flex}' +
+    '#busy-overlay .bo-box{text-align:center;color:#fff;max-width:24rem;padding:2rem}' +
+    '#busy-overlay .bo-spin{width:40px;height:40px;border:3px solid rgba(255,255,255,.25);border-top-color:#d8502d;border-radius:50%;margin:0 auto 1.2rem;animation:bo-spin 1s linear infinite}' +
+    '@keyframes bo-spin{to{transform:rotate(360deg)}}' +
+    '#busy-overlay .bo-title{font-size:1.15rem;font-weight:700;margin-bottom:.4rem}' +
+    '#busy-overlay .bo-note{font-size:.9rem;color:rgba(255,255,255,.85);line-height:1.5}' +
+    '#busy-overlay .bo-warn{display:inline-block;margin-top:1rem;font-size:.78rem;font-weight:600;color:#ffcaba}';
+  document.head.appendChild(style);
+  el = document.createElement('div');
+  el.id = 'busy-overlay';
+  el.innerHTML =
+    '<div class="bo-box"><div class="bo-spin"></div>' +
+    '<div class="bo-title" id="bo-title">Please wait…</div>' +
+    '<div class="bo-note" id="bo-note"></div>' +
+    '<span class="bo-warn">Please don\'t refresh or leave this page.</span></div>';
+  document.body.appendChild(el);
+  return el;
+}
+function __busyGuard(e) { if (__busyDepth > 0) { e.preventDefault(); e.returnValue = ''; } }
+function showBusyOverlay(title, note) {
+  const el = __ensureBusyOverlay();
+  el.querySelector('#bo-title').textContent = title || 'Please wait…';
+  el.querySelector('#bo-note').textContent = note || '';
+  el.classList.add('open');
+  __busyDepth++;
+  if (!__busyGuardBound) { window.addEventListener('beforeunload', __busyGuard); __busyGuardBound = true; }
+}
+// Update the sub-note without touching the depth counter — for multi-phase
+// flows (e.g. "Uploading…" -> "Reading your photo…").
+function setBusyNote(note) {
+  const el = document.getElementById('busy-overlay');
+  if (el) el.querySelector('#bo-note').textContent = note || '';
+}
+function hideBusyOverlay() {
+  __busyDepth = Math.max(0, __busyDepth - 1);
+  if (__busyDepth === 0) { const el = document.getElementById('busy-overlay'); if (el) el.classList.remove('open'); }
+}
+// Wrap any async generation/upload so the overlay + leave-guard cover its whole
+// duration and always clear afterward. The error still propagates so callers
+// keep showing their own inline message.
+async function withBusyOverlay(title, note, fn) {
+  showBusyOverlay(title, note);
+  try { return await fn(); }
+  finally { hideBusyOverlay(); }
+}

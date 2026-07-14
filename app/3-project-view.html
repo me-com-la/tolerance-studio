@@ -5,9 +5,9 @@
 <title>Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="lib/db.js"></script>
-<script src="lib/lightbox.js"></script>
+<script src="lib/supabase.js?v=20260714"></script>
+<script src="lib/db.js?v=20260714"></script>
+<script src="lib/lightbox.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -133,7 +133,7 @@ h1{font-family:var(--font-display);font-size:2.4rem;font-weight:700;text-transfo
       <div class="field"><label for="pd-product">Product</label><input type="text" id="pd-product" placeholder="e.g. PAWD Crate"></div>
       <div class="field"><label for="pd-started">Started</label><input type="date" id="pd-started"></div>
     </div>
-    <div class="field"><label for="pd-description">Description</label><textarea id="pd-description" placeholder="What's this campaign about — product, mood, key facts."></textarea></div>
+    <div class="field"><label for="pd-description">Description</label><textarea id="pd-description" placeholder="What's this about — product, mood, key facts."></textarea></div>
     <div class="edit-actions">
       <button class="btn btn-primary btn-sm" onclick="saveDetailsEdit()">Save</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelDetailsEdit()">Cancel</button>
@@ -323,6 +323,6 @@ async function init(){
 }
 init();
 </script>
-<script src="../assets/app-switcher.js"></script>
+<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>

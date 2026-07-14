@@ -121,7 +121,7 @@ Deno.serve(async (req)=>{
       if (error) throw error;
       return data || [];
     }
-    const briefLine = `Client: ${project.clients ? project.clients.name : '?'} · Campaign: ${project.name} · ` + `Product: ${project.product || '?'}\nProject brief: ${project.description || '(none)'}`;
+    const briefLine = `Client: ${project.clients ? project.clients.name : '?'} · Product: ${project.name || project.product || '?'}\nProject brief: ${project.description || '(none)'}`;
     let result;
     if (kind === 'tags') {
       const siblings = await listSiblings(2);

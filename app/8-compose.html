@@ -5,10 +5,10 @@
 <title>Size and Text — Blue — Kindtail | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="lib/db.js"></script>
-<script src="lib/functions.js"></script>
-<script src="lib/lightbox.js"></script>
+<script src="lib/supabase.js?v=20260714"></script>
+<script src="lib/db.js?v=20260714"></script>
+<script src="lib/functions.js?v=20260714"></script>
+<script src="lib/lightbox.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -131,7 +131,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .color-reset{font-size:.74rem;color:var(--muted);background:transparent;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0}
 .color-reset:hover{color:var(--ink)}
 /* paint chip — floats over the preview when the photo drag opens a gap */
-.paint-chip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:600;font-size:.8rem;border-radius:100px;padding:.55rem 1.1rem;cursor:pointer;display:none;white-space:nowrap;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.paint-chip{position:absolute;left:50%;bottom:.9rem;top:auto;transform:translateX(-50%);background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:600;font-size:.8rem;border-radius:100px;padding:.55rem 1.1rem;cursor:pointer;display:none;white-space:nowrap;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .paint-chip:hover{opacity:.92}
 .paint-chip:disabled{opacity:.7;cursor:wait}
 /* Size choices exposed as cards with an aspect-ratio graphic (no dropdown). */
@@ -150,12 +150,21 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 /* preview */
 .preview-wrap{position:sticky;top:140px}
 .preview-canvas-wrap{position:relative;background:var(--chip);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;min-height:200px}
-.preview-canvas-wrap canvas{max-width:100%;max-height:72vh;display:block;cursor:grab;touch-action:none}
+.preview-canvas-wrap canvas{max-width:100%;max-height:72vh;display:block;cursor:grab;touch-action:none;transition:opacity .2s}
+/* while the gap is inpainting: dim the photo, float a solid status label */
+.preview-canvas-wrap.painting canvas{opacity:.3;pointer-events:none}
+.paint-overlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;display:none;align-items:center;gap:.6rem;background:var(--card);border:1px solid var(--line-2);color:var(--ink);font-size:.85rem;font-weight:600;border-radius:100px;padding:.6rem 1.2rem;box-shadow:0 2px 12px rgba(0,0,0,.4);white-space:nowrap}
+.preview-canvas-wrap.painting .paint-overlay{display:flex}
+.paint-overlay .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--accent);animation:paint-spin .7s linear infinite}
+@keyframes paint-spin{to{transform:rotate(360deg)}}
 /* canvas cheat sheet — three scannable chips instead of a prose paragraph */
 .hint-chips{display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap}
 .hint-chip{flex:1;min-width:120px;display:flex;gap:.45rem;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.5rem .7rem;font-size:.72rem;line-height:1.3;color:var(--muted)}
 .hint-chip .ic{font-size:.95rem;line-height:1;flex:0 0 auto}
 .hint-chip b{color:var(--ink);font-size:.74rem}
+.hint-sentence{font-size:.78rem;color:var(--muted);line-height:1.6;margin:.5rem 0 .8rem}
+.copy-link-btn{background:none;border:none;padding:0;font-family:inherit;color:var(--accent-ink);cursor:pointer;text-decoration:underline;font-size:.8rem}
+.copy-link-btn:disabled{opacity:.5;cursor:default;text-decoration:none}
 /* faint always-on 3×3 zone grid — an HTML overlay glued to the canvas box,
    so it guides the eye on screen but can never end up in the saved PNG
    (saveComposed reads the canvas, not the DOM). The brighter in-canvas grid
@@ -227,44 +236,36 @@ img.lb-thumb{cursor:pointer}
 </div></div>
 
 <div class="wrap">
-  <div class="compose-grid">
+  <div class="acc" id="acc-2">
+    <div class="acc-h" onclick="toggleAcc(2)"><span class="sn">1</span>Lay it out<span class="chev">▾</span></div>
+    <div class="acc-b">
+      <div class="field">
+        <label>Choose a size</label>
+        <div id="cmp-size" class="size-grid"></div>
+      </div>
+      <div class="field" id="custom-size-row" style="display:none">
+        <label>Custom size (px)</label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="number" id="cmp-cw" min="200" max="4096" value="1080" style="width:6.5rem">
+          <span style="color:var(--muted)">×</span>
+          <input type="number" id="cmp-ch" min="200" max="4096" value="1080" style="width:6.5rem">
+          <button type="button" class="btn btn-ghost" style="padding:.45rem .8rem;font-size:.78rem" onclick="applyCustomSize()">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="compose-grid" id="compose-main" style="display:none">
     <div>
-      <div class="acc" id="acc-1">
-        <div class="acc-h" onclick="toggleAcc(1)"><span class="sn">1</span>Pick a photo <span class="cnt" id="select-count"></span><span class="chev">▾</span></div>
+      <div class="acc" id="acc-3">
+        <div class="acc-h" onclick="toggleAcc(3)"><span class="sn">2</span>Copy and Style<span class="chev">▾</span></div>
         <div class="acc-b">
-          <div class="select-strip" id="select-strip"><span class="select-empty">loading…</span></div>
-        </div>
-      </div>
-
-      <div class="acc collapsed" id="acc-2">
-        <div class="acc-h" onclick="toggleAcc(2)"><span class="sn">2</span>Lay it out<span class="chev">▾</span></div>
-        <div class="acc-b">
-          <div class="field">
-            <label>Size</label>
-            <div id="cmp-size" class="size-grid"></div>
-          </div>
-          <div class="field" id="custom-size-row" style="display:none">
-            <label>Custom size (px)</label>
-            <div style="display:flex;gap:.5rem;align-items:center">
-              <input type="number" id="cmp-cw" min="200" max="4096" value="1080" style="width:6.5rem">
-              <span style="color:var(--muted)">×</span>
-              <input type="number" id="cmp-ch" min="200" max="4096" value="1080" style="width:6.5rem">
-              <button type="button" class="btn btn-ghost" style="padding:.45rem .8rem;font-size:.78rem" onclick="applyCustomSize()">Apply</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="acc collapsed" id="acc-3">
-        <div class="acc-h" onclick="toggleAcc(3)"><span class="sn">3</span>Write &amp; style the copy<span class="chev">▾</span></div>
-        <div class="acc-b">
-          <div class="ai-bar">
-            <span class="lbl">✍️ Copy — AI options</span>
-            <span class="ai-status" id="copy-status"></span>
-            <button class="btn btn-ai" id="copy-draft-btn" onclick="draftCopy()">Generate copy</button>
-          </div>
           <div class="copy-options" id="copy-options" style="margin-bottom:.6rem"></div>
-          <div class="add-own-row"><a class="add-own-link" id="add-own-link" onclick="revealCustomText()">✎ add your own text</a></div>
+          <div style="display:flex;gap:1.2rem;align-items:center;margin:.2rem 0 .8rem;flex-wrap:wrap">
+            <button class="copy-link-btn" id="copy-draft-btn" onclick="draftCopy()">Generate new copy</button>
+            <span class="ai-status" id="copy-status"></span>
+            <a class="add-own-link" id="add-own-link" onclick="revealCustomText()">Edit or add text</a>
+          </div>
           <div id="custom-text-fields" style="display:none">
             <div class="field">
               <label for="cmp-eyebrow">Eyebrow</label>
@@ -299,7 +300,7 @@ img.lb-thumb{cursor:pointer}
       </div>
 
       <div class="acc collapsed" id="acc-4">
-        <div class="acc-h" onclick="toggleAcc(4)"><span class="sn">4</span>Colors<span class="chev">▾</span></div>
+        <div class="acc-h" onclick="toggleAcc(4)"><span class="sn">3</span>Colors<span class="chev">▾</span></div>
         <div class="acc-b">
           <div class="color-grid">
             <div class="field">
@@ -325,33 +326,33 @@ img.lb-thumb{cursor:pointer}
         <div class="section-h" style="margin:0">Preview</div>
         <button type="button" class="btn btn-ghost" id="start-over-btn" style="padding:.3rem .65rem;font-size:.7rem" onclick="startOver()">↺ Start over</button>
       </div>
-      <div class="hint-chips">
-        <div class="hint-chip"><span class="ic">✋</span><b>Drag the photo</b></div>
-        <div class="hint-chip"><span class="ic">✦</span><b>Push it past an edge</b></div>
-        <div class="hint-chip"><span class="ic">⠿</span><b>Drag words or button</b></div>
+      <p class="hint-sentence">Drag the photo ✋ to reposition it, push it past an edge ✦ to expand the scene, or drag the words or button ⠿ to move the copy.</p>
+      <div class="preview-canvas-wrap" id="preview-canvas-wrap">
+        <p class="preview-empty">Choose a size above to get started.</p>
       </div>
-      <div class="field photo-size-field">
+      <div class="field photo-size-field" style="margin-top:1.2rem">
         <label for="cmp-pzoom">Photo size <span id="pzoom-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
         <input type="range" id="cmp-pzoom" min="60" max="180" step="5" value="100" oninput="setPhotoZoom(this.value)">
       </div>
-      <div class="preview-canvas-wrap" id="preview-canvas-wrap">
-        <p class="preview-empty">Pick an approved render above to start.</p>
-      </div>
       <div class="ai-status" id="save-status" style="margin-top:.7rem"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:.5rem" onclick="saveComposed()">Save image</button>
+      <button class="btn btn-ghost" id="animate-btn" style="width:100%;margin-top:.5rem" onclick="animateComposed()" title="Turns this layout into a short looping clip — subtle scene motion, your product and words stay put">✦ Animate</button>
+      <div class="ai-status" id="animate-status" style="margin-top:.5rem"></div>
       <div class="ai-status" id="compose-hint" style="margin-top:.5rem"></div>
     </div>
   </div>
 
+  <div id="after-compose" style="display:none">
   <div class="section-h">Saved <span style="font-weight:400;text-transform:none;font-size:.78rem;color:var(--muted)" id="rendered-count"></span></div>
   <div class="grid" id="rendered-grid"></div>
 
   <div class="savebar">
-    <a class="btn btn-ghost" href="../full-service.html" title="Hand this campaign to the studio team — we take it from here">Escalate to full service</a>
+    <a class="btn btn-ghost" href="../full-service.html" title="Hand this campaign to the studio team — we take it from here">Ask a Creative Director for help</a>
     <button type="button" class="btn btn-ghost" onclick="applyKitStyle(true)" title="Set font, colors and text size from this client's brand kit">Apply brand kit</button>
     <button type="button" class="btn btn-ghost" onclick="saveStyleToKit()" title="Font, colors and text size become this client's defaults on every new project">Save brand kit</button>
     <span class="ai-status" id="kit-status" style="margin-right:auto"></span>
     <button class="btn btn-next" onclick="saveAndContinue()">Continue</button>
+  </div>
   </div>
 </div>
 
@@ -499,8 +500,12 @@ function pickPlatform(key){
   if (key === 'custom'){ applyCustomSize(); return; }
   activePlatform = key;
   renderPlatformRow();
-  resetLayout();   // a paid extension belongs to a frame shape — switching discards it
-  renderPreview();
+  resetLayout();
+  const main = document.getElementById('compose-main');
+  if (main) main.style.display = '';
+  const after = document.getElementById('after-compose');
+  if (after) after.style.display = '';
+  autoLayoutForPlatform();
 }
 function applyCustomSize(){
   const w = Math.max(200, Math.min(4096, parseInt(document.getElementById('cmp-cw').value, 10) || 1080));
@@ -510,8 +515,12 @@ function applyCustomSize(){
   PLATFORMS.custom = makeSpec('Custom', w, h);
   activePlatform = 'custom';
   renderPlatformRow();
-  resetLayout();   // same rule as a preset switch — new frame, fresh layout
-  renderPreview();
+  resetLayout();
+  const main = document.getElementById('compose-main');
+  if (main) main.style.display = '';
+  const after = document.getElementById('after-compose');
+  if (after) after.style.display = '';
+  autoLayoutForPlatform();
 }
 
 // Back to the untouched render, default zones, no pan, no zoom. Called on
@@ -533,6 +542,48 @@ function resetLayout(){
 }
 
 function startOver(){ resetLayout(); renderPreview(); }
+
+// When a size is picked (or a new render loaded): contain the entire product
+// in frame (no cropping), push it to one edge so there is ONE gap to inpaint,
+// trigger inpaint automatically, and place text in the gap zone.
+function autoLayoutForPlatform(){
+  if (!selectedImg) return;
+  const spec = PLATFORMS[activePlatform];
+  const W = spec.w, H = spec.h;
+  const imgW = selectedImg.width, imgH = selectedImg.height;
+
+  const sCover   = Math.max(W / imgW, H / imgH);
+  const sContain = Math.min(W / imgW, H / imgH);
+  const drawnW   = imgW * sContain, drawnH = imgH * sContain;
+  const gapX     = W - drawnW, gapY = H - drawnH;
+
+  // Always contain — the whole product must stay in frame, never cover-cropped.
+  // (Owner: make sure the product is all in the preview window, THEN auto-paint
+  // the rest in.) The bigger gap decides which side to push to so there's one
+  // clean area to paint.
+  photoZoom = sContain / sCover;
+
+  if (gapX > gapY + 4) {
+    // Image is wider relative to frame: push right → left gap for inpaint, text left.
+    ox = gapX; oy = (H - drawnH) / 2;
+    tCol = 'left'; tRow = 'middle';
+  } else if (gapY > gapX + 4) {
+    // Image is taller relative to frame: push to top → bottom gap for inpaint, text bottom.
+    ox = gapX / 2; oy = 0;
+    tCol = 'center'; tRow = 'bottom';
+  } else {
+    // Product's aspect matches the size closely — keep it fully contained and
+    // centered (NOT cover-cropped), default text zone. Any tiny remaining gap
+    // is below the paint threshold, so nothing is painted.
+    ox = gapX / 2; oy = gapY / 2;
+    const z = spec.zone; tCol = z.col; tRow = z.row;
+  }
+  cCol = null; cRow = null;
+
+  renderPreview();
+  // Auto-inpaint the gap so the product is surrounded by a natural scene.
+  setTimeout(() => paintGap(), 150);
+}
 
 function setTextScale(v){
   tScale = v / 100;
@@ -622,19 +673,22 @@ function resetScrimColor(){
 // scale change (standard anchor-preserving zoom math), before and after
 // painting alike — one slider, one feel, in both states.
 function setPhotoZoom(v){
+  // A paint exists → resizing means the user wants to reframe, so promote the
+  // painted composite to the base first; from here it scales like any photo
+  // and zooming out can reopen a gap to paint again.
+  if (extDir) bakeExtension();
   const img = baseImage();
   if (!img) return;
   const spec = PLATFORMS[activePlatform];
   const W = spec.w, H = spec.h;
   const s0 = displayScale(img, W, H);
-  if (extDir) extendZoom = Math.max(1, v / 100);
-  else photoZoom = v / 100;
+  photoZoom = v / 100;
   const s1 = displayScale(img, W, H);
   const cx = W / 2, cy = H / 2;
   ox = cx - (cx - ox) / s0 * s1;
   oy = cy - (cy - oy) / s0 * s1;
   const lbl = document.getElementById('pzoom-val');
-  if (lbl) lbl.textContent = Math.round((extDir ? extendZoom : photoZoom) * 100) + '%';
+  if (lbl) lbl.textContent = Math.round(photoZoom * 100) + '%';
   renderPreview();
 }
 
@@ -662,60 +716,59 @@ function extendedFit(img, W, H, dir){
 }
 function clampOffsets(img, s, W, H){
   const sl = coverSlack(img, s, W, H);
-  // before an extension exists the photo may overpan (that's what opens a
-  // paintable gap); after one it pans only within its own pixels
-  const gx = extDir ? 0 : W * MAX_GAP, gy = extDir ? 0 : H * MAX_GAP;
+  // For contained images (sl.x/y === 0, image fits within frame) allow free
+  // positioning across the full frame so auto-layout can push to any edge.
+  // For cover-fit images allow MAX_GAP overpan for user-dragged gaps.
+  const gx = extDir ? 0 : (sl.x === 0 ? W : W * MAX_GAP);
+  const gy = extDir ? 0 : (sl.y === 0 ? H : H * MAX_GAP);
   ox = Math.max(sl.x - gx, Math.min(gx, ox));
   oy = Math.max(sl.y - gy, Math.min(gy, oy));
 }
 function computeGaps(img, s, W, H){
-  const sl = coverSlack(img, s, W, H);
+  // Works for both cover-fit (image overflows) and contain-fit (image undershoots).
+  const drawnW = img.width * s, drawnH = img.height * s;
   return {
     left:   Math.max(0, ox),
-    right:  Math.max(0, sl.x - ox),
+    right:  Math.max(0, W - drawnW - ox),
     top:    Math.max(0, oy),
-    bottom: Math.max(0, sl.y - oy),
+    bottom: Math.max(0, H - drawnH - oy),
   };
 }
 
 // ---- paint-the-gap (fal outpaint via the deployed edge function) ----
-// Green thickness is the LARGER of two amounts: how far the Owner actually
-// dragged (in source pixels, same proportion), and the minimum the target
-// frame's aspect ratio demands. That second number matters a lot: once
-// painted, the axis perpendicular to the extend direction is force-fit
-// to the frame exactly (extendedFit, see below), which is a FIXED scale
-// that doesn't care how much was dragged — for a portrait target it can
-// be much larger than any modest drag would ask for. Sizing purely off
-// the drag left a real bug: a landscape render extended into a tall
-// vertical frame came back roughly half painted, and the unpainted half
-// showed as a flat fallback-color block next to the actual photo — which
-// reads as "half grey, half black." Requesting the aspect-driven minimum
-// up front means the paint that comes back actually covers the frame the
-// first time.
+// Reconstruct the TARGET FRAME at source resolution: the product is drawn
+// exactly where it currently sits on the canvas, and every remaining pixel is
+// green for the model to paint. Two things fall out of this, and both are
+// bug fixes:
+//   1. The green area is EXACTLY the visible empty space — never more. The
+//      old formula sized green off the drag distance and could ask for up to
+//      3× the product's size, so the model was handed a huge blank region and
+//      filled it by duplicating the product. A gap-sized region gives it only
+//      the real empty space to extend the scene into.
+//   2. The composite comes back already at the frame's aspect ratio with the
+//      product in its final position, so it drops straight back in at (0,0)
+//      with no reposition — the photo no longer jumps/"resets" after a paint.
+// dir/gap/drawn* are no longer needed for sizing (the on-screen layout is the
+// single source of truth) but stay in the signature for the caller.
 function buildGreenCanvas(dir, gap, drawnW, drawnH, targetW, targetH){
-  const srcW = Math.min(selectedImg.width, EXTEND_SRC_CAP);
-  const k = srcW / selectedImg.width;
-  const srcH = Math.round(selectedImg.height * k);
-  let gw = srcW, gh = srcH, ix = 0, iy = 0;
-  if (dir === 'left' || dir === 'right'){
-    const dragGreen = Math.max(40, Math.round(srcW * gap / Math.max(1, drawnW - gap)));
-    const needGreen = Math.max(40, Math.ceil(targetW * srcH / targetH - srcW));
-    const green = Math.min(srcW * 3, Math.max(dragGreen, needGreen));
-    gw = srcW + green;
-    ix = dir === 'left' ? green : 0;
-  } else {
-    const dragGreen = Math.max(40, Math.round(srcH * gap / Math.max(1, drawnH - gap)));
-    const needGreen = Math.max(40, Math.ceil(targetH * srcW / targetW - srcH));
-    const green = Math.min(srcH * 3, Math.max(dragGreen, needGreen));
-    gh = srcH + green;
-    iy = dir === 'top' ? green : 0;
-  }
+  const s = displayScale(selectedImg, targetW, targetH); // frame-px per source-px
+  // Render the frame so the product keeps roughly its native pixels, capped so
+  // a very empty frame (small product, big canvas) can't balloon the request.
+  let factor = 1 / s;                        // frame-px -> source-px
+  const CAP = 1600;
+  const maxDim = Math.max(targetW, targetH) * factor;
+  if (maxDim > CAP) factor *= CAP / maxDim;
+  const gw = Math.round(targetW * factor);
+  const gh = Math.round(targetH * factor);
   const c = document.createElement('canvas');
   c.width = gw; c.height = gh;
   const g = c.getContext('2d');
   g.fillStyle = '#00ff00';
   g.fillRect(0, 0, gw, gh);
-  g.drawImage(selectedImg, ix, iy, srcW, srcH);
+  // product's on-canvas rect (ox, oy, drawnW, drawnH), scaled into this frame
+  g.drawImage(selectedImg,
+    ox * factor, oy * factor,
+    selectedImg.width * s * factor, selectedImg.height * s * factor);
   return c.toDataURL('image/png');
 }
 
@@ -735,27 +788,43 @@ function sampleEdgeColor(img, dir){
   return { r: Math.round(r/n), g: Math.round(gr/n), b: Math.round(b/n) };
 }
 
-// After painting, flush-align the ORIGINAL image's edge (not the new paint)
-// to its matching frame edge — e.g. for a 'left' extend, the paint sits at
-// the composite's left and the original content at its right, so the
-// composite's right edge locks to the frame's right edge. Any crop from
-// extendedFit's overflow then eats into the fresh paint, never the
-// subject; any shortfall leaves a sliver on the SAME (painted) side, which
-// renderPreview fills with the sampled edge color.
+// The paint comes back as a full-frame reconstruction (buildGreenCanvas draws
+// the whole target frame, product in place, green everywhere else), so it maps
+// 1:1 onto the frame: sit it at the origin and let displayScale's extendedFit
+// (frame-aspect → exact fill) size it. No flush-align, no jump — the product
+// stays exactly where it was on screen. Any rounding sliver at an edge is
+// covered by renderPreview's sampled-color fill.
 function anchorExtended(){
-  const spec = PLATFORMS[activePlatform];
   extendZoom = 1; // fresh paint — reset any zoom from a previous attempt
-  const s = extendedFit(extendedImg, spec.w, spec.h, extDir);
-  const dw = extendedImg.width * s, dh = extendedImg.height * s;
-  if (extDir === 'left'){ ox = spec.w - dw; oy = (spec.h - dh) / 2; }
-  else if (extDir === 'right'){ ox = 0; oy = (spec.h - dh) / 2; }
-  else if (extDir === 'top'){ ox = (spec.w - dw) / 2; oy = spec.h - dh; }
-  else { ox = (spec.w - dw) / 2; oy = 0; } // bottom
-  // Zoom-in-only past this point (see extendZoom's comment above) — narrow
-  // the slider's own range so the lower half isn't a dead zone.
+  ox = 0; oy = 0;
+  // Slider stays full-range (60-180): zooming BACK out past the exact-fit
+  // floor is now a feature — it reopens a gap so the user can paint again
+  // (bakeExtension below promotes the current paint to the base first).
   const pz = document.getElementById('cmp-pzoom'), pzv = document.getElementById('pzoom-val');
-  if (pz){ pz.min = 100; pz.value = 100; }
+  if (pz){ pz.min = 60; pz.value = 100; }
   if (pzv) pzv.textContent = '100%';
+}
+
+// After a paint, the moment the user repositions or rescales the photo we
+// "bake" the painted composite into the base image: it becomes the new
+// selectedImg, extDir clears, and the full pan/zoom range comes back. Gaps
+// recompute against this new base, so pushing the photo past an edge opens a
+// fresh paintable gap and the paint chip returns — each paint round becomes
+// the source for the next (progressive outpainting).
+function bakeExtension(){
+  if (!extDir || !extendedImg) return;
+  const spec = PLATFORMS[activePlatform];
+  const sNow = displayScale(extendedImg, spec.w, spec.h); // current on-screen scale
+  selectedImg = extendedImg;                              // composite is the new base
+  extendedImg = null;
+  extDir = null;
+  extendEdgeColor = null;
+  extendZoom = 1;
+  const sCover = coverScale(selectedImg, spec.w, spec.h);
+  photoZoom = sNow / sCover;                              // keep exact size/position
+  const pz = document.getElementById('cmp-pzoom'), pzv = document.getElementById('pzoom-val');
+  if (pz){ pz.min = 60; pz.value = Math.round(photoZoom * 100); }
+  if (pzv) pzv.textContent = Math.round(photoZoom * 100) + '%';
 }
 
 async function paintGap(){
@@ -768,8 +837,11 @@ async function paintGap(){
   const gp = computeGaps(selectedImg, s, spec.w, spec.h);
   if (gp[dir] < 4) return;
   const imageDataUri = buildGreenCanvas(dir, gp[dir], selectedImg.width * s, selectedImg.height * s, spec.w, spec.h);
+  const wrapEl = document.getElementById('preview-canvas-wrap');
+  wrapEl.classList.add('painting');   // dim the photo, show the solid status label
   try {
-    const result = await withBusy(chip, hintEl, 'painting…', () => callFunction('outpaint', { imageDataUri }));
+    const result = await withBusyOverlay('Extending your image…', 'Painting in the new area…', () =>
+      withBusy(chip, hintEl, 'painting…', () => callFunction('outpaint', { imageDataUri })));
     await new Promise((resolve, reject) => {
       const img = new Image();               // data URI → never taints the save canvas
       img.onload = () => {
@@ -784,6 +856,7 @@ async function paintGap(){
     });
     renderPreview();
   } catch (e) { /* withBusy already surfaced the error in the hint line */ }
+  finally { wrapEl.classList.remove('painting'); }
 }
 
 // ---- drag: photo pans, words and CTA snap to zones ----
@@ -810,7 +883,12 @@ function attachDragHandlers(canvas){
     const p = canvasPoint(canvas, e);
     if (inBox(p, ctaBox, 14)) dragState = { kind: 'cta' };
     else if (inBox(p, textBox, 14)) dragState = { kind: 'text' };
-    else dragState = { kind: 'photo', px: p.x, py: p.y, sx: ox, sy: oy };
+    else {
+      // Repositioning the photo after a paint bakes the composite into the
+      // base so this drag can open a fresh gap and paint again.
+      if (extDir) bakeExtension();
+      dragState = { kind: 'photo', px: p.x, py: p.y, sx: ox, sy: oy };
+    }
     canvas.setPointerCapture(e.pointerId);
     renderPreview();
   });
@@ -841,35 +919,23 @@ async function resolveUrl(path){
 }
 async function renderSelectStrip(){
   const approved = renders.filter(r => (r.human_override || r.verdict) === 'approved');
-  document.getElementById('select-count').textContent = `(${approved.length})`;
-  if (!approved.length){
-    document.getElementById('select-strip').innerHTML = '<span class="select-empty">No approved renders yet — check some images first.</span>';
-    return;
-  }
+  if (!approved.length) return;
   const urls = await Promise.all(approved.map(r => resolveUrl(r.storage_path)));
-  // auto-load the first approved render into the preview on landing, so the
-  // page isn't empty — the user can still click another photo to switch.
   if (!selectedRenderId){
     selectedRenderId = approved[0].id;
     resetLayout();
     selectedImg = new Image();
     selectedImg.crossOrigin = 'anonymous';
-    selectedImg.onload = () => renderPreview();
+    selectedImg.onload = () => autoLayoutForPlatform();
     selectedImg.src = urls[0];
   }
-  document.getElementById('select-strip').innerHTML = approved.map((r, i) => `
-    <div class="select-card ${r.id===selectedRenderId?'active':''}" onclick="pickRender('${r.id}','${esc(urls[i])}')">
-      <img src="${esc(urls[i])}">
-      <div class="fn">${esc(r.filename)}</div>
-    </div>`).join('');
 }
 function pickRender(renderId, url){
   selectedRenderId = renderId;
-  openAcc(2);     // walk the user forward: photo picked, next is layout
   resetLayout();  // an extension and any pan belong to a specific image — start fresh
   selectedImg = new Image();
   selectedImg.crossOrigin = 'anonymous';
-  selectedImg.onload = () => renderPreview();
+  selectedImg.onload = () => autoLayoutForPlatform();
   selectedImg.src = url;
   renderSelectStrip();
 }
@@ -896,8 +962,9 @@ async function draftCopy(){
   const status = document.getElementById('copy-status');
   const avoid = (window._copyOptions || []).map(o => o.headline).filter(Boolean);
   try {
-    const result = await withBusy(btn, status, 'drafting…', () =>
-      callFunction('ai-draft', { projectId, kind: 'copy', count: 2, avoid }));
+    const result = await withBusyOverlay('Writing copy…', 'Drafting headline options…', () =>
+      withBusy(btn, status, 'drafting…', () =>
+        callFunction('ai-draft', { projectId, kind: 'copy', count: 2, avoid })));
     window._copyOptions = [...(window._copyOptions || []), ...(result.options || [])];
     renderCopyOptions();
   } catch (e) { /* status shows the error via withBusy */ }
@@ -915,7 +982,6 @@ function useCopy(i){
 // the manual fields for anyone who'd rather write their own.
 function revealCustomText(){
   document.getElementById('custom-text-fields').style.display = '';
-  document.getElementById('add-own-link').style.display = 'none';
 }
 async function autoDraftCopy(){
   if ((window._copyOptions || []).length) return;                 // already drafted
@@ -1058,6 +1124,11 @@ function renderPreview(){
     ov.className = 'zone-overlay';
     ov.id = 'zone-overlay';
     wrapEl.appendChild(ov);
+    const pov = document.createElement('div');
+    pov.className = 'paint-overlay';
+    pov.id = 'paint-overlay';
+    pov.innerHTML = '<span class="spin"></span>Painting, please wait';
+    wrapEl.appendChild(pov);
   }
   canvas.width = W; canvas.height = H;
   syncZoneOverlay();
@@ -1329,6 +1400,148 @@ async function saveComposed(){
   }
 }
 
+// ---------- Animate (first iteration, 2026-07-14 R&D) ----------
+// Turns the CURRENT layout into a short video clip via the `animate` Edge
+// Function (fal / Kling image-to-video). Key design decisions:
+//   - We send the CLEAN frame: photo layer only, exactly as positioned on
+//     screen (pan/zoom/painted extension included), NO words/CTA/scrim —
+//     AI video mangles text, so text is re-overlaid after (next iteration).
+//   - Video models only speak 1:1 / 16:9 / 9:16, so the frame is padded to
+//     the nearest containing ratio with edge-sampled bands; the pad math is
+//     stored on the job so Review can crop the video back to the user's
+//     exact size with CSS. Never cropped — padding only.
+//   - Generation takes minutes, so nothing here waits: submit returns fast,
+//     the job lands in project.settings.animation_jobs, and the REVIEW page
+//     polls and stores the finished video. Safe to leave this page.
+
+// Photo layer only, at the frame's real pixel size — mirrors renderPreview's
+// photo pass (bg, drawImage, extension sliver) minus hints/text/scrim.
+function buildCleanFrameCanvas(){
+  const spec = PLATFORMS[activePlatform];
+  const W = spec.w, H = spec.h;
+  const img = baseImage();
+  const s = displayScale(img, W, H);
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#141118';
+  ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
+  if (extDir && extendEdgeColor){
+    const dw = img.width * s, dh = img.height * s;
+    const short = (extDir === 'left' || extDir === 'right') ? Math.max(0, W - dw) : Math.max(0, H - dh);
+    if (short > 1){
+      ctx.fillStyle = `rgb(${extendEdgeColor.r},${extendEdgeColor.g},${extendEdgeColor.b})`;
+      if (extDir === 'left') ctx.fillRect(0, 0, short, H);
+      else if (extDir === 'right') ctx.fillRect(W - short, 0, short, H);
+      else if (extDir === 'top') ctx.fillRect(0, 0, W, short);
+      else ctx.fillRect(0, H - short, W, short);
+    }
+  }
+  return c;
+}
+
+// Average color of the frame's outermost strip on one side — used to fill
+// the pad bands so the model sees scene color, not black bars.
+function edgeStripColor(canvas, side){
+  const g = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const d = side === 'left' ? g.getImageData(0, 0, 1, H).data
+    : side === 'right' ? g.getImageData(W - 1, 0, 1, H).data
+    : side === 'top' ? g.getImageData(0, 0, W, 1).data
+    : g.getImageData(0, H - 1, W, 1).data;
+  let r = 0, gr = 0, b = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4){ r += d[i]; gr += d[i+1]; b += d[i+2]; n++; }
+  return `rgb(${Math.round(r/n)},${Math.round(gr/n)},${Math.round(b/n)})`;
+}
+
+// Pads the clean frame up to the nearest ratio Kling speaks (1:1, 16:9,
+// 9:16) — whichever wastes the least area. Returns the padded canvas plus
+// where the real frame sits inside it (Review needs this to crop back).
+function padToSupportedRatio(frame){
+  const W = frame.width, H = frame.height, a = W / H;
+  const candidates = [1, 16/9, 9/16];
+  let best = null;
+  for (const c of candidates){
+    const padW = a >= c ? W : Math.round(H * c);
+    const padH = a >= c ? Math.round(W / c) : H;
+    const extra = padW * padH - W * H;
+    if (!best || extra < best.extra) best = { c, padW, padH, extra };
+  }
+  const { padW, padH } = best;
+  const offX = Math.round((padW - W) / 2), offY = Math.round((padH - H) / 2);
+  const c = document.createElement('canvas');
+  c.width = padW; c.height = padH;
+  const g = c.getContext('2d');
+  if (padH > H){ // horizontal bands top/bottom
+    g.fillStyle = edgeStripColor(frame, 'top'); g.fillRect(0, 0, padW, offY + 1);
+    g.fillStyle = edgeStripColor(frame, 'bottom'); g.fillRect(0, offY + H - 1, padW, padH - offY - H + 1);
+  }
+  if (padW > W){ // vertical bands left/right
+    g.fillStyle = edgeStripColor(frame, 'left'); g.fillRect(0, 0, offX + 1, padH);
+    g.fillStyle = edgeStripColor(frame, 'right'); g.fillRect(offX + W - 1, 0, padW - offX - W + 1, padH);
+  }
+  g.drawImage(frame, offX, offY);
+  return { canvas: c, padW, padH, offX, offY };
+}
+
+// Motion prompt — fixed house rules (subtle, ambient, locked camera), plus
+// one spatial hint: keep the side the words will sit on calm, since the text
+// is stamped back over the video afterward.
+function buildMotionPrompt(){
+  const zone = tCol === 'left' ? 'left side' : tCol === 'right' ? 'right side'
+    : tRow === 'top' ? 'top' : 'bottom';
+  return 'Subtle ambient environmental motion only: gentle light shifts, soft drifting ' +
+    'shadows, faint atmospheric movement like steam, dust motes or softly moving foliage ' +
+    'where natural. The camera is completely locked — no zoom, no pan, no rotation. ' +
+    'The product and all objects keep their exact position, shape and detail. ' +
+    `Keep the ${zone} of the frame especially calm and nearly still. ` +
+    'Seamless, loopable, calm, premium product-film feel.';
+}
+
+async function animateComposed(){
+  const status = document.getElementById('animate-status');
+  const btn = document.getElementById('animate-btn');
+  if (!selectedRenderId || !selectedImg){ status.textContent = 'pick an approved render first'; status.classList.add('err'); return; }
+  status.classList.remove('err');
+  try {
+    const result = await withBusy(btn, status, 'sending…', async () => {
+      // 1. Clean frame at the user's exact size, padded to a video-safe ratio.
+      const frame = buildCleanFrameCanvas();
+      const padded = padToSupportedRatio(frame);
+      const blob = await new Promise(res => padded.canvas.toBlob(res, 'image/png'));
+      // 2. Store the frame — Try again on Review resubmits from this exact file.
+      const sourceRender = renders.find(r => r.id === selectedRenderId);
+      const baseName = (sourceRender?.filename || 'composed').replace(/\.[^.]+$/, '');
+      const sizeKey = activePlatform === 'custom' ? `${PLATFORMS.custom.w}x${PLATFORMS.custom.h}` : activePlatform;
+      const framePath = db.storagePath(project.clients.slug, projectId, 'composed', `${baseName}-${sizeKey}-animframe.png`);
+      await db.uploadFile(framePath, blob);
+      const frameUrl = await db.getSignedUrl(framePath);
+      // 3. Submit to fal via the animate Edge Function (fast — no waiting here).
+      const prompt = buildMotionPrompt();
+      const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt, duration: '5' });
+      // 4. Record the job — the Review page picks it up from settings.
+      const job = {
+        id: `anim-${Date.now()}`,
+        request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
+        frame_path: framePath, prompt, duration: '5',
+        w: frame.width, h: frame.height,
+        padW: padded.padW, padH: padded.padH, offX: padded.offX, offY: padded.offY,
+        sizeKey, baseName, created_at: new Date().toISOString(), status: 'pending',
+      };
+      project.settings = Object.assign({}, project.settings || {});
+      project.settings.animation_jobs = [...(project.settings.animation_jobs || []), job];
+      await db.saveSettings(projectId, project.settings);
+      await db.createRunLogEntry(projectId, 'generate', `animate submitted: ${baseName} @ ${sizeKey} (${job.request_id})`);
+      return job;
+    });
+    if (result) {
+      status.innerHTML = `Animating — takes a minute or two. It'll appear on the ` +
+        `<a href="7-review-gallery.html?project=${encodeURIComponent(projectId)}" style="color:var(--accent);text-decoration:underline">Review page</a> — safe to leave this page.`;
+    }
+  } catch (e) { /* withBusy already put the error in the status line */ }
+}
+
 // Continue from the savebar saves whatever's laid out first (if anything),
 // so leaving the page never silently drops a layout the Owner forgot to hit
 // "Save image" on. Nothing to save (no photo picked, no headline) just
@@ -1403,6 +1616,6 @@ async function init(){
 }
 init();
 </script>
-<script src="../assets/app-switcher.js"></script>
+<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>
