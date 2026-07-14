@@ -258,28 +258,48 @@ async function renderAnimations(){
   if (!jobs.length) return;
   const cards = await Promise.all(jobs.map(async j => {
     const meta = `${esc(j.baseName || '')} · ${esc(j.sizeKey || '')} · ${j.w}×${j.h} · ${fmtWhen(j.created_at)}`;
-    if (j.status === 'done' && j.storage_path){
-      if (!signedUrlCache[j.storage_path]) {
-        try { signedUrlCache[j.storage_path] = await db.getSignedUrl(j.storage_path); } catch (e) { signedUrlCache[j.storage_path] = ''; }
+    if (j.status === 'done' && (j.final_path || j.storage_path)){
+      // Finished clip is already the exact composed size — plays as-is. A
+      // raw clip (finish failed) is the padded frame, so CSS-crop it back.
+      const playPath = j.final_path || j.storage_path;
+      if (!signedUrlCache[playPath]) {
+        try { signedUrlCache[playPath] = await db.getSignedUrl(playPath); } catch (e) { signedUrlCache[playPath] = ''; }
       }
-      const url = signedUrlCache[j.storage_path];
-      // Crop the padded video back to the composed size: the wrapper clips at
-      // the user's aspect; the video is %-scaled and offset off the pad math.
-      const vidW = (j.padW / j.w) * 100;
-      const left = -(j.offX / j.w) * 100;
-      const top = -(j.offY / j.h) * 100;
+      const url = signedUrlCache[playPath];
+      const videoTag = j.final_path
+        ? `<video src="${esc(url)}" autoplay muted loop playsinline style="position:static;width:100%;height:auto;display:block"></video>`
+        : (() => {
+            const vidW = (j.padW / j.w) * 100;
+            const left = -(j.offX / j.w) * 100;
+            const top = -(j.offY / j.h) * 100;
+            return `<video src="${esc(url)}" autoplay muted loop playsinline style="width:${vidW}%;left:${left}%;top:${top}%"></video>`;
+          })();
+      const finishNote = j.finish_error
+        ? `<span class="anim-err">Finishing failed (${esc(j.finish_error)}) — showing the raw clip, words not stamped yet.</span>`
+        : '';
+      const finishBtns = j.finish_error
+        ? `<button class="btn btn-ghost" onclick="animRefinish('${j.id}')" title="Re-run crop + loop + words — no new generation cost">↻ Retry finish</button>`
+        : (j.gif_path ? `<button class="btn btn-ghost" onclick="animDownload('${j.id}','gif')">⬇ Email GIF</button>` : '');
       return `<div class="anim-card">
         <div class="anim-frame" style="aspect-ratio:${j.w}/${j.h}">
-          <video src="${esc(url)}" autoplay muted loop playsinline style="width:${vidW}%;left:${left}%;top:${top}%"></video>
+          ${videoTag}
         </div>
         <div class="anim-body">
           <span class="anim-meta">${meta}</span>
+          ${finishNote}
           <div class="anim-actions">
-            <button class="btn btn-ghost" onclick="animDownload('${j.id}')">⬇ Download</button>
+            <button class="btn btn-ghost" onclick="animDownload('${j.id}')">⬇ Video</button>
+            ${finishBtns}
             <button class="btn btn-ghost" onclick="animTryAgain('${j.id}')" title="Same image, a fresh take — results vary run to run">↻ Try again</button>
             <button class="btn btn-ghost" onclick="animDelete('${j.id}')">✕ Remove</button>
           </div>
         </div>
+      </div>`;
+    }
+    if (j.status === 'finishing'){
+      return `<div class="anim-card">
+        <div class="anim-pending"><span class="anim-spin"></span>Sizing, looping and placing your words…</div>
+        <div class="anim-body"><span class="anim-meta">${meta}</span></div>
       </div>`;
     }
     if (j.status === 'failed'){
@@ -320,8 +340,12 @@ async function pollAnimations(){
         const filename = `${j.baseName || 'clip'}-${j.sizeKey}-${j.id}.mp4`;
         const path = db.storagePath(project.clients.slug, projectId, 'video', filename);
         await db.uploadFile(path, new Blob([bytes], { type: dl.mime_type || 'video/mp4' }));
-        j.status = 'done'; j.storage_path = path;
+        j.status = 'finishing'; j.storage_path = path;
         await saveAnimJobs();
+        await renderAnimations();
+        // Second half: crop to composed size + seamless loop + stamp the
+        // words back on + email GIF, on the pixel-lock Cloud Run box.
+        await finishAnimation(j);
         await db.createRunLogEntry(projectId, 'generate', `animation finished: ${filename}`);
         animBusy.delete(j.id);
         await renderAnimations();
@@ -344,17 +368,68 @@ function startAnimPolling(){
   animPollTimer = setInterval(pollAnimations, 6000);
 }
 
-// Signed URLs are cross-origin, so a plain <a download> is ignored by the
-// browser — fetch the bytes and hand over a local blob instead.
-async function animDownload(jobId){
+// Finishing pass (2026-07-14): raw fal clip -> deliverables, via the
+// pixel-lock Cloud Run service's /video-finish (ffmpeg lives there; the
+// browser and Deno edge functions have none). Crop math comes from the pad
+// numbers Compose stored on the job, as FRACTIONS — fal decides its own
+// output resolution, so pixel coords would be wrong. Results go straight
+// to storage through signed upload URLs (Cloud Run responses have a hard
+// size ceiling that a 10s clip can graze).
+async function fileB64FromPath(path){
+  const url = await db.getSignedUrl(path);
+  const buf = await (await fetch(url)).arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const CHUNK = 32768;
+  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  return btoa(bin);
+}
+async function finishAnimation(j){
+  try {
+    const finalPath = db.storagePath(project.clients.slug, projectId, 'video', `${j.baseName || 'clip'}-${j.sizeKey}-${j.id}-final.mp4`);
+    const gifPath   = db.storagePath(project.clients.slug, projectId, 'video', `${j.baseName || 'clip'}-${j.sizeKey}-${j.id}.gif`);
+    const { data: mp4Up, error: e1 } = await sb.storage.from('projects').createSignedUploadUrl(finalPath);
+    const { data: gifUp, error: e2 } = await sb.storage.from('projects').createSignedUploadUrl(gifPath);
+    if (e1 || e2) throw (e1 || e2);
+    const body = {
+      video_url: await db.getSignedUrl(j.storage_path),
+      crop: { xf: j.offX / j.padW, yf: j.offY / j.padH, wf: j.w / j.padW, hf: j.h / j.padH },
+      pingpong: true, gif: true,
+      mp4_upload_url: mp4Up.signedUrl, gif_upload_url: gifUp.signedUrl,
+    };
+    if (j.text_path) body.text_png_b64 = await fileB64FromPath(j.text_path);
+    await callLocalService('video-finish', body);
+    j.status = 'done'; j.final_path = finalPath; j.gif_path = gifPath; j.finish_error = null;
+  } catch (e) {
+    // Raw clip is safe in storage — show it (cropped in CSS) and let the
+    // finish be retried without another fal spend.
+    j.status = 'done'; j.finish_error = e.message || String(e);
+  }
+  await saveAnimJobs();
+}
+// Retry only the finishing pass (no new fal run, no new cost).
+async function animRefinish(jobId){
   const j = animJobs().find(x => x.id === jobId);
   if (!j || !j.storage_path) return;
+  j.status = 'finishing'; await saveAnimJobs(); await renderAnimations();
+  await finishAnimation(j);
+  await renderAnimations();
+}
+
+// Signed URLs are cross-origin, so a plain <a download> is ignored by the
+// browser — fetch the bytes and hand over a local blob instead.
+async function animDownload(jobId, kind){
+  const j = animJobs().find(x => x.id === jobId);
+  if (!j) return;
+  // 'gif' → email GIF; default → finished mp4, falling back to the raw clip.
+  const path = kind === 'gif' ? j.gif_path : (j.final_path || j.storage_path);
+  if (!path) return;
   try {
-    const url = signedUrlCache[j.storage_path] || await db.getSignedUrl(j.storage_path);
+    const url = signedUrlCache[path] || await db.getSignedUrl(path);
     const blob = await (await fetch(url)).blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${j.baseName || 'clip'}-${j.sizeKey || 'anim'}.mp4`;
+    a.download = `${j.baseName || 'clip'}-${j.sizeKey || 'anim'}.${kind === 'gif' ? 'gif' : 'mp4'}`;
     a.click();
     URL.revokeObjectURL(a.href);
   } catch (e) { alert('Download failed: ' + (e.message || e)); }
@@ -387,7 +462,8 @@ async function animDelete(jobId){
   if (!j) return;
   if (!confirm('Remove this animation? This cannot be undone.')) return;
   try {
-    if (j.storage_path) await db.removeFiles([j.storage_path]);
+    const files = [j.storage_path, j.final_path, j.gif_path].filter(Boolean);
+    if (files.length) await db.removeFiles(files);
     project.settings.animation_jobs = animJobs().filter(x => x.id !== jobId);
     await saveAnimJobs();
     await renderAnimations();
@@ -459,6 +535,11 @@ async function init(){
     // the Compose page submitted (this page owns the poll → store → show).
     await renderAnimations();
     if (animJobs().some(j => j.status === 'pending')) startAnimPolling();
+    // Resume any job the user abandoned mid-finish (raw clip stored, page
+    // closed before the Cloud Run pass came back) — no fal cost to redo.
+    for (const j of animJobs().filter(x => x.status === 'finishing' && x.storage_path)){
+      finishAnimation(j).then(renderAnimations);
+    }
   } catch (e) {
     // RLS denies (not signed in as this client, or project not at review/delivered
     // stage yet) surfaces as an empty/failed read, not a leak.

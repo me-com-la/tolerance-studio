@@ -1136,32 +1136,37 @@ function renderPreview(){
 
   // photo layer — extended image once painted, otherwise the raw render,
   // panned by the Owner's own drag (ox/oy) and sized by the zoom slider,
-  // never by hidden subject logic
-  const img = baseImage();
-  const s = displayScale(img, W, H);
-  clampOffsets(img, s, W, H);
-  ctx.fillStyle = '#141118';
-  ctx.fillRect(0, 0, W, H);
-  ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
+  // never by hidden subject logic. Skipped entirely in text-layer capture
+  // mode (Animate, 2026-07-14): the same typesetting pass below then lands
+  // on a transparent canvas, giving a pixel-identical words+scrim+CTA layer
+  // to stamp onto the finished video.
+  if (!captureTextLayerOnly) {
+    const img = baseImage();
+    const s = displayScale(img, W, H);
+    clampOffsets(img, s, W, H);
+    ctx.fillStyle = '#141118';
+    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
 
-  if (extDir && extendEdgeColor){
-    // extendedFit only guarantees the perpendicular axis fills exactly —
-    // if the paint itself came up short on its own axis, fill the sliver
-    // with the sampled edge color instead of leaving a hard dark edge.
-    const dw = img.width * s, dh = img.height * s;
-    const short = (extDir === 'left' || extDir === 'right') ? Math.max(0, W - dw) : Math.max(0, H - dh);
-    if (short > 1){
-      ctx.fillStyle = `rgb(${extendEdgeColor.r},${extendEdgeColor.g},${extendEdgeColor.b})`;
-      if (extDir === 'left') ctx.fillRect(0, 0, short, H);
-      else if (extDir === 'right') ctx.fillRect(W - short, 0, short, H);
-      else if (extDir === 'top') ctx.fillRect(0, 0, W, short);
-      else ctx.fillRect(0, H - short, W, short);
+    if (extDir && extendEdgeColor){
+      // extendedFit only guarantees the perpendicular axis fills exactly —
+      // if the paint itself came up short on its own axis, fill the sliver
+      // with the sampled edge color instead of leaving a hard dark edge.
+      const dw = img.width * s, dh = img.height * s;
+      const short = (extDir === 'left' || extDir === 'right') ? Math.max(0, W - dw) : Math.max(0, H - dh);
+      if (short > 1){
+        ctx.fillStyle = `rgb(${extendEdgeColor.r},${extendEdgeColor.g},${extendEdgeColor.b})`;
+        if (extDir === 'left') ctx.fillRect(0, 0, short, H);
+        else if (extDir === 'right') ctx.fillRect(W - short, 0, short, H);
+        else if (extDir === 'top') ctx.fillRect(0, 0, W, short);
+        else ctx.fillRect(0, H - short, W, short);
+      }
     }
-  }
 
-  const gp = extDir ? null : computeGaps(img, s, W, H);
-  if (gp) drawGapHints(ctx, gp, W, H);
-  updatePaintChip(gp);
+    const gp = extDir ? null : computeGaps(img, s, W, H);
+    if (gp) drawGapHints(ctx, gp, W, H);
+    updatePaintChip(gp);
+  }
 
   const eyebrow = document.getElementById('cmp-eyebrow').value.trim();
   const headline = document.getElementById('cmp-headline').value.trim();
@@ -1414,6 +1419,27 @@ async function saveComposed(){
 //     the job lands in project.settings.animation_jobs, and the REVIEW page
 //     polls and stores the finished video. Safe to leave this page.
 
+// Text-layer capture (2026-07-14): when true, renderPreview skips the photo
+// pass so the identical typesetting code paints words+scrim+CTA onto a
+// transparent canvas — the layer the Cloud Run finisher stamps onto the video.
+let captureTextLayerOnly = false;
+// Returns a transparent-background PNG data URI of the current text layout at
+// the frame's exact pixel size, or null when there's no headline to typeset.
+// Uses the LIVE canvas (same code, same fonts, same metrics), then repaints
+// the normal preview so the user never sees the intermediate state.
+function captureTextLayerPng(){
+  if (!document.getElementById('cmp-headline').value.trim()) return null;
+  captureTextLayerOnly = true;
+  try {
+    renderPreview();
+    const canvas = document.querySelector('#preview-canvas-wrap canvas');
+    return canvas ? canvas.toDataURL('image/png') : null;
+  } finally {
+    captureTextLayerOnly = false;
+    renderPreview();
+  }
+}
+
 // Photo layer only, at the frame's real pixel size — mirrors renderPreview's
 // photo pass (bg, drawImage, extension sliver) minus hints/text/scrim.
 function buildCleanFrameCanvas(){
@@ -1517,6 +1543,16 @@ async function animateComposed(){
       const framePath = db.storagePath(project.clients.slug, projectId, 'composed', `${baseName}-${sizeKey}-animframe.png`);
       await db.uploadFile(framePath, blob);
       const frameUrl = await db.getSignedUrl(framePath);
+      // Text layer (words+scrim+CTA on transparent) — stamped onto the
+      // finished video by Cloud Run so the copy stays sharp and in place.
+      // Null when no headline yet; the finisher then just crops + loops.
+      let textPath = null;
+      const textDataUri = captureTextLayerPng();
+      if (textDataUri){
+        const textBytes = Uint8Array.from(atob(textDataUri.split(',')[1]), ch => ch.charCodeAt(0));
+        textPath = db.storagePath(project.clients.slug, projectId, 'composed', `${baseName}-${sizeKey}-animtext.png`);
+        await db.uploadFile(textPath, new Blob([textBytes], { type: 'image/png' }));
+      }
       // 3. Submit to fal via the animate Edge Function (fast — no waiting here).
       const prompt = buildMotionPrompt();
       const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt, duration: '5' });
@@ -1524,7 +1560,7 @@ async function animateComposed(){
       const job = {
         id: `anim-${Date.now()}`,
         request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
-        frame_path: framePath, prompt, duration: '5',
+        frame_path: framePath, text_path: textPath, prompt, duration: '5',
         w: frame.width, h: frame.height,
         padW: padded.padW, padH: padded.padH, offX: padded.offX, offY: padded.offY,
         sizeKey, baseName, created_at: new Date().toISOString(), status: 'pending',
