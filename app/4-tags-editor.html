@@ -517,10 +517,9 @@ async function renderBrief(){
       </div>`).join('');
     readSection.style.display = '';
     savebar.style.display = '';
-    // Tags now live inside Additional Information (2026-07-12) — open it
-    // automatically whenever there's something in there to see, so a
-    // returning visit doesn't hide already-drafted tags behind a click.
-    if ((tags.product && tags.product.length) || (tags.creative && tags.creative.length)) openMoreDetails();
+    // Tags live inside Additional Information (2026-07-12) and stay collapsed
+    // there until the Owner clicks the link (2026-07-14) — even on a returning
+    // visit with already-drafted tags, nothing is exposed until asked for.
   } catch (e) {
     photosEl.innerHTML = `<span class="none">couldn't load photos: ${esc(e.message)}</span>`;
   }
@@ -692,7 +691,8 @@ async function aiDraftTags(){
     const result = await callFunction('ai-draft', { projectId, kind: 'tags' });
     tags = result.tags && (result.tags.product || result.tags.creative) ? result.tags : tags;
     status.textContent = ''; status.classList.remove('busy');
-    if ((tags.product && tags.product.length) || (tags.creative && tags.creative.length)) openMoreDetails();
+    // Tags stay tucked behind the Additional Information link even once they're
+    // drafted (2026-07-14) — the Owner opens it when they want to review them.
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
   } finally {

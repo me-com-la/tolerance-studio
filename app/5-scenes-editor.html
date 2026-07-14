@@ -215,7 +215,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
             </svg>
           </div>
           <div class="mm-desc">Photoreal, natural lighting.</div>
-          <button class="btn btn-primary" onclick="useModel('default')">Use Gemini</button>
+          <button class="btn btn-next" onclick="useModel('default')">Use Gemini</button>
         </div>
 
         <div class="mode-or">OR</div>
@@ -228,7 +228,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
             </svg>
           </div>
           <div class="mm-desc">Hyper-real, glossier finish.</div>
-          <button class="btn btn-primary" onclick="useModel('seedream')">Use Seedream</button>
+          <button class="btn btn-next" onclick="useModel('seedream')">Use Seedream</button>
         </div>
 
         <div class="mode-or">OR</div>
@@ -246,13 +246,13 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
             </svg>
           </div>
           <div class="mm-desc">Strictest product match, softer scenes.</div>
-          <button class="btn btn-primary" onclick="useModel('gpt')">Use GPT Image</button>
+          <button class="btn btn-next" onclick="useModel('gpt')">Use GPT Image</button>
         </div>
 
       </div>
       <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
         <p>If your product is noticeably inaccurate, you can try our Exact Render, which will use your exact image with no angle change.</p>
-        <button class="btn btn-ghost btn-sm" style="margin-top:.8rem" onclick="event.stopPropagation();useExact()">Use Exact Render</button>
+        <button class="btn btn-next btn-sm" style="margin-top:.8rem" onclick="event.stopPropagation();useExact()">Use Exact Render</button>
       </div>
     </div>
   </div>
@@ -707,8 +707,14 @@ async function init(){
 
   // Restore where the user left off. wizard_stage is saved as they advance;
   // fall back to "has scenes" so older projects still open past step 1.
+  // The "re-confirm scenes first" gate (2026-07-14, Owner call) only applies
+  // when arriving forward from the Brief page — a fresh pass should hide the
+  // gen-model choice until "Looks good →". On a returning/resume visit we
+  // restore the model step (their saved gen-model choice is already reflected
+  // above), so they don't have to click through again.
+  const cameFromBrief = /4-tags-editor\.html/.test(document.referrer);
   const stage = project.settings?.wizard_stage || (scenes.length ? 2 : 1);
-  if (stage >= 3) revealModeStep();
+  if (stage >= 3 && !cameFromBrief) revealModeStep();
 }
 init();
 </script>
