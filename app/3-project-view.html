@@ -2,327 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Blue — Kindtail | Tolerance Studio</title>
+<title>Opening project… | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="lib/supabase.js?v=20260714"></script>
-<script src="lib/db.js?v=20260714"></script>
-<script src="lib/lightbox.js?v=20260714"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{
-  --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
-  --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
-  --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
-  --chip:#2a2735; --radius:14px;
-  --font-display:'Barlow Condensed',sans-serif;
-  --font-body:'IBM Plex Sans',system-ui,sans-serif;
-  --font-mono:'IBM Plex Mono','Courier New',monospace;
-  --st-checking:#b89aff; --st-checking-wash:rgba(157,122,255,.2);
-}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
-.topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
-.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
-.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
-.crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
-.crumbs a:hover{color:var(--ink)}
-.crumbs .cur{color:var(--ink);font-weight:600}
-.who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
-.avatar{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
-
-.projhead{background:var(--card);border-bottom:1px solid var(--line)}
-.projhead-in{max-width:88rem;margin:0 auto;padding:1.8rem 1.6rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem}
-h1{font-family:var(--font-display);font-size:2.4rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
-.projhead .sub{font-size:.88rem;color:var(--muted);margin-top:.25rem}
-.status-pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:600;padding:.35rem .8rem;border-radius:100px;text-transform:uppercase;letter-spacing:.03em;color:var(--st-checking);background:var(--st-checking-wash)}
-.status-pill .sw{width:6px;height:6px;border-radius:50%;background:var(--st-checking)}
-
-.rail-wrap{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
-.rail{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
-.rail-step{display:flex;align-items:center;justify-content:center;flex:1;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
-.rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
-.rail-step.done .n{background:#2e7d32;color:#fff}
-.rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
-.rail-step.active .n{background:var(--accent);color:#fff}
-.rail-step:hover{color:var(--ink)}
-
-.wrap{max-width:88rem;margin:0 auto;padding:2.6rem 1.6rem 4rem}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.8rem 1.9rem;margin-bottom:1.6rem;box-shadow:0 1px 2px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.12)}
-.panel h2{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase;margin-bottom:.4rem}
-.panel .hint{font-size:.85rem;color:var(--muted);margin-bottom:1rem;max-width:60ch;line-height:1.6}
-
-.grid-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.8rem}
-.thumb{border-radius:10px;overflow:hidden;background:var(--chip);aspect-ratio:4/3;position:relative;display:flex;align-items:center;justify-content:center}
-.thumb img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;cursor:zoom-in}
-
-/* ---------- lightbox: ported as-is from tools/control.html ---------- */
-#lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
-#lightbox .lb-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#lightbox img{max-width:90vw;max-height:88vh;object-fit:contain;cursor:zoom-in;transition:transform .08s ease-out;touch-action:none}
-#lightbox img.zoomed{cursor:grab;transition:none}
-#lightbox img.panning{cursor:grabbing}
-#lightbox .lb-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:none;width:2.6rem;height:2.6rem;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-#lightbox .lb-btn:hover{background:rgba(255,255,255,.24)}
-#lightbox .lb-prev{left:1rem}
-#lightbox .lb-next{right:1rem}
-#lightbox .lb-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.12);color:#fff;border:none;width:2.2rem;height:2.2rem;border-radius:50%;font-size:1.1rem;cursor:pointer}
-#lightbox .lb-close:hover{background:rgba(255,255,255,.24)}
-#lightbox .lb-counter{position:absolute;top:1.1rem;left:1rem;color:#eee;font-size:.8rem;background:rgba(255,255,255,.12);border-radius:6px;padding:.25rem .55rem}
-#lightbox .lb-open-orig{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);color:#eee;font-size:.75rem;background:rgba(255,255,255,.12);border-radius:6px;padding:.3rem .7rem;text-decoration:none}
-#lightbox .lb-open-orig:hover{background:rgba(255,255,255,.24)}
-#lightbox .lb-hint{position:absolute;bottom:1rem;right:1rem;color:#999;font-size:.68rem}
-
-.tally{display:flex;gap:1.6rem;flex-wrap:wrap;margin-top:.6rem}
-.tally-item{display:flex;flex-direction:column}
-.tally-num{font-family:var(--font-mono);font-size:1.6rem;font-weight:600}
-.tally-label{font-size:.78rem;color:var(--muted)}
-
-.btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.65rem 1.2rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.btn:hover{opacity:.9}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
-
-.summary-row{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
-@media(max-width:800px){.summary-row{grid-template-columns:1fr}}
-.tag-preview-mini{font-family:var(--font-mono);font-size:.75rem;line-height:1.9;background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem}
-.tag-preview-mini b{color:#ef5350}
-.tag-preview-mini b.should{color:#ffa726}
-.tag-preview-mini b.flavor{color:#9a978f}
-
-/* project-details edit panel — click the pencil next to the name to swap
-   the read view for these fields; everything on this row except the image
-   reference is fair game (see saveProjectDetails in lib/db.js) */
-.btn-sm{font-size:.72rem;padding:.35rem .7rem}
-.edit-trigger{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;margin-left:.5rem;vertical-align:2px}
-.edit-trigger:hover{color:var(--ink)}
-.projhead-edit{display:flex;flex-direction:column;gap:.7rem;max-width:32rem}
-.projhead-edit .field{display:flex;flex-direction:column;gap:.3rem}
-.projhead-edit .field label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.projhead-edit input,.projhead-edit textarea{padding:.5rem .7rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.88rem;background:var(--paper);color:var(--ink);width:100%}
-.projhead-edit textarea{resize:vertical;min-height:2.6rem}
-.projhead-edit .row2{display:flex;gap:.7rem}
-.projhead-edit .row2 .field{flex:1}
-.edit-actions{display:flex;align-items:center;gap:.6rem}
-.pd-status{font-size:.8rem;color:var(--muted)}
-.pd-status.err{color:#ef5350}
-.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
-.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
-.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
+body{background:#0c0b10;color:#9a978f;font-family:'IBM Plex Sans',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-size:.9rem}
+.spin{width:22px;height:22px;border:3px solid rgba(255,255,255,.18);border-top-color:#9d7aff;border-radius:50%;animation:s 1s linear infinite;margin-right:.7rem}
+@keyframes s{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="topbar"><div class="topbar-in">
-  <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><span id="crumb-client"></span><span>/</span><span class="cur" id="crumb-proj"></span><span class="mode-chip" id="mode-chip"></span></div>
-  <div class="who"><span>Owner</span><div class="avatar">O</div></div>
-</div></div>
-
-<div class="projhead"><div class="projhead-in">
-  <div id="projhead-view">
-    <h1><span id="proj-name">…</span><button type="button" class="edit-trigger" title="Edit project details" onclick="openDetailsEdit()">✎</button></h1>
-    <div class="sub" id="proj-sub"></div>
-  </div>
-  <div class="projhead-edit" id="projhead-edit" style="display:none">
-    <div class="field"><label for="pd-name">Project name</label><input type="text" id="pd-name"></div>
-    <div class="row2">
-      <div class="field"><label for="pd-product">Product</label><input type="text" id="pd-product" placeholder="e.g. PAWD Crate"></div>
-      <div class="field"><label for="pd-started">Started</label><input type="date" id="pd-started"></div>
-    </div>
-    <div class="field"><label for="pd-description">Description</label><textarea id="pd-description" placeholder="What's this about — product, mood, key facts."></textarea></div>
-    <div class="edit-actions">
-      <button class="btn btn-primary btn-sm" onclick="saveDetailsEdit()">Save</button>
-      <button class="btn btn-ghost btn-sm" onclick="cancelDetailsEdit()">Cancel</button>
-      <span class="pd-status" id="pd-status"></span>
-    </div>
-  </div>
-  <span class="status-pill" id="status-pill"><span class="sw"></span><span id="status-label"></span></span>
-</div></div>
-
-<div class="rail-wrap"><div class="rail" id="rail"></div></div>
-
-<div class="wrap">
-  <div class="summary-row">
-    <div class="panel">
-      <h2>Brief snapshot</h2>
-      <p class="hint">The weighted tags driving this batch's prompts and checker severity. Full editor in step 1.</p>
-      <div class="tag-preview-mini" id="tag-preview">(no tags yet)</div>
-      <div style="margin-top:1rem"><a class="btn btn-ghost" id="edit-tags-link" href="#">Edit tags →</a></div>
-    </div>
-
-    <div class="panel">
-      <h2>Checker status</h2>
-      <p class="hint">Stage 1 + 2 vision check against the weighted tags above. Your override on any image is final.</p>
-      <div class="tally">
-        <div class="tally-item"><span class="tally-num" id="tally-approved">0</span><span class="tally-label">approved</span></div>
-        <div class="tally-item"><span class="tally-num" id="tally-rejected">0</span><span class="tally-label">not approved</span></div>
-        <div class="tally-item"><span class="tally-num" id="tally-flagged">0</span><span class="tally-label">flagged for review</span></div>
-      </div>
-      <div style="margin-top:1rem"><a class="btn btn-primary" id="checker-link" href="#">Open checker gallery →</a></div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Latest renders</h2>
-    <p class="hint" id="renders-hint"></p>
-    <div class="grid-mini" id="renders-grid"></div>
-  </div>
-</div>
-
-<div id="lightbox" onclick="if(event.target===this)closeLightbox()">
-  <div class="lb-stage" onclick="if(event.target===this)closeLightbox()">
-    <button class="lb-btn lb-prev" onclick="lbNext(-1)">‹</button>
-    <img id="lb-img">
-    <button class="lb-btn lb-next" onclick="lbNext(1)">›</button>
-  </div>
-  <button class="lb-close" onclick="closeLightbox()">✕</button>
-  <div class="lb-counter" id="lb-counter"></div>
-  <a class="lb-open-orig" id="lb-open-orig" target="_blank" rel="noopener">⤢ open original</a>
-  <div class="lb-hint">click image to zoom · scroll to zoom · drag to pan · ← → to navigate · esc to close</div>
-</div>
+<span class="spin"></span>Opening your project…
 <script>
-function qs(k){ return new URLSearchParams(location.search).get(k); }
-function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
-const projectId = qs('project');
-const STATUS_LABEL = { brief:'Brief & Specs', generating:'Generating', checking:'Checking', compose:'Size and Text', review:'Review', delivered:'Delivered' };
-// No separate "Generate" step — generation isn't a page, it's the action the
-// Scenes editor's CTA kicks off (ask Boss/Claude to run the image-gen batch),
-// which lands you on Check once renders exist. Matches the real pipeline
-// (control.html's "2-Image-Creation" covers scenes + renders as one step).
-// No separate "Deliver" step either — control.html never had one, the
-// "6-Client-Review" folder was always both the review view AND the zip
-// download source. Review's "Download all as zip" CTA IS delivery.
-const RAIL_STEPS = [
-  {key:'tags', n:1, label:'Brief & Specs', href:'4-tags-editor.html'},
-  {key:'scenes', n:2, label:'Scenes', href:'5-scenes-editor.html'},
-  {key:'check', n:3, label:'Check', href:'6-checker-gallery.html'},
-  {key:'compose', n:4, label:'Size and Text', href:'8-compose.html'},
-  {key:'review', n:5, label:'Review', href:'7-review-gallery.html'},
-];
-// "furthest incomplete step" mapping from project status, per design-notes.md.
-// 'generating' already routes to the Check step — that's where the Scenes
-// page's "Generate & check" CTA sends you while the batch runs. 'delivered'
-// maps one past the last index so every step shows done/checkmarked — there's
-// nothing left to do once the zip's been sent.
-const STATUS_STEP_INDEX = { brief:0, generating:2, checking:2, compose:3, review:4, delivered:5 };
-
-function tagPreviewHtml(tags){
-  if (!tags || (!tags.product?.length && !tags.creative?.length)) return '(no tags yet — start in the tags editor)';
-  const all = [...(tags.product||[]), ...(tags.creative||[])];
-  const line = w => all.filter(t=>t.w===w).map(t=>esc(t.t)).join(' · ') || '—';
-  return `<b>ALWAYS:</b> ${line('must')}<br><b class="should">PREFER:</b> ${line('should')}<br><b class="flavor">DETAIL:</b> ${line('flavor')}`;
-}
-
-function renderRail(status){
-  // Plain step numbers only — no green "done" checkmarks on the overview
-  // (Owner call, 2026-07-12). The overview isn't a step, so progress marks
-  // read as noise here; the rail is just navigation to each step.
-  document.getElementById('rail').innerHTML = RAIL_STEPS.map((s) => {
-    const click = s.href ? ` onclick="location.href='${s.href}?project=${encodeURIComponent(projectId)}'"` : '';
-    return `<div class="rail-step"${click}><span class="n">${s.n}</span>${s.label}</div>`;
-  }).join('');
-}
-
-// Hoisted so the edit-details panel can read/update it after a save,
-// without re-fetching the whole project or re-running init().
-let project = null;
-
-function renderProjHead(){
-  const clientName = project.clients ? project.clients.name : '';
-  document.title = `${project.name} — ${clientName} | Tolerance Studio`;
-  document.getElementById('crumb-client').textContent = clientName;
-  document.getElementById('crumb-proj').textContent = project.name;
-  document.getElementById('proj-name').textContent = project.name;
-  document.getElementById('proj-sub').textContent = `${clientName} · ${project.product || ''} · started ${project.started_on}`;
-  // Mode chip (one app, two render modes — 2026-07-10 merge).
-  const chip = document.getElementById('mode-chip');
-  chip.className = 'mode-chip ' + (project.pipeline === 'pro' ? 'exact' : 'scene');
-  chip.textContent = project.pipeline === 'pro' ? 'Exact render' : 'Scene render';
-}
-
-// ---------- edit project details (name/product/description/started_on
-// only — reference_image stays out, see saveProjectDetails in lib/db.js) ----------
-function openDetailsEdit(){
-  document.getElementById('pd-name').value = project.name || '';
-  document.getElementById('pd-product').value = project.product || '';
-  document.getElementById('pd-description').value = project.description || '';
-  document.getElementById('pd-started').value = project.started_on || '';
-  document.getElementById('pd-status').textContent = '';
-  document.getElementById('pd-status').classList.remove('err');
-  document.getElementById('projhead-view').style.display = 'none';
-  document.getElementById('projhead-edit').style.display = 'flex';
-  document.getElementById('pd-name').focus();
-}
-function cancelDetailsEdit(){
-  document.getElementById('projhead-edit').style.display = 'none';
-  document.getElementById('projhead-view').style.display = '';
-}
-async function saveDetailsEdit(){
-  const name = document.getElementById('pd-name').value.trim();
-  const statusEl = document.getElementById('pd-status');
-  if (!name){ statusEl.textContent = 'project name is required'; statusEl.classList.add('err'); return; }
-  const fields = {
-    name,
-    product: document.getElementById('pd-product').value.trim(),
-    description: document.getElementById('pd-description').value.trim(),
-    startedOn: document.getElementById('pd-started').value || project.started_on,
+// The project overview page is GONE (Owner call, 2026-07-15 — clicking a
+// project should resume where they left off, not show a summary screen).
+// This stub survives only as a redirect so every old link — Files-page
+// project chips, breadcrumbs, bookmarks — lands on the furthest step
+// reached. Same resume mapping as 2-project-list.html's projectHref():
+// a composed/approved render always means Review; otherwise project.status.
+// (The old overview markup is in git history if it's ever wanted back.)
+(async function(){
+  var qs = new URLSearchParams(location.search);
+  var projectId = qs.get('project');
+  var fallback = '2-project-list.html';
+  if (!projectId){ location.replace(fallback); return; }
+  var STATUS_HREF = {
+    brief: '4-tags-editor.html',
+    generating: '6-checker-gallery.html',
+    checking: '6-checker-gallery.html',
+    compose: '8-compose.html',
+    review: '7-review-gallery.html',
+    delivered: '7-review-gallery.html',
   };
-  statusEl.textContent = 'saving…'; statusEl.classList.remove('err');
   try {
-    const updated = await db.saveProjectDetails(projectId, fields);
-    project = { ...project, ...updated };
-    renderProjHead();
-    cancelDetailsEdit();
+    var pq = await sb.from('projects').select('status').eq('id', projectId).single();
+    if (pq.error) throw pq.error;
+    var rq = await sb.from('renders')
+      .select('stage, verdict, human_override')
+      .eq('project_id', projectId);
+    var hasReviewable = (rq.data || []).some(function(r){
+      return r.stage === 'composed' || (r.human_override || r.verdict) === 'approved';
+    });
+    var page = hasReviewable ? '7-review-gallery.html' : (STATUS_HREF[pq.data.status] || '4-tags-editor.html');
+    location.replace(page + '?project=' + encodeURIComponent(projectId));
   } catch (e) {
-    // Most likely real error here: the (client_id, name, started_on) unique
-    // constraint — another project already has this exact combination.
-    statusEl.textContent = e.message || String(e); statusEl.classList.add('err');
+    // Not signed in / RLS denied / project gone — the list page handles all
+    // of those (it has the login gate and its own empty states).
+    location.replace(fallback);
   }
-}
-
-async function init(){
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { location.href = '1-login.html'; return; }
-  if (!projectId) { document.getElementById('proj-name').textContent = 'No project specified'; return; }
-
-  project = await db.getProject(projectId);
-  renderProjHead();
-  const status = project.status || 'brief';
-  document.getElementById('status-pill').className = 'status-pill s-' + status;
-  document.getElementById('status-label').textContent = STATUS_LABEL[status] || status;
-  document.getElementById('tag-preview').innerHTML = tagPreviewHtml(project.tags);
-  document.getElementById('edit-tags-link').href = `4-tags-editor.html?project=${encodeURIComponent(projectId)}`;
-  document.getElementById('checker-link').href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
-  renderRail(status);
-
-  const renders = await db.listRenders(projectId);
-  let approved = 0, rejected = 0, flagged = 0;
-  for (const r of renders) {
-    const v = r.human_override || r.verdict;
-    if (v === 'approved') approved++;
-    else if (v === 'rejected') rejected++;
-    if (r.checker && r.checker.stage2_verdict === 'HUMAN_REVIEW' && !r.human_override) flagged++;
-  }
-  document.getElementById('tally-approved').textContent = approved;
-  document.getElementById('tally-rejected').textContent = rejected;
-  document.getElementById('tally-flagged').textContent = flagged;
-  document.getElementById('renders-hint').textContent = `${renders.length} renders in this batch.`;
-  // The 'projects' bucket is private (see migrations/001_init.sql) — getPublicUrl()
-  // silently returns an unusable URL for private buckets (no auth attached, always
-  // 403s in the browser). Every other page in this app already uses
-  // db.getSignedUrl() for exactly this reason; this page just never got that fix.
-  const latest = renders.slice(0, 10);
-  const urls = await Promise.all(latest.map(r => r.storage_path ? db.getSignedUrl(r.storage_path).catch(() => '') : ''));
-  document.getElementById('renders-grid').innerHTML = latest.map((r, i) =>
-    `<div class="thumb"><img class="lb-thumb" src="${esc(urls[i])}" loading="lazy" onclick="openLightbox(this)"></div>`
-  ).join('') || '<p style="color:var(--muted);font-size:.85rem">No renders uploaded yet.</p>';
-}
-init();
+})();
 </script>
-<script src="../assets/app-switcher.js?v=20260714"></script>
 </body>
 </html>

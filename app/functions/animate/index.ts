@@ -22,6 +22,10 @@
 
 const VIDEO_MODEL = Deno.env.get("VIDEO_MODEL") || "fal-ai/kling-video/v2.5-turbo/pro/image-to-video";
 const FAL_KEY = Deno.env.get("FAL_KEY");
+// Vision model for the `suggest` action — same fal OpenRouter route + model
+// as the checker, so no new provider or key (fal-only rule).
+const SUGGEST_MODEL = Deno.env.get("SUGGEST_MODEL") || "anthropic/claude-haiku-4.5";
+const CHAT_API = "https://fal.run/openrouter/router/openai/v1/chat/completions";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,13 +57,71 @@ function assertVideoUrl(url: string) {
   if (!ok) throw new Error("not a fal video URL");
 }
 
-async function submit(imageUrl: string, prompt: string, duration: string) {
+// suggest: vision model looks at the actual composed frame and drafts the
+// editable part of the motion prompt — what, of the things ALREADY in the
+// frame, can move a little. The user sees and edits this text in the Animate
+// modal before anything is generated (transparency, Owner call 2026-07-15).
+// Only frames from our own storage are fetched (SUPABASE_URL host check),
+// so this can't be used as a fetch-anything proxy.
+function assertFrameUrl(url: string) {
+  const own = new URL(Deno.env.get("SUPABASE_URL") || "https://x.invalid").host;
+  let host = "";
+  try { host = new URL(url).host; } catch (_e) { /* falls through */ }
+  if (!host || host !== own) throw new Error("not a project storage URL");
+}
+
+async function suggest(imageUrl: string) {
+  assertFrameUrl(imageUrl);
+  const imgRes = await fetch(imageUrl);
+  if (!imgRes.ok) throw new Error(`could not read frame: HTTP ${imgRes.status}`);
+  const bytes = new Uint8Array(await imgRes.arrayBuffer());
+  let binary = "";
+  const CHUNK = 32768;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[]);
+  }
+  const mediaType = imgRes.headers.get("Content-Type") || "image/png";
+  const instructions =
+    "You write the motion description for turning this still product photo into a ~5-second, " +
+    "very subtle, seamlessly looping video clip. Look at the photo. Name only things ALREADY " +
+    "visible in the frame that could plausibly move a little — plants or flowers swaying, fabric " +
+    "stirring, existing shadows or light drifting, water rippling. Write 2 to 4 short plain " +
+    "sentences describing that subtle motion. Hard rules: never invent objects that are not in " +
+    "the photo; the product itself stays perfectly still; no people, smoke, steam or particles; " +
+    "no camera movement. Output ONLY the motion sentences — no preamble, no list markers.";
+  const res = await fetch(CHAT_API, {
+    method: "POST",
+    headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: SUGGEST_MODEL,
+      max_tokens: 400,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: `data:${mediaType};base64,${btoa(binary)}` } },
+          { type: "text", text: instructions },
+        ],
+      }],
+    }),
+  });
+  const out = await res.json();
+  if (!res.ok || out.error) throw new Error(`fal suggest error: ${JSON.stringify(out.error || out).slice(0, 300)}`);
+  const text = (out.choices || []).map((c: { message?: { content?: string } }) => c.message?.content || "").join("").trim();
+  if (!text) throw new Error("fal returned no suggestion text");
+  return { ok: true, suggestion: text };
+}
+
+async function submit(imageUrl: string, prompt: string, duration: string, tailImageUrl?: string) {
   const res = await fetch(`https://queue.fal.run/${VIDEO_MODEL}`, {
     method: "POST",
     headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       prompt,
       image_url: imageUrl,
+      // Seamless-loop mode: same frame as start AND end, so Kling choreographs
+      // the motion back to the opening frame — a true native loop, no reverse
+      // bounce needed downstream. Omitted entirely for the classic pingpong path.
+      ...(tailImageUrl ? { tail_image_url: tailImageUrl } : {}),
       duration: duration === "10" ? "10" : "5",
       // Forbids the two failure modes seen on the first clips: ADDED elements
       // (smoke came from the old prompt's "steam"; the phantom window from
@@ -123,9 +185,13 @@ Deno.serve(async (req) => {
     if (!FAL_KEY) throw new Error("FAL_KEY secret not set");
     const p = await req.json();
     switch (p.action) {
+      case "suggest": {
+        if (!p.image_url) return json({ ok: false, error: "image_url is required" }, 400);
+        return json(await suggest(p.image_url));
+      }
       case "submit": {
         if (!p.image_url || !p.prompt) return json({ ok: false, error: "image_url and prompt are required" }, 400);
-        return json(await submit(p.image_url, p.prompt, p.duration));
+        return json(await submit(p.image_url, p.prompt, p.duration, p.tail_image_url));
       }
       case "status": {
         if (!p.status_url) return json({ ok: false, error: "status_url is required" }, 400);
@@ -140,7 +206,7 @@ Deno.serve(async (req) => {
         return json(await download(p.video_url));
       }
       default:
-        return json({ ok: false, error: "unknown action (use submit/status/result/download)" }, 400);
+        return json({ ok: false, error: "unknown action (use suggest/submit/status/result/download)" }, 400);
     }
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 500);

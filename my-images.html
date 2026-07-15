@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app/lib/supabase.js"></script>
 <script src="app/lib/lightbox.js"></script>
+<script src="app/lib/anim-preview.js?v=20260715"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -59,6 +60,9 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
    the image loads; object-fit:contain keeps the same letterboxed look
    once it does. */
 .card img{width:100%;height:100%;object-fit:contain;display:block;cursor:pointer}
+/* Animations tab: the finished mp4 is already cropped to the composed size by
+   the video-finish pass, so it drops into the same letterboxed box as images. */
+.card video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
 .empty{color:var(--muted);font-size:.88rem;padding:1rem 0}
 
 .fav-btn,.del-btn{position:absolute;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;width:1.9rem;height:1.9rem;background:rgba(255,255,255,.15);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-size:1rem}
@@ -72,6 +76,13 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 .pro-tag{position:absolute;bottom:.4rem;left:.4rem;background:rgba(0,0,0,.68);color:#fff;font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:.18rem .45rem;border-radius:5px;pointer-events:none}
 .proj-link{position:absolute;bottom:.4rem;right:.4rem;max-width:calc(100% - .8rem);background:rgba(0,0,0,.68);color:#fff;font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.02em;padding:.18rem .5rem;border-radius:5px;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .proj-link:hover{background:var(--accent)}
+
+/* Download chips on animation cards (hover-reveal, same feel as fav/del) */
+.dl-btn{position:absolute;top:.4rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;opacity:0;transition:opacity .15s,background .15s;font-weight:700}
+.card:hover .dl-btn{opacity:1}
+.dl-vid{right:.4rem;width:1.9rem;height:1.9rem;border-radius:50%;font-size:.9rem}
+.dl-gif{right:2.55rem;height:1.9rem;padding:0 .55rem;border-radius:1rem;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.03em}
+.dl-btn:hover{background:var(--accent)}
 
 /* ---------- lightbox (reused as-is from app/lib/lightbox.js) ---------- */
 #lightbox{position:fixed;inset:0;background:rgba(10,9,12,.92);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
@@ -109,6 +120,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
   <div class="tabs">
     <button class="tab active" id="tab-saves" onclick="switchTab('saves')">Saves<span id="count-saves"></span></button>
     <button class="tab" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
+    <button class="tab" id="tab-animations" onclick="switchTab('animations')">Animations<span id="count-animations"></span></button>
     <button class="tab" id="tab-all" onclick="switchTab('all')">All<span id="count-all"></span></button>
     <span class="size-toggle" id="size-toggle">
       <button data-size="130" onclick="setThumbSize(130,this)">S</button>
@@ -119,6 +131,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.4rem);font-wei
 
   <div class="grid" id="grid-saves"></div>
   <div class="grid" id="grid-favorites" hidden></div>
+  <div class="grid" id="grid-animations" hidden></div>
   <div class="grid" id="grid-all" hidden></div>
 </div>
 
@@ -143,7 +156,38 @@ function setThumbSize(px, btn){
 }
 
 let allRenders = [];
+let allAnimations = [];
 let signedUrls = {};
+
+// Animations don't live in the `renders` table — they're finished-video jobs
+// stored on each project (projects.settings.animation_jobs, written by
+// 7-review-gallery.html's finishAnimation). RLS on `projects` already scopes
+// this to what the signed-in user owns, same as renders. We flatten every
+// project's "done" jobs into one list so Files shows them across projects,
+// the same way the render tabs mix every project's images.
+async function loadAnimations(){
+  const { data, error } = await sb.from('projects')
+    .select('id, name, pipeline, settings')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const out = [];
+  for (const p of (data || [])){
+    const jobs = (p.settings && p.settings.animation_jobs) || [];
+    for (const j of jobs){
+      // A job is showable once it has a playable file. final_path is the
+      // cropped-and-looped deliverable; storage_path is the raw fal clip we
+      // fall back to if the finishing pass errored (still watchable).
+      const videoPath = j.final_path || j.storage_path;
+      if (j.status !== 'done' || !videoPath) continue;
+      out.push({
+        id: j.id, projectId: p.id, projectName: p.name || 'Open project',
+        pipeline: p.pipeline, videoPath, gifPath: j.gif_path || null,
+        baseName: j.baseName || 'clip',
+      });
+    }
+  }
+  return out;
+}
 
 // No client/project filter here on purpose — RLS (member_all_renders policy,
 // migrations/002_beta_members.sql) already scopes `renders` to whatever this
@@ -164,12 +208,20 @@ async function loadAllRenders(){
 // library this was firing a network round-trip PER image before the grid
 // could even render its first row. Same result shape either way (a
 // storage_path -> signed URL map), just one request instead of N.
-async function resolveSignedUrls(rows){
-  const paths = [...new Set(rows.map(r => r.storage_path).filter(p => p && !signedUrls[p]))];
+async function resolvePaths(rawPaths){
+  const paths = [...new Set(rawPaths.filter(p => p && !signedUrls[p]))];
   if (!paths.length) return;
   const { data, error } = await sb.storage.from('projects').createSignedUrls(paths, 3600);
   if (error) { paths.forEach(p => signedUrls[p] = ''); return; }
   data.forEach((d, i) => { signedUrls[paths[i]] = d.error ? '' : d.signedUrl; });
+}
+async function resolveSignedUrls(rows){
+  await resolvePaths(rows.map(r => r.storage_path));
+}
+// Sign the video path for playback now; the GIF is signed on demand at
+// download time (most cards are never downloaded, no need to sign every one).
+async function resolveAnimUrls(anims){
+  await resolvePaths(anims.map(a => a.videoPath));
 }
 
 // Real viewport-gated lazy load (Owner report, 2026-07-11: images below the
@@ -208,27 +260,52 @@ function cardHtml(r){
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRender(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       ${isPro ? '<span class="pro-tag">Exact</span>' : ''}
-      ${projHref ? `<a class="proj-link" href="${esc(projHref)}" title="Open ${esc(projName)}'s overview" onclick="event.stopPropagation()">📁 ${esc(projName)}</a>` : ''}
+      ${projHref ? `<a class="proj-link" href="${esc(projHref)}" title="Open ${esc(projName)}" onclick="event.stopPropagation()">📁 ${esc(projName)}</a>` : ''}
+    </div>
+  </div>`;
+}
+
+// Video card for the Animations tab. The mp4 autoplays muted+looped (same as
+// the Review page's clip cards); ⬇ downloads the mp4, the GIF chip the email
+// GIF. No lightbox/favorite here — animations aren't rows in `renders`.
+function animCardHtml(a){
+  const url = signedUrls[a.videoPath] || '';
+  const isPro = a.pipeline === 'pro';
+  const projHref = a.projectId ? `app/3-project-view.html?project=${esc(a.projectId)}` : '';
+  return `<div class="card">
+    <div class="imgwrap">
+      <video class="anim-vid anim-preview"${url ? ` src="${esc(url)}"` : ''} muted loop playsinline preload="metadata"></video>
+      <button class="del-btn" title="Delete" onclick="deleteAnimation(event,'${esc(a.projectId)}','${esc(a.id)}')">🗑</button>
+      <button class="dl-btn dl-vid" title="Download video" onclick="animDownload(event,'${esc(a.videoPath)}','mp4','${esc(a.baseName)}')">⬇</button>
+      ${a.gifPath ? `<button class="dl-btn dl-gif" title="Download email GIF" onclick="animDownload(event,'${esc(a.gifPath)}','gif','${esc(a.baseName)}')">GIF</button>` : ''}
+      ${isPro ? '<span class="pro-tag">Exact</span>' : ''}
+      ${projHref ? `<a class="proj-link" href="${esc(projHref)}" title="Open ${esc(a.projectName)}" onclick="event.stopPropagation()">📁 ${esc(a.projectName)}</a>` : ''}
     </div>
   </div>`;
 }
 
 function renderGrids(){
   // Saves = images saved from the Size and Text step (8-compose sets
-  // stage:'composed'); Favorites = hearted; All = every render this user owns.
+  // stage:'composed'); Favorites = hearted; Animations = finished video jobs;
+  // All = every render this user owns.
   const saves = allRenders.filter(r => r.stage === 'composed');
   const favorites = allRenders.filter(r => r.is_favorite);
   document.getElementById('grid-saves').innerHTML = saves.map(cardHtml).join('') || '<p class="empty">No saved images yet — save some from the Size and Text step.</p>';
   document.getElementById('grid-favorites').innerHTML = favorites.map(cardHtml).join('') || '<p class="empty">No favorites yet.</p>';
+  document.getElementById('grid-animations').innerHTML = allAnimations.map(animCardHtml).join('') || '<p class="empty">No animations yet — make one from the Size and Text step.</p>';
   document.getElementById('grid-all').innerHTML = allRenders.map(cardHtml).join('') || '<p class="empty">No images yet.</p>';
   document.getElementById('count-saves').textContent = ` (${saves.length})`;
   document.getElementById('count-favorites').textContent = ` (${favorites.length})`;
+  document.getElementById('count-animations').textContent = ` (${allAnimations.length})`;
   document.getElementById('count-all').textContent = ` (${allRenders.length})`;
-  document.getElementById('page-sub').textContent = `${saves.length} save${saves.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'} · ${allRenders.length} total`;
+  document.getElementById('page-sub').textContent = `${saves.length} save${saves.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'} · ${allAnimations.length} animation${allAnimations.length===1?'':'s'} · ${allRenders.length} total`;
 
   // innerHTML above just replaced every <img>, so the observer needs fresh
   // targets — old (now-detached) elements just stop being watched, harmless.
   observeLazyThumbs();
+  // Wire hover/tap-to-play + one-at-a-time on the animation cards
+  // (lib/anim-preview.js) — bare autoplay grids exhaust the decoder budget.
+  if (window.AnimPreview) AnimPreview.init(document.getElementById('grid-animations'));
 }
 
 async function toggleFavorite(event, id){
@@ -254,8 +331,52 @@ async function deleteRender(event, id, storagePath){
   } catch (e) { alert('Delete failed: ' + (e.message || e)); }
 }
 
+// Deleting an animation removes its files from storage AND the job entry from
+// projects.settings.animation_jobs (the Review page reads the same list, so it
+// disappears there too). Settings are re-fetched first — this page's initial
+// load may be minutes old, and writing a stale copy back would silently undo
+// any job the Review page added since.
+async function deleteAnimation(event, projectId, jobId){
+  event.stopPropagation();
+  if (!confirm('Delete this animation? This cannot be undone.')) return;
+  try {
+    const { data: p, error } = await sb.from('projects').select('settings').eq('id', projectId).single();
+    if (error) throw error;
+    const jobs = (p.settings && p.settings.animation_jobs) || [];
+    const j = jobs.find(x => x.id === jobId);
+    const paths = j ? [j.final_path, j.storage_path, j.gif_path].filter(Boolean) : [];
+    if (paths.length) await sb.storage.from('projects').remove(paths);
+    const settings = Object.assign({}, p.settings, { animation_jobs: jobs.filter(x => x.id !== jobId) });
+    const { error: e2 } = await sb.from('projects').update({ settings }).eq('id', projectId);
+    if (e2) throw e2;
+    allAnimations = allAnimations.filter(a => !(a.id === jobId && a.projectId === projectId));
+    renderGrids();
+  } catch (e) { alert('Delete failed: ' + (e.message || e)); }
+}
+
+// Signed URLs are cross-origin, so a plain <a download> is ignored — fetch the
+// bytes and hand the browser a local blob (same trick as the Review page).
+async function animDownload(event, path, ext, baseName){
+  event.stopPropagation();
+  if (!path) return;
+  try {
+    let url = signedUrls[path];
+    if (!url){
+      const { data } = await sb.storage.from('projects').createSignedUrl(path, 3600);
+      url = data && data.signedUrl;
+    }
+    if (!url) throw new Error('could not sign the file');
+    const blob = await (await fetch(url)).blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${baseName || 'clip'}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) { alert('Download failed: ' + (e.message || e)); }
+}
+
 function switchTab(name){
-  ['saves','favorites','all'].forEach(n => {
+  ['saves','favorites','animations','all'].forEach(n => {
     document.getElementById('tab-' + n).classList.toggle('active', n === name);
     document.getElementById('grid-' + n).hidden = n !== name;
   });
@@ -270,11 +391,19 @@ function switchTab(name){
   const email = session.user && session.user.email;
   if (email) document.getElementById('greeting').textContent = `Welcome back, ${email.split('@')[0]}`;
 
+  // Animations load independently — if that query fails, the image tabs still
+  // render (and vice versa), rather than one error blanking the whole page.
+  try {
+    allAnimations = await loadAnimations();
+    await resolveAnimUrls(allAnimations);
+  } catch (e) { /* leave Animations empty; images below still render */ }
+
   try {
     allRenders = await loadAllRenders();
     await resolveSignedUrls(allRenders);
     renderGrids();
   } catch (e) {
+    renderGrids(); // still show any animations that loaded
     document.getElementById('page-sub').textContent = 'Could not load images: ' + (e.message || e);
   }
 })();

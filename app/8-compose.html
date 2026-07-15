@@ -8,6 +8,7 @@
 <script src="lib/supabase.js?v=20260714"></script>
 <script src="lib/db.js?v=20260714"></script>
 <script src="lib/functions.js?v=20260714"></script>
+<script src="lib/animate-modal.js?v=20260715"></script>
 <script src="lib/lightbox.js?v=20260714"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1539,24 +1540,26 @@ function padToSupportedRatio(frame){
 // Everything stays subtle, product locked, camera locked. Edit THIS to retune
 // what kind of motion the whole app produces — one place, ripples everywhere.
 // A per-run correction note (Try again) is appended verbatim after this.
-function buildMotionPrompt(extraNote){
+// The motion prompt is now two parts (Owner call, 2026-07-15 — the old
+// all-in-one house prompt had too much leeway and none of it was visible):
+//   1. motion text — WHAT moves. AI-drafted from the frame (animate fn,
+//      action 'suggest') and fully editable by the user in the Animate modal.
+//   2. guardrails — the fixed house rules, shown read-only in the modal and
+//      always appended, so edits can't invite new objects into the frame.
+// Final prompt sent to fal = motionText + '\n\n' + guardrails.
+const DEFAULT_MOTION =
+  'A soft breeze: any flowers, leaves, plants or fabric sway slowly and gently, and existing ' +
+  'shadows drift a touch as if a cloud passes the light. The existing light shifts slowly ' +
+  'and gently in its warmth.';
+function buildGuardrails(){
   const zone = tCol === 'left' ? 'left side' : tCol === 'right' ? 'right side'
     : tRow === 'top' ? 'top' : 'bottom';
-  const base =
-    'Bring this product photo to life with subtle, natural motion. Nothing is added or ' +
-    'removed — only what is already in the frame moves, and only a little. ' +
-    'Primary motion, a soft breeze: any flowers, leaves, plants or fabric sway slowly and ' +
-    'gently, and existing shadows drift a touch as if a cloud passes the light. ' +
-    'Secondary motion: a slow, gentle shift in the existing light and its warmth. ' +
-    'The product itself stays perfectly still — exact shape, position, colour and detail. ' +
-    'Existing architecture (windows, walls, frames, surfaces) stays fixed and unchanged; ' +
-    'only soft shadows, light and plants move. ' +
-    'The camera is completely locked: no zoom, no pan, no rotation. ' +
+  return 'Nothing is added or removed — only what is already in the frame moves, and only a ' +
+    'little. The product itself stays perfectly still — exact shape, position, colour and ' +
+    'detail. Existing architecture (windows, walls, frames, surfaces) stays fixed and ' +
+    'unchanged. The camera is completely locked: no zoom, no pan, no rotation. ' +
     `Keep the ${zone} of the frame especially calm and nearly still. ` +
     'Very subtle, calm, premium product-film feel. Seamless and loopable.';
-  // Owner's redo rule ([[redo-keeps-exact-prompt]]): append the correction
-  // note verbatim, never rewrite the base prompt around it.
-  return extraNote && extraNote.trim() ? `${base}\n\nAlso: ${extraNote.trim()}` : base;
 }
 
 async function animateComposed(){
@@ -1565,12 +1568,14 @@ async function animateComposed(){
   if (!selectedRenderId || !selectedImg){ status.textContent = 'pick an approved render first'; status.classList.add('err'); return; }
   status.classList.remove('err');
   try {
-    const result = await withBusy(btn, status, 'sending…', async () => {
-      // 1. Clean frame at the user's exact size, padded to a video-safe ratio.
+    // Phase 1 — prepare the frame BEFORE the modal opens: the AI draft and
+    // the eventual submit both need the stored frame's signed URL.
+    const prep = await withBusy(btn, status, 'preparing…', async () => {
+      // Clean frame at the user's exact size, padded to a video-safe ratio.
       const frame = buildCleanFrameCanvas();
       const padded = padToSupportedRatio(frame);
       const blob = await new Promise(res => padded.canvas.toBlob(res, 'image/png'));
-      // 2. Store the frame — Try again on Review resubmits from this exact file.
+      // Store the frame — Edit & redo on Review resubmits from this exact file.
       const sourceRender = renders.find(r => r.id === selectedRenderId);
       const baseName = (sourceRender?.filename || 'composed').replace(/\.[^.]+$/, '');
       const sizeKey = activePlatform === 'custom' ? `${PLATFORMS.custom.w}x${PLATFORMS.custom.h}` : activePlatform;
@@ -1587,31 +1592,49 @@ async function animateComposed(){
         textPath = db.storagePath(project.clients.slug, projectId, 'composed', `${baseName}-${sizeKey}-animtext.png`);
         await db.uploadFile(textPath, new Blob([textBytes], { type: 'image/png' }));
       }
-      // 3. Submit to fal via the animate Edge Function (fast — no waiting here).
-      // base_prompt is the house prompt with no correction note; Review's Try
-      // again rebuilds from base_prompt + the Owner's verbatim note so notes
-      // never stack across retries ([[redo-keeps-exact-prompt]]).
-      const prompt = buildMotionPrompt();
-      const sub = await callFunction('animate', { action: 'submit', image_url: frameUrl, prompt, duration: '5' });
-      // 4. Record the job — the Review page picks it up from settings.
-      const job = {
-        id: `anim-${Date.now()}`,
-        request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
-        frame_path: framePath, text_path: textPath, prompt, base_prompt: prompt, note: null, duration: '5',
-        w: frame.width, h: frame.height,
-        padW: padded.padW, padH: padded.padH, offX: padded.offX, offY: padded.offY,
-        sizeKey, baseName, created_at: new Date().toISOString(), status: 'pending',
-      };
-      project.settings = Object.assign({}, project.settings || {});
-      project.settings.animation_jobs = [...(project.settings.animation_jobs || []), job];
-      await db.saveSettings(projectId, project.settings);
-      await db.createRunLogEntry(projectId, 'generate', `animate submitted: ${baseName} @ ${sizeKey} (${job.request_id})`);
-      return job;
+      return { frame, padded, frameUrl, framePath, textPath, baseName, sizeKey };
     });
-    if (result) {
-      status.innerHTML = `Animating — takes a minute or two. It'll appear on the ` +
-        `<a href="7-review-gallery.html?project=${encodeURIComponent(projectId)}" style="color:var(--accent);text-decoration:underline">Review page</a> — safe to leave this page.`;
-    }
+    if (!prep) return;
+    status.textContent = '';
+
+    // Phase 2 — the transparent prompt modal (lib/animate-modal.js). AI
+    // drafts the motion text from the frame, the user edits it, and the
+    // read-only guardrails are always appended.
+    const guardrails = buildGuardrails();
+    AnimateModal.open({
+      motionText: null,
+      loop: true,
+      guardrails,
+      suggest: async () => (await callFunction('animate', { action: 'suggest', image_url: prep.frameUrl })).suggestion,
+      onSubmit: async ({ motionText, loop }) => {
+        const prompt = `${motionText}\n\n${guardrails}`;
+        // Seamless loop: same clean frame as start AND end so Kling returns
+        // to the opening pose. Off = classic pingpong in the finisher.
+        const sub = await callFunction('animate', Object.assign(
+          { action: 'submit', image_url: prep.frameUrl, prompt, duration: '5' },
+          loop ? { tail_image_url: prep.frameUrl } : {},
+        ));
+        // Record the job — the Review page picks it up from settings.
+        // motion_text + guardrails are stored separately so Review's
+        // Edit & redo modal can prefill exactly what the user wrote.
+        const job = {
+          id: `anim-${Date.now()}`,
+          request_id: sub.request_id, status_url: sub.status_url, response_url: sub.response_url,
+          frame_path: prep.framePath, text_path: prep.textPath, prompt,
+          motion_text: motionText, guardrails, loop, duration: '5',
+          w: prep.frame.width, h: prep.frame.height,
+          padW: prep.padded.padW, padH: prep.padded.padH, offX: prep.padded.offX, offY: prep.padded.offY,
+          sizeKey: prep.sizeKey, baseName: prep.baseName,
+          created_at: new Date().toISOString(), status: 'pending',
+        };
+        project.settings = Object.assign({}, project.settings || {});
+        project.settings.animation_jobs = [...(project.settings.animation_jobs || []), job];
+        await db.saveSettings(projectId, project.settings);
+        await db.createRunLogEntry(projectId, 'generate', `animate submitted: ${prep.baseName} @ ${prep.sizeKey} (${job.request_id})`);
+        status.innerHTML = `Animating — takes a minute or two. It'll appear on the ` +
+          `<a href="7-review-gallery.html?project=${encodeURIComponent(projectId)}" style="color:var(--accent);text-decoration:underline">Review page</a> — safe to leave this page.`;
+      },
+    });
   } catch (e) { /* withBusy already put the error in the status line */ }
 }
 
@@ -1690,6 +1713,6 @@ async function init(){
 }
 init();
 </script>
-<script src="../assets/app-switcher.js?v=20260714"></script>
+<script src="../assets/app-switcher.js?v=20260715"></script>
 </body>
 </html>

@@ -197,4 +197,26 @@
       nameRow.appendChild(modeChip);
     }
   }
+
+  // (4) Keep the project name pinned WITH the nav. The band we just inserted
+  // sits between the sticky topbar and the sticky step rail but was static, so
+  // the project name scrolled away while the logo + rail stayed put. Make the
+  // band sticky right under the topbar and push the rail to sit just below it,
+  // so the whole nav stack (logo · project name · steps) stays fixed. Heights
+  // are measured at runtime (and on resize) so a taller topbar or a wrapped
+  // project name never overlaps the rail. Project-view pages own their header
+  // (existingHead) — left untouched.
+  var stickyBand = existingHead ? null : document.querySelector('.ts-projhead');
+  if (stepRail && stickyBand) {
+    var restack = function () {
+      var topbarEl = document.querySelector('.topbar');
+      var topbarH = topbarEl ? topbarEl.offsetHeight : 60;
+      stickyBand.style.position = 'sticky';
+      stickyBand.style.top = topbarH + 'px';
+      stickyBand.style.zIndex = '16';       // above rail (15), below topbar (20)
+      stepRail.style.top = (topbarH + stickyBand.offsetHeight) + 'px';
+    };
+    restack();
+    window.addEventListener('resize', restack);
+  }
 })();
