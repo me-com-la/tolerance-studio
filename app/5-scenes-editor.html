@@ -211,11 +211,11 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
                 </linearGradient>
               </defs>
               <path d="M18 1C18 1 20.5 12 35 18C20.5 24 18 35 18 35C18 35 15.5 24 1 18C15.5 12 18 1 18 1Z" fill="url(#gm-g)"/>
-              <text x="42" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="18" fill="white">Gemini</text>
+              <text x="42" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="15" fill="white">Nano Banana 2</text>
             </svg>
           </div>
           <div class="mm-desc">Photoreal, natural lighting.</div>
-          <button class="btn btn-next" onclick="useModel('default')">Use Gemini</button>
+          <button class="btn btn-next" onclick="useModel('default')">Use Nano Banana 2</button>
         </div>
 
         <div class="mode-or">OR</div>
@@ -224,7 +224,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
           <div class="logo-box">
             <svg width="140" height="36" viewBox="0 0 140 36" fill="none">
               <text x="0" y="27" font-family="'Arial Black','Helvetica Neue',sans-serif" font-weight="900" font-size="24" fill="white">Seedream</text>
-              <text x="1" y="36" font-family="'IBM Plex Sans',sans-serif" font-weight="400" font-size="11" fill="rgba(255,255,255,.55)">4.0</text>
+              <text x="1" y="36" font-family="'IBM Plex Sans',sans-serif" font-weight="400" font-size="11" fill="rgba(255,255,255,.55)">5.0 Lite</text>
             </svg>
           </div>
           <div class="mm-desc">Hyper-real, glossier finish.</div>
@@ -403,8 +403,8 @@ async function pickMode(mode){
   }
 }
 // Per-project render model, stored in projects.settings.image_model — the
-// generate function maps 'seedream' to fal's Seedream v4 endpoint and uses
-// the standard Gemini model otherwise. Lives here next to batch size:
+// generate function maps 'seedream' to fal's Seedream 5 Lite endpoint and
+// uses the standard Nano Banana 2 (Gemini) model otherwise. Next to batch size:
 // both decide what the Generate run produces.
 async function saveSceneModel(v){
   const settings = Object.assign({}, project.settings || {});

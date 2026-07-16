@@ -144,7 +144,7 @@ async function falQueueRun(falKey, model, body) {
 // falls back to IMAGE_MODEL, so a stale/garbage setting can't route to an
 // arbitrary fal endpoint.
 const MODEL_CHOICES = {
-  seedream: 'fal-ai/bytedance/seedream/v4/edit',
+  seedream: 'fal-ai/bytedance/seedream/v5/lite/edit',
   gpt: 'fal-ai/gpt-image-1.5/edit'
 };
 function modelForProject(project) {
@@ -178,10 +178,12 @@ function falInputFor(model, prompt, image_urls, aspectRatio) {
     };
   }
   if (model.includes('seedream')) {
+    // Seedream 5 Lite requires 3.7–9.43 MP output; 16:9/9:16 bumped up from
+    // the v4 sizes (2560×1440 = 3.69 MP) to clear the 3.7 MP floor.
     const SIZES = {
       '1:1':  { width: 2048, height: 2048 },
-      '16:9': { width: 2560, height: 1440 },
-      '9:16': { width: 1440, height: 2560 },
+      '16:9': { width: 2688, height: 1512 },
+      '9:16': { width: 1512, height: 2688 },
       '4:3':  { width: 2304, height: 1728 },
       '3:4':  { width: 1728, height: 2304 },
       '3:2':  { width: 2496, height: 1664 },
