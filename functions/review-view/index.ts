@@ -59,22 +59,16 @@ Deno.serve(async (req) => {
     // images, plus anything approved at Check that skipped Compose.
     const { data: allRenders } = await supabase
       .from('renders')
-      .select('id, filename, storage_path, hires_path, stage, verdict, human_override')
+      .select('id, filename, storage_path, stage, verdict, human_override')
       .eq('project_id', project.id)
       .order('filename');
     const shown = (allRenders || []).filter(
       (r) => r.stage === 'composed' || (r.human_override || r.verdict) === 'approved',
     );
-    // hiresUrl is the 4K delivery file when the studio has upscaled this
-    // render (migration 007); the viewer downloads it in preference to the
-    // preview when present. url stays the on-screen preview either way.
+    // A 4K delivery is its own render (filename ends -4k), so it comes through
+    // here as a normal card; the viewer badges it off the filename.
     const renders = await Promise.all(
-      shown.map(async (r) => ({
-        id: r.id,
-        filename: r.filename,
-        url: await sign(r.storage_path),
-        hiresUrl: r.hires_path ? await sign(r.hires_path) : '',
-      })),
+      shown.map(async (r) => ({ id: r.id, filename: r.filename, url: await sign(r.storage_path) })),
     );
 
     // Finished animation clips only (status 'done'). Carry the pad/crop math

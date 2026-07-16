@@ -212,14 +212,25 @@ async function reportImageDims(img, renderId){
 // The client viewer then downloads the 4K version. Owner-only: the function
 // reads/writes under the Owner's session, so a client visitor can't spend
 // upscale credits.
+// A 4K render is just another render whose filename ends in -4k (same idea
+// as edit-render's -edit-<ts>). Detect it to badge the thumbnail and to hide
+// the "Deliver in 4K" button on 4K cards (and on originals already upscaled).
+function is4k(r){ return /-4k\.[a-z0-9]+$/i.test(r.filename); }
+function has4kSibling(r){
+  const base = r.filename.replace(/\.[a-z0-9]+$/i, '');
+  return renders.some(x => x.filename === `${base}-4k.jpg`);
+}
+
 async function upscaleRender(renderId, btn){
   const r = renders.find(x => x.id === renderId);
   if (!r) return;
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = '↑ Upscaling to 4K…';
   try {
-    const res = await callFunction('upscale', { renderId });
-    r.hires_path = res.hires_path; r.hires_w = res.w; r.hires_h = res.h;
+    await callFunction('upscale', { renderId });
+    // Reload so the new 4K render shows as its own thumbnail (editRender pattern).
+    renders = await db.listRenders(projectId);
+    renders = renders.filter(x => x.stage === 'composed' || (x.human_override || x.verdict) === 'approved');
     await render();
   } catch (e) {
     btn.disabled = false; btn.textContent = label;
@@ -534,9 +545,10 @@ async function render(){
       <div class="body">
         <span class="fname">${esc(r.filename)}</span>
         <span class="imgsize" id="imgsize-${r.id}"></span>
-        ${r.hires_path
-          ? `<span class="imgsize" style="color:var(--accent)">✓ 4K ready${r.hires_w?` · ${r.hires_w}×${r.hires_h}`:''}</span>`
-          : `<button class="btn btn-ghost" style="padding:.42rem .8rem;font-size:.76rem" onclick="upscaleRender('${r.id}',this)" title="Upscale this exact image to 4K for print / large-format delivery (~8¢)">⬆ Deliver in 4K</button>`}
+        ${is4k(r)
+          ? `<span class="imgsize" style="color:var(--accent);font-weight:700">4K</span>`
+          : (has4kSibling(r) ? ''
+            : `<button class="btn btn-ghost" style="padding:.42rem .8rem;font-size:.76rem" onclick="upscaleRender('${r.id}',this)" title="Upscale this exact image to 4K for print / large-format delivery (~8¢)">⬆ Deliver in 4K</button>`)}
       </div>
     </div>`;
   }).join('') || '<p style="color:var(--muted)">No images ready for review yet.</p>';

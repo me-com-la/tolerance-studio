@@ -96,19 +96,27 @@ Deno.serve(async (req) => {
     let w: number | null = null, h: number | null = null;
     try { const im = await Image.decode(bytes); w = im.width; h = im.height; } catch (_) { /* dims are cosmetic */ }
 
-    // Delivery area (not renders/) — mirrors the 'delivery' folder the client
-    // storage RLS already recognises; the viewer reads it via service role.
+    // Save the 4K as its OWN render row (mirrors edit-render: a brand-new
+    // filename so both versions sit side by side as separate thumbnails).
+    // The '-4k' suffix is what the galleries key the "4K" badge off. stage
+    // 'composed' so it passes the review/viewer filter and shows up. upsert
+    // on (project_id, filename) so re-running replaces the 4K, no duplicate.
     const base = render.filename.replace(/\.[a-z0-9]+$/i, '');
-    const hiresPath = `${slug}/${render.project_id}/delivery/${base}-4k.jpg`;
+    const filename = `${base}-4k.jpg`;
+    const path = `${slug}/${render.project_id}/renders/${filename}`;
     const { error: upErr } = await supabase
-      .storage.from('projects').upload(hiresPath, bytes, { upsert: true, contentType: out.content_type || 'image/jpeg' });
+      .storage.from('projects').upload(path, bytes, { upsert: true, contentType: out.content_type || 'image/jpeg' });
     if (upErr) throw upErr;
 
-    const { error: updErr } = await supabase
-      .from('renders').update({ hires_path: hiresPath, hires_w: w, hires_h: h }).eq('id', render.id);
-    if (updErr) throw updErr;
+    const { data: newRender, error: insErr } = await supabase
+      .from('renders')
+      .upsert({ project_id: render.project_id, filename, storage_path: path, stage: 'composed' },
+        { onConflict: 'project_id,filename' })
+      .select('id, filename')
+      .single();
+    if (insErr) throw insErr;
 
-    return json({ ok: true, hires_path: hiresPath, w, h });
+    return json({ ok: true, render: newRender, w, h });
   } catch (e) {
     return json({ ok: false, error: (e as Error).message || String(e) }, 500);
   }

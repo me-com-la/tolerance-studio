@@ -142,16 +142,15 @@ function renderImages(renders){
   if(!renders.length){ grid.innerHTML = '<p style="color:var(--muted)">No images ready for review yet.</p>'; return; }
   document.getElementById('img-h').style.display = '';
   grid.innerHTML = renders.map((r,i) => {
-    // Download the 4K delivery file when the studio has provided one;
-    // otherwise the on-screen preview. Badge marks 4K-ready images.
-    const dlUrl = r.hiresUrl || r.url;
-    const dlName = r.hiresUrl ? r.filename.replace(/\.[a-z0-9]+$/i,'') + '-4k.jpg' : r.filename;
-    const badge = r.hiresUrl ? ' <span style="color:var(--accent);font-weight:700;font-size:.7rem">4K</span>' : '';
+    // A 4K delivery is its own render (filename ends -4k) — badge it and its
+    // download IS the 4K file. Everything else is a normal card.
+    const hi = /-4k\.[a-z0-9]+$/i.test(r.filename);
+    const badge = hi ? ' <span style="color:var(--accent);font-weight:700;font-size:.7rem">4K</span>' : '';
     return `<div class="card">
       <div class="imgwrap"><img src="${esc(r.url)}" alt="${esc(r.filename)}" onclick="openLightbox(${i})"></div>
       <div class="body">
         <span class="fname" title="${esc(r.filename)}">${esc(r.filename)}${badge}</span>
-        <button class="dl" onclick="downloadImage('${esc(dlUrl)}','${esc(dlName)}')">⬇${r.hiresUrl?' 4K':''}</button>
+        <button class="dl" onclick="downloadImage('${esc(r.url)}','${esc(r.filename)}')">⬇${hi?' 4K':''}</button>
       </div>
     </div>`; }).join('');
 }
