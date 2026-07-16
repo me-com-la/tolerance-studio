@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review | Tolerance Studio</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
+  --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
+  --muted:#9a978f; --accent:#9d7aff; --chip:#2a2735; --radius:14px;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+  --thumb:260px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* Just a logo at the top — no owner nav, no pipeline rail. */
+.topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;height:60px}
+.brand{display:flex;align-items:center;gap:.55rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:.02em}
+
+.hero{max-width:88rem;margin:0 auto;padding:2.4rem 1.6rem 1rem}
+h1{font-family:var(--font-display);font-size:clamp(1.7rem,4vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em;margin-bottom:.35rem}
+.hero p{color:var(--muted);font-size:.92rem}
+
+.status{max-width:88rem;margin:0 auto;padding:3rem 1.6rem;font-family:var(--font-display);font-size:1.3rem;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center}
+
+.wrap{max-width:88rem;margin:0 auto;padding:1rem 1.6rem 4rem}
+.section-h{font-family:var(--font-display);font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:1.6rem 0 .9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:1.2rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.imgwrap{aspect-ratio:4/3;background:var(--chip);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.imgwrap img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;cursor:zoom-in}
+.card .body{padding:.8rem 1rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.fname{font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl{flex:none;font-size:.75rem;font-weight:600;color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:.35rem .7rem;cursor:pointer;background:transparent;font-family:inherit}
+.dl:hover{border-color:var(--accent);color:#fff}
+
+.anim-frame{position:relative;overflow:hidden;background:var(--chip);width:100%}
+.anim-frame video{position:absolute;display:block}
+.anim-frame video.final{position:static;width:100%;height:auto}
+
+.foot{text-align:center;color:var(--muted);font-size:.8rem;padding:1rem 1.6rem 3rem}
+
+#lightbox{position:fixed;inset:0;background:rgba(10,9,12,.94);display:none;align-items:center;justify-content:center;z-index:1000;user-select:none}
+#lightbox img{max-width:92vw;max-height:88vh;object-fit:contain}
+#lightbox .lb-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:none;width:2.6rem;height:2.6rem;border-radius:50%;font-size:1.3rem;cursor:pointer}
+#lightbox .lb-btn:hover{background:rgba(255,255,255,.24)}
+#lightbox .lb-prev{left:1rem}#lightbox .lb-next{right:1rem}
+#lightbox .lb-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.12);color:#fff;border:none;width:2.2rem;height:2.2rem;border-radius:50%;font-size:1.1rem;cursor:pointer}
+#lightbox .lb-counter{position:absolute;top:1.1rem;left:1rem;color:#eee;font-size:.8rem;background:rgba(255,255,255,.12);border-radius:6px;padding:.25rem .55rem}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <span class="brand"><img src="images/ts-logo.png" alt="Tolerance Studio" style="height:20px;width:auto;display:block"></span>
+</div></div>
+
+<div class="hero">
+  <h1 id="title">Review</h1>
+  <p id="sub">Loading your images…</p>
+</div>
+
+<p class="status" id="status" style="display:none"></p>
+
+<div class="wrap" id="wrap" style="display:none">
+  <div id="anim-section" style="display:none">
+    <div class="section-h">Animations</div>
+    <div class="grid" id="anim-grid"></div>
+  </div>
+  <div class="section-h" id="img-h" style="display:none">Images</div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="foot">Powered by Tolerance Studio</div>
+
+<div id="lightbox">
+  <button class="lb-btn lb-prev" id="lb-prev">‹</button>
+  <img id="lb-img" alt="">
+  <button class="lb-btn lb-next" id="lb-next">›</button>
+  <button class="lb-close" id="lb-close">✕</button>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<script>
+// Public client viewer. No Supabase session — all data comes from the
+// review-view Edge Function, which authenticates the share token server-side.
+const FUNCTIONS_BASE = 'https://mqgfosfadmmiqlvuvbcy.supabase.co/functions/v1';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZ2Zvc2ZhZG1taXFsdnV2YmN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjA3OTgsImV4cCI6MjA5ODkzNjc5OH0.E9Zj_LRU3Uetrcnv5UTOZ1mjDC7aLqKRbgPqsIypsMQ';
+
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function showStatus(msg){ const el=document.getElementById('status'); el.textContent=msg; el.style.display=''; document.getElementById('sub').style.display='none'; }
+
+let images = []; // {url, filename} — lightbox navigates this list
+
+async function downloadImage(url, filename){
+  try{
+    const blob = await (await fetch(url)).blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename || 'image';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){ window.open(url, '_blank'); }
+}
+
+// ---- lightbox ----
+let lbIndex = 0;
+const lb = document.getElementById('lightbox');
+function openLightbox(i){ lbIndex=i; paintLb(); lb.style.display='flex'; }
+function closeLightbox(){ lb.style.display='none'; }
+function paintLb(){
+  const it = images[lbIndex]; if(!it) return;
+  document.getElementById('lb-img').src = it.url;
+  document.getElementById('lb-counter').textContent = `${lbIndex+1} / ${images.length}`;
+}
+function lbNext(d){ lbIndex=(lbIndex+d+images.length)%images.length; paintLb(); }
+document.getElementById('lb-prev').onclick = ()=>lbNext(-1);
+document.getElementById('lb-next').onclick = ()=>lbNext(1);
+document.getElementById('lb-close').onclick = closeLightbox;
+lb.onclick = (e)=>{ if(e.target===lb) closeLightbox(); };
+document.addEventListener('keydown', (e)=>{
+  if(lb.style.display!=='flex') return;
+  if(e.key==='Escape') closeLightbox();
+  else if(e.key==='ArrowLeft') lbNext(-1);
+  else if(e.key==='ArrowRight') lbNext(1);
+});
+
+function renderImages(renders){
+  images = renders.map(r => ({ url: r.url, filename: r.filename }));
+  const grid = document.getElementById('grid');
+  if(!renders.length){ grid.innerHTML = '<p style="color:var(--muted)">No images ready for review yet.</p>'; return; }
+  document.getElementById('img-h').style.display = '';
+  grid.innerHTML = renders.map((r,i) => {
+    // Download the 4K delivery file when the studio has provided one;
+    // otherwise the on-screen preview. Badge marks 4K-ready images.
+    const dlUrl = r.hiresUrl || r.url;
+    const dlName = r.hiresUrl ? r.filename.replace(/\.[a-z0-9]+$/i,'') + '-4k.jpg' : r.filename;
+    const badge = r.hiresUrl ? ' <span style="color:var(--accent);font-weight:700;font-size:.7rem">4K</span>' : '';
+    return `<div class="card">
+      <div class="imgwrap"><img src="${esc(r.url)}" alt="${esc(r.filename)}" onclick="openLightbox(${i})"></div>
+      <div class="body">
+        <span class="fname" title="${esc(r.filename)}">${esc(r.filename)}${badge}</span>
+        <button class="dl" onclick="downloadImage('${esc(dlUrl)}','${esc(dlName)}')">⬇${r.hiresUrl?' 4K':''}</button>
+      </div>
+    </div>`; }).join('');
+}
+
+function renderAnimations(anims){
+  if(!anims.length) return;
+  document.getElementById('anim-section').style.display = '';
+  document.getElementById('anim-grid').innerHTML = anims.map(a => {
+    // A finished clip is already the exact composed size; a raw clip is the
+    // padded frame, CSS-cropped back the same way the owner gallery does it.
+    const vid = a.isFinal
+      ? `<video class="final" src="${esc(a.url)}" muted loop playsinline autoplay preload="metadata"></video>`
+      : (()=>{ const vidW=(a.padW/a.w)*100, left=-(a.offX/a.w)*100, top=-(a.offY/a.h)*100;
+          return `<video src="${esc(a.url)}" muted loop playsinline autoplay preload="metadata" style="width:${vidW}%;left:${left}%;top:${top}%"></video>`; })();
+    return `<div class="card">
+      <div class="anim-frame" style="aspect-ratio:${a.w}/${a.h}">${vid}</div>
+      <div class="body">
+        <span class="fname">${esc(a.baseName)} · ${esc(a.sizeKey)}</span>
+        <button class="dl" onclick="downloadImage('${esc(a.url)}','${esc(a.baseName||'clip')}.mp4')">⬇</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function init(){
+  const token = qs('t');
+  if(!token){ showStatus('This review link is missing its code.'); return; }
+  try{
+    const res = await fetch(`${FUNCTIONS_BASE}/review-view`, {
+      method:'POST',
+      headers:{ apikey: ANON_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.ok){ showStatus(data.error || 'This review link is not available.'); return; }
+    document.getElementById('status').style.display = 'none';
+    document.title = `${data.project.name} — Review | Tolerance Studio`;
+    document.getElementById('title').textContent = data.project.name;
+    document.getElementById('sub').textContent = 'Your images are ready to review and download.';
+    document.getElementById('wrap').style.display = '';
+    renderAnimations(data.animations || []);
+    renderImages(data.renders || []);
+  }catch(e){ showStatus('Could not load this review. Please try again.'); }
+}
+init();
+</script>
+</body>
+</html>

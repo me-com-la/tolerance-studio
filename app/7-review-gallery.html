@@ -143,7 +143,8 @@ h1{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.6rem);font-weigh
 
   <div class="savebar">
     <a class="btn btn-ghost" href="../full-service.html" style="margin-right:auto" title="Hand this campaign to the studio team — we take it from here">Ask a Creative Director for help</a>
-    <a class="btn btn-ghost" id="email-link-btn" style="display:none">✉ Email</a>
+    <button class="btn btn-ghost" id="copy-link-btn" style="display:none">🔗 Copy client link</button>
+    <a class="btn btn-ghost" id="email-link-btn" style="display:none">✉ Email client</a>
     <button class="btn btn-primary" onclick="downloadZip()">⬇ Download all as zip</button>
   </div>
 </div>
@@ -203,6 +204,26 @@ async function reportImageDims(img, renderId){
       fileSizeCache[img.src] = formatBytes(len);
     } catch (e) { fileSizeCache[img.src] = ''; }
     renderImageSize(renderId, dims, fileSizeCache[img.src]);
+  }
+}
+
+// Deliver in 4K — upscale the EXACT approved render (not a re-gen) via the
+// upscale Edge Function (fal Topaz), store the 4K file, and mark the card.
+// The client viewer then downloads the 4K version. Owner-only: the function
+// reads/writes under the Owner's session, so a client visitor can't spend
+// upscale credits.
+async function upscaleRender(renderId, btn){
+  const r = renders.find(x => x.id === renderId);
+  if (!r) return;
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = '↑ Upscaling to 4K…';
+  try {
+    const res = await callFunction('upscale', { renderId });
+    r.hires_path = res.hires_path; r.hires_w = res.w; r.hires_h = res.h;
+    await render();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = label;
+    alert('4K upscale failed: ' + (e.message || e));
   }
 }
 
@@ -513,6 +534,9 @@ async function render(){
       <div class="body">
         <span class="fname">${esc(r.filename)}</span>
         <span class="imgsize" id="imgsize-${r.id}"></span>
+        ${r.hires_path
+          ? `<span class="imgsize" style="color:var(--accent)">✓ 4K ready${r.hires_w?` · ${r.hires_w}×${r.hires_h}`:''}</span>`
+          : `<button class="btn btn-ghost" style="padding:.42rem .8rem;font-size:.76rem" onclick="upscaleRender('${r.id}',this)" title="Upscale this exact image to 4K for print / large-format delivery (~8¢)">⬆ Deliver in 4K</button>`}
       </div>
     </div>`;
   }).join('') || '<p style="color:var(--muted)">No images ready for review yet.</p>';
@@ -527,19 +551,35 @@ async function downloadZip(){
         'server.py\'s GET /zip has no hosted port yet. See app/README.md TODO list.');
 }
 
-// Owner-only "send this to the client" shortcut — opens the browser's
-// default mail client via a plain mailto: link, prefilled with this exact
-// page's URL so the client always lands on the same review link the Owner
-// is looking at. No recipient (clients has no email column yet — see
-// migrations/001_init.sql) and no actual send-tracking; that's a real gap,
-// flagged rather than faked, not something to build here.
+// Owner-only "send this to the client" shortcut. The link points at the
+// PUBLIC viewer (../review.html?t=<share_token>), NOT this owner page — the
+// client has no account and RLS would hand them nothing on this page. The
+// viewer authenticates the share token through the review-view Edge Function
+// (migration 006), so the emailed link opens with no login, even inside a
+// mail app's in-app browser. "Copy link" grabs the same URL for pasting
+// anywhere; the mail button just prefills the default mail client.
+function clientReviewUrl(project){
+  // review.html lives at the site root, one level up from app/.
+  const base = location.href.replace(/\/app\/[^/]*$/, '');
+  return `${base}/review.html?t=${encodeURIComponent(project.share_token || '')}`;
+}
 function wireEmailLinkButton(project, clientName){
-  const url = location.href;
+  if (!project.share_token) return; // no token yet (run migration 006) — leave buttons hidden
+  const url = clientReviewUrl(project);
   const subject = `${project.name} — ready for your review`;
   const body = `Hi,\n\nYour images for "${project.name}" are ready to review and download:\n${url}\n\nThanks!`;
-  const btn = document.getElementById('email-link-btn');
-  btn.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  btn.style.display = '';
+
+  const mail = document.getElementById('email-link-btn');
+  mail.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  mail.style.display = '';
+
+  const copy = document.getElementById('copy-link-btn');
+  copy.style.display = '';
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(url); copy.textContent = '✓ Client link copied'; }
+    catch (e) { prompt('Copy the client review link:', url); return; }
+    setTimeout(() => { copy.textContent = '🔗 Copy client link'; }, 1800);
+  };
 }
 
 async function init(){
