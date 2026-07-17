@@ -178,3 +178,132 @@ async function withBusyOverlay(title, note, fn) {
   try { return await fn(); }
   finally { hideBusyOverlay(); }
 }
+
+// ---- Background task chips (2026-07-16) --------------------------------
+// The full-screen overlay above forced the user to sit and wait even for
+// short AI drafts. withBusyChip() shows a small pill in the bottom-right
+// corner instead, so the page stays interactive — user can keep editing,
+// switch tabs, etc. — while the task runs. Long tasks (Compose outpaint,
+// 30-90s) still opt into the beforeunload guard so a refresh mid-flight
+// doesn't burn a fal credit; short tasks (5s AI text) skip it. Auto-clears
+// on settle; error text lingers until the user clicks the chip to dismiss.
+let __chipSeq = 0;
+function __ensureChipHost() {
+  let host = document.getElementById('task-chips');
+  if (host) return host;
+  const style = document.createElement('style');
+  style.textContent =
+    '#task-chips{position:fixed;right:1.2rem;bottom:1.2rem;display:flex;flex-direction:column;gap:.5rem;z-index:2500;pointer-events:none;max-width:22rem}' +
+    '.task-chip{pointer-events:auto;background:#1a1820;color:#e8e6e1;border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.4);padding:.7rem .9rem;display:flex;align-items:center;gap:.7rem;font-size:.86rem;line-height:1.35;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s}' +
+    '.task-chip.show{opacity:1;transform:translateY(0)}' +
+    '.task-chip .tc-spin{flex-shrink:0;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#9d7aff;border-radius:50%;animation:tc-spin 1s linear infinite}' +
+    '.task-chip.done .tc-spin{border-color:#2e7d32;border-top-color:#2e7d32;animation:none}' +
+    '.task-chip.err .tc-spin{border-color:#ff6b5c;border-top-color:#ff6b5c;animation:none}' +
+    '.task-chip .tc-body{min-width:0;flex:1}' +
+    '.task-chip .tc-title{font-weight:600}' +
+    '.task-chip .tc-note{color:rgba(232,230,225,.7);font-size:.78rem;margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.task-chip .tc-x{flex-shrink:0;cursor:pointer;color:rgba(232,230,225,.55);font-size:1.05rem;line-height:1;padding:.15rem .25rem;border-radius:6px}' +
+    '.task-chip .tc-x:hover{color:#fff;background:rgba(255,255,255,.08)}' +
+    '@keyframes tc-spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(style);
+  host = document.createElement('div');
+  host.id = 'task-chips';
+  document.body.appendChild(host);
+  return host;
+}
+// Show a chip. Returns a handle with .setNote(t) / .done(t) / .fail(t).
+// If guardLeave is true, the beforeunload guard fires until the chip settles.
+function showTaskChip(title, note, guardLeave) {
+  const host = __ensureChipHost();
+  const el = document.createElement('div');
+  el.className = 'task-chip';
+  el.id = 'tc-' + (++__chipSeq);
+  el.innerHTML =
+    '<div class="tc-spin"></div>' +
+    '<div class="tc-body"><div class="tc-title"></div><div class="tc-note"></div></div>' +
+    '<div class="tc-x" title="Dismiss">×</div>';
+  el.querySelector('.tc-title').textContent = title || 'Working…';
+  el.querySelector('.tc-note').textContent = note || '';
+  el.querySelector('.tc-x').onclick = () => dismiss();
+  host.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  if (guardLeave) {
+    __busyDepth++;
+    if (!__busyGuardBound) { window.addEventListener('beforeunload', __busyGuard); __busyGuardBound = true; }
+  }
+  let dismissed = false, settled = false;
+  function dismiss() {
+    if (dismissed) return; dismissed = true;
+    if (guardLeave && !settled) { __busyDepth = Math.max(0, __busyDepth - 1); settled = true; }
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 220);
+  }
+  function settleGuard() {
+    if (guardLeave && !settled) { __busyDepth = Math.max(0, __busyDepth - 1); settled = true; }
+  }
+  return {
+    setNote(t) { el.querySelector('.tc-note').textContent = t || ''; },
+    done(t) {
+      settleGuard();
+      el.classList.add('done');
+      el.querySelector('.tc-title').textContent = t || 'Done';
+      el.querySelector('.tc-note').textContent = '';
+      setTimeout(dismiss, 2500);
+    },
+    fail(t) {
+      settleGuard();
+      el.classList.add('err');
+      el.querySelector('.tc-title').textContent = 'Failed';
+      el.querySelector('.tc-note').textContent = t || '';
+      // No auto-dismiss on error — user reads it and clicks × to dismiss.
+    },
+    dismiss,
+  };
+}
+// ---- Step rail unlock ---------------------------------------------------
+// Each step page's rail hardcodes .done / .active / .locked based on which
+// page it is. That's fine on the way FORWARD, but wrong on the way BACK:
+// going from Check to Brief re-locks Check because the Brief page's rail
+// doesn't know renders already exist (Owner report, 2026-07-16). This
+// helper reads the actual "how far did the user get?" from the DB and
+// unlocks any .rail-step whose position is ≤ that. Called on init from
+// every step page — a no-op if the DB says nothing was reached yet.
+const __RAIL_STEP_URLS = [
+  '4-tags-editor.html',      // 1 Brief
+  '5-scenes-editor.html',    // 2 Scenes
+  '6-checker-gallery.html',  // 3 Check
+  '8-compose.html',          // 4 Size and Text
+  '7-review-gallery.html',   // 5 Review
+];
+async function applyRailUnlocks(projectId) {
+  if (!projectId || !window.db || !window.db.computeReachedStep) return;
+  let reached = 1;
+  try { reached = await window.db.computeReachedStep(projectId); } catch (e) { return; }
+  const steps = document.querySelectorAll('.rail .rail-step');
+  steps.forEach((el, idx) => {
+    const stepNum = idx + 1;
+    if (stepNum > reached) return;                        // still ahead — leave locked
+    if (!el.classList.contains('locked')) return;         // already done/active — leave alone
+    el.classList.remove('locked');
+    el.classList.add('done');
+    const n = el.querySelector('.n');
+    if (n) n.textContent = '✓';
+    const url = __RAIL_STEP_URLS[idx];
+    if (url) el.onclick = () => { location.href = url + '?project=' + encodeURIComponent(projectId); };
+  });
+}
+
+// Wrap an async call with a chip. Same shape as withBusyOverlay so the four
+// call sites swap in cleanly. guardLeave defaults false — pass true for long
+// tasks (e.g. outpaint) that shouldn't be lost to an accidental refresh.
+async function withBusyChip(title, note, fn, opts) {
+  const chip = showTaskChip(title, note, !!(opts && opts.guardLeave));
+  try {
+    const r = await fn(chip);
+    chip.done((opts && opts.doneLabel) || (title.replace(/…$/, '') + ' — done'));
+    return r;
+  } catch (err) {
+    chip.fail(err && err.message ? err.message : String(err));
+    throw err;
+  }
+}

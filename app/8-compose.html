@@ -860,8 +860,11 @@ async function paintGap(){
   const wrapEl = document.getElementById('preview-canvas-wrap');
   wrapEl.classList.add('painting');   // dim the photo, show the solid status label
   try {
-    const result = await withBusyOverlay('Extending your image…', 'Painting in the new area…', () =>
-      withBusy(chip, hintEl, 'painting…', () => callFunction('outpaint', { imageDataUri })));
+    // guardLeave: true — outpaint takes 30-90s and returns a data URI the
+    // page needs in memory; a mid-flight refresh loses the fal credit and
+    // the paint context, so beforeunload still fires.
+    const result = await withBusyChip('Extending your image…', 'Painting in the new area…', () =>
+      withBusy(chip, hintEl, 'painting…', () => callFunction('outpaint', { imageDataUri })), { guardLeave: true });
     await new Promise((resolve, reject) => {
       const img = new Image();               // data URI → never taints the save canvas
       img.onload = () => {
@@ -982,7 +985,7 @@ async function draftCopy(){
   const status = document.getElementById('copy-status');
   const avoid = (window._copyOptions || []).map(o => o.headline).filter(Boolean);
   try {
-    const result = await withBusyOverlay('Writing copy…', 'Drafting headline options…', () =>
+    const result = await withBusyChip('Writing copy…', 'Drafting headline options…', () =>
       withBusy(btn, status, 'drafting…', () =>
         callFunction('ai-draft', { projectId, kind: 'copy', count: 2, avoid })));
     window._copyOptions = [...(window._copyOptions || []), ...(result.options || [])];
@@ -1702,6 +1705,8 @@ async function init(){
   if (!session) { location.href = '1-login.html'; return; }
   if (!projectId) return;
   project = await db.getProject(projectId);
+  // Unlock forward rail steps the user has already been past.
+  applyRailUnlocks(projectId).catch(() => {});
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Size and Text — ${project.name} | Tolerance Studio`;

@@ -493,7 +493,10 @@ async function editRender(renderId){
     return;
   }
   statusEl.textContent = 'editing…'; statusEl.classList.remove('err'); statusEl.classList.add('busy');
-  showBusyOverlay('Editing your image…', 'Redrawing with your change, then scoring…');
+  // Chip instead of overlay so the user can review other renders while
+  // this one is being redrawn. guardLeave: true — mid-edit refresh loses
+  // the fal credit for a call that could be running 30-60s.
+  const chip = showTaskChip('Editing your image…', 'Redrawing with your change, then scoring…', true);
   try {
     const sourceUrl = signedUrlCache[r.storage_path] || await db.getSignedUrl(r.storage_path);
     const { mediaType, base64 } = await toBase64Image(sourceUrl);
@@ -514,6 +517,7 @@ async function editRender(renderId){
 
     input.value = '';
     statusEl.textContent = 'scoring…';
+    chip.setNote('Scoring the new image…');
     renders = await loadRenders();
     await render();
     // Regenerated image gets scored right away — no manual checker step.
@@ -527,10 +531,10 @@ async function editRender(renderId){
       await render();
     }
     statusEl.textContent = ''; statusEl.classList.remove('busy');
+    chip.done('Image updated');
   } catch (e) {
     statusEl.textContent = e.message || String(e); statusEl.classList.remove('busy'); statusEl.classList.add('err');
-  } finally {
-    hideBusyOverlay();
+    chip.fail(e.message || String(e));
   }
 }
 
@@ -566,6 +570,8 @@ async function init(){
   if (!session) { location.href = '1-login.html'; return; }
   if (!projectId) return;
   project = await db.getProject(projectId);
+  // Unlock forward rail steps the user has already been past.
+  applyRailUnlocks(projectId).catch(() => {});
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Checker — ${project.name} | Tolerance Studio`;

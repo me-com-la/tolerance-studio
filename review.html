@@ -25,7 +25,13 @@ a{color:inherit;text-decoration:none}
 /* Just a logo at the top — no owner nav, no pipeline rail. */
 .topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;height:60px}
-.brand{display:flex;align-items:center;gap:.55rem;font-family:var(--font-display);font-weight:700;font-size:1.1rem;text-transform:uppercase;letter-spacing:.02em}
+/* Wordmark matches images/ts-logo.png's pattern (Toler[an]ceStudio) but
+   as text so it reads correctly on the dark viewer background — a raw
+   PNG of black letters vanished here. Red = site brand accent.
+   display:inline-block, not flex — the wordmark is one word and the
+   parent's flex/gap put visible spaces around the red inner span. */
+.brand{display:inline-block;font-family:var(--font-display);font-weight:700;font-size:1.4rem;letter-spacing:-.01em;color:#fff}
+.brand .mark{color:#d8502d}
 
 .hero{max-width:88rem;margin:0 auto;padding:2.4rem 1.6rem 1rem}
 h1{font-family:var(--font-display);font-size:clamp(1.7rem,4vw,2.4rem);font-weight:700;text-transform:uppercase;letter-spacing:.01em;margin-bottom:.35rem}
@@ -62,7 +68,7 @@ h1{font-family:var(--font-display);font-size:clamp(1.7rem,4vw,2.4rem);font-weigh
 </head>
 <body>
 <div class="topbar"><div class="topbar-in">
-  <span class="brand"><img src="images/ts-logo.png" alt="Tolerance Studio" style="height:20px;width:auto;display:block"></span>
+  <span class="brand" aria-label="Tolerance Studio">Toler<span class="mark">an</span>ceStudio</span>
 </div></div>
 
 <div class="hero">

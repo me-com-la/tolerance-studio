@@ -340,6 +340,31 @@
     return data;
   }
 
+  // ---------- step gating ----------
+  // Returns the highest step number the user has already reached for this
+  // project, based on natural data signals — not a wizard-stage counter
+  // (which drifts because only one page writes it). Used by each step
+  // page's rail to un-lock any step the user has already been past, so
+  // going BACK to Brief (etc.) doesn't re-lock Check when there are
+  // already renders in it (Owner report, 2026-07-16):
+  //   1 = Brief only (nothing generated yet)
+  //   2 = Scenes visited (kept for parity; currently indistinguishable
+  //       from 1 without a stage marker, so we don't return this)
+  //   3 = any render exists — Check reachable
+  //   4 = any approved render — Size and Text reachable
+  //   5 = any composed render — Review reachable
+  async function computeReachedStep(projectId) {
+    try {
+      const renders = await listRenders(projectId);
+      if (!renders.length) return 1;
+      if (renders.some((r) => r.stage === 'composed')) return 5;
+      if (renders.some((r) => (r.human_override || r.verdict) === 'approved')) return 4;
+      return 3;
+    } catch (e) {
+      return 1;
+    }
+  }
+
   // ---------- run_log ----------
   async function createRunLogEntry(projectId, step, note) {
     const { data, error } = await client()
@@ -414,6 +439,7 @@
     savePipeline,
     listSiblingProjects,
     listRenders,
+    computeReachedStep,
     upsertRender,
     setVerdict,
     setCheckerResult,

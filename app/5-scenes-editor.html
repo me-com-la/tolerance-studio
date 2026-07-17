@@ -277,7 +277,14 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s??''; ret
 const projectId = qs('project');
 let project = null, scenes = [];
 const DEFAULT_SCENE_COUNT = 1;
-const MAX_SCENE_COUNT = 5;
+// 2026-07-16: lowered 5 -> 2. The generate function's per-lane concurrency is
+// already 2 (fal rate-limit ceiling — see generate/index.ts). Batches bigger
+// than that queued behind the same 2 lanes AND stacked more base64 memory in
+// the worker, which is what surfaced as "3 nano banana scenes at the same
+// time fails, periodically with seedream too" (Owner, 2026-07-16). Capping
+// at 2 = every batch fits in one wave of both lanes and every shot gets a
+// clean run at fal instead of contending with siblings.
+const MAX_SCENE_COUNT = 2;
 
 // Each scene is {t: text, src: 'owner'|'ai'} (Owner call, 2026-07-06):
 // your lines and Claude's lines live in visually separate sections so an AI
@@ -625,8 +632,27 @@ async function generateAndCheck(){
     note.textContent = 'Expanding your scenes into full prompts…';
     await callFunction('expand-shots', { projectId });
 
-    note.textContent = `Generating and checking ${scenes.length} image${scenes.length===1?'':'s'} — this can take a few minutes.`;
-    await callFunction('generate', { projectId });
+    // Snapshot renders BEFORE the batch so we can count only the new ones.
+    // Poll every 3s: shots land in the renders table as each lane finishes,
+    // so the note ticks "0/2 → 1/2 → 2/2" as they arrive — real progress,
+    // not a fake spinner. Cleared in finally so a failure path doesn't
+    // leave an interval running.
+    const total = scenes.length;
+    let baseCount = 0;
+    try { baseCount = (await db.listRenders(projectId)).length; } catch (e) { /* fall through — progress will just start from 0 */ }
+    note.textContent = `Generating ${total} image${total===1?'':'s'} — 0/${total} ready…`;
+    const progressTimer = setInterval(async () => {
+      try {
+        const now = (await db.listRenders(projectId)).length;
+        const done = Math.max(0, Math.min(total, now - baseCount));
+        note.textContent = `Generating ${total} image${total===1?'':'s'} — ${done}/${total} ready…`;
+      } catch (e) { /* poll failure is non-fatal; leave the last note in place */ }
+    }, 3000);
+    try {
+      await callFunction('generate', { projectId });
+    } finally {
+      clearInterval(progressTimer);
+    }
 
     generating = false;
     location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
@@ -651,7 +677,7 @@ async function aiDraftScenes(targetCount){
     return;
   }
   try {
-    const result = await withBusyOverlay('Drafting scenes…', 'Writing scene ideas from your brief…', () =>
+    const result = await withBusyChip('Drafting scenes…', 'Writing scene ideas from your brief…', () =>
       withBusy(btn, status, 'drafting…', () =>
         callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: draftCount })));
     const drafted = (result.text || '').split('\n')
@@ -673,7 +699,7 @@ async function addSceneViaAI(){
   const status = document.getElementById('ai-status');
   const avoid = scenes.map(s => (s.t || '').trim()).filter(Boolean);
   try {
-    const result = await withBusyOverlay('Drafting a scene…', 'Writing one more scene idea…', () =>
+    const result = await withBusyChip('Drafting a scene…', 'Writing one more scene idea…', () =>
       withBusy(btn, status, 'drafting…', () =>
         callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: 1, avoid })));
     const drafted = (result.text || '').split('\n')
@@ -692,6 +718,8 @@ async function init(){
   if (!session) { location.href = '1-login.html'; return; }
   if (!projectId) { document.querySelector('.wrap').innerHTML = '<p style="color:var(--muted)">No project specified.</p>'; return; }
   project = await db.getProject(projectId);
+  // Unlock forward rail steps the user has already been past.
+  applyRailUnlocks(projectId).catch(() => {});
   const clientName = project.clients ? project.clients.name : '';
   document.title = `Scenes — ${project.name} — ${clientName} | Tolerance Studio`;
   document.getElementById('crumb-proj').textContent = project.name;

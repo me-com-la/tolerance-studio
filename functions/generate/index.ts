@@ -205,16 +205,30 @@ async function generateShotImage(falKey, { prompt, aspectRatio, referenceImages,
   //same trick already
   // proven with Bria's image_url/mask_url fields (see keys-and-deploy.md).
   const image_urls = referenceImages.map((img)=>`data:${img.mimeType};base64,${img.base64}`);
-  const result = await falQueueRun(falKey, model || IMAGE_MODEL, falInputFor(model || IMAGE_MODEL, prompt, image_urls, aspectRatio));
-  const img = (result.images || [])[0];
-  if (!img || !img.url) throw new Error(`fal returned no image: ${JSON.stringify(result).slice(0, 300)}`);
-  const imgRes = await fetch(img.url);
-  if (!imgRes.ok) throw new Error(`failed to download generated image: HTTP ${imgRes.status}`);
-  const bytes = new Uint8Array(await imgRes.arrayBuffer());
-  return {
-    bytes,
-    mimeType: img.content_type || 'image/png'
-  };
+  // Retry-once wrapper (2026-07-16). fetchWithRetry429 already handles 429s
+  // up to 4 tries with backoff; this covers everything else that used to
+  // fail a whole shot on the first hiccup — a fal internal error, a queue
+  // deadline hit, a hosted-image 5xx on download, etc. One retry after a
+  // short pause recovers the transient cases; a truly broken shot still
+  // fails cleanly (mapWithConcurrency records it as ok:false and moves on).
+  async function attempt() {
+    const result = await falQueueRun(falKey, model || IMAGE_MODEL, falInputFor(model || IMAGE_MODEL, prompt, image_urls, aspectRatio));
+    const img = (result.images || [])[0];
+    if (!img || !img.url) throw new Error(`fal returned no image: ${JSON.stringify(result).slice(0, 300)}`);
+    const imgRes = await fetch(img.url);
+    if (!imgRes.ok) throw new Error(`failed to download generated image: HTTP ${imgRes.status}`);
+    const bytes = new Uint8Array(await imgRes.arrayBuffer());
+    return { bytes, mimeType: img.content_type || 'image/png' };
+  }
+  try {
+    return await attempt();
+  } catch (err) {
+    // Backoff before the retry so a fal queue slot has time to free up
+    // and a rate-limit bucket has time to refill; jitter avoids two lanes
+    // retrying in lockstep after a shared spike.
+    await sleep(3000 + Math.floor(Math.random() * 1000));
+    return await attempt();
+  }
 }
 // ---------- checker logic (duplicated from checker/index.ts, see its header) ----------
 function buildSpecFromTags(project) {

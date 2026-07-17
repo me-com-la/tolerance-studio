@@ -144,8 +144,11 @@
     };
 
     el.classList.add('open');
-    // Empty box → draft immediately; prefilled (Review edit) → leave as-is.
-    if (!text.value) draft();
+    // No auto-draft (Owner call, 2026-07-16). Let the user write what they
+    // want to see first; "✦ Ask AI to draft it" pulls an AI draft on demand
+    // and, if the user has typed something, still replaces it (explicit
+    // click = explicit consent). Prefilled opens (Review edit) keep their
+    // existing text.
   }
 
   window.AnimateModal = { open: open };

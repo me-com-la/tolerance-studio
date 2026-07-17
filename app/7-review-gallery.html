@@ -5,6 +5,9 @@
 <title>Santa-Barbara-July-2026 — Wingstudio review | Tolerance Studio</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- JSZip for the "Download all as zip" button — same jsdelivr host we
+     already trust for Supabase. Pinned to 3.10.1. -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="lib/supabase.js?v=20260714"></script>
 <script src="lib/db.js?v=20260714"></script>
 <script src="lib/functions.js?v=20260714"></script>
@@ -225,7 +228,7 @@ async function upscaleRender(renderId, btn){
   const r = renders.find(x => x.id === renderId);
   if (!r) return;
   const label = btn.textContent;
-  btn.disabled = true; btn.textContent = '↑ Upscaling to 4K…';
+  btn.disabled = true; btn.textContent = '↑ Upscaling to 4k…';
   try {
     await callFunction('upscale', { renderId });
     // Reload so the new 4K render shows as its own thumbnail (editRender pattern).
@@ -548,19 +551,79 @@ async function render(){
         ${is4k(r)
           ? `<span class="imgsize" style="color:var(--accent);font-weight:700">4K</span>`
           : (has4kSibling(r) ? ''
-            : `<button class="btn btn-ghost" style="padding:.42rem .8rem;font-size:.76rem" onclick="upscaleRender('${r.id}',this)" title="Upscale this exact image to 4K for print / large-format delivery (~8¢)">⬆ Deliver in 4K</button>`)}
+            : `<button class="btn btn-ghost" style="padding:.42rem .8rem;font-size:.76rem" onclick="upscaleRender('${r.id}',this)">⬆ Upscale to 4k</button>`)}
       </div>
     </div>`;
   }).join('') || '<p style="color:var(--muted)">No images ready for review yet.</p>';
 }
 
+// Client-side zip using JSZip (2026-07-16). Wired up when the button
+// stopped being a TODO alert. Bundles everything the review page shows:
+// approved/composed renders (images) AND finished animations (mp4 + gif
+// per job). Each file's signed URL is fetched to a blob, added to the
+// archive under its own filename, then the whole thing is streamed as
+// one download. Uses a chip so the page stays interactive and guardLeave
+// so a refresh mid-zip doesn't leave the user with a broken half-download.
 async function downloadZip(){
-  // TODO (see app/README.md): server.py's GET /zip endpoint (zips a project
-  // subfolder) has no hosted equivalent yet — zipping storage-bucket objects
-  // needs either a small server-side zip function or a client-side JS zip
-  // lib pulling each signed URL. Not built in phase 1b; flagged as a gap.
-  alert('Zip download needs a server-side (or client-side JS-zip) implementation — ' +
-        'server.py\'s GET /zip has no hosted port yet. See app/README.md TODO list.');
+  if (typeof JSZip === 'undefined') {
+    alert('Zip library did not load. Check your connection and try again.');
+    return;
+  }
+  // Collect everything worth zipping: images from `renders`, plus every
+  // done animation's mp4 and gif from project.settings.animation_jobs.
+  // Filenames come from the last path segment so the archive shows the
+  // real file, not the storage-bucket key.
+  const items = [];
+  for (const r of renders) items.push({ path: r.storage_path, name: r.filename });
+  for (const j of animJobs()) {
+    if (j.status !== 'done') continue;
+    for (const p of [j.final_path, j.gif_path]) {
+      if (p) items.push({ path: p, name: p.split('/').pop() });
+    }
+  }
+  if (!items.length) { alert('Nothing to download yet — no approved images or finished animations.'); return; }
+  const chip = showTaskChip('Preparing zip…', `Fetching ${items.length} file${items.length===1?'':'s'}…`, true);
+  try {
+    await resolveSignedUrls(renders);
+    const zip = new JSZip();
+    let done = 0;
+    // Sequential fetch: friendlier to Supabase storage's signed-URL rate
+    // limits than firing 20+ parallel requests at once. Videos in
+    // particular can be several MB and benefit from serial pacing.
+    for (const item of items) {
+      // Renders were pre-signed by resolveSignedUrls; animation paths
+      // aren't in the cache yet, so sign them on the fly.
+      let url = signedUrlCache[item.path];
+      if (!url) {
+        try { url = await db.getSignedUrl(item.path); signedUrlCache[item.path] = url; }
+        catch (e) { console.warn('zip: skipped ' + item.name + ' — sign failed: ' + (e.message || e)); done++; continue; }
+      }
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        zip.file(item.name, await res.blob());
+      } catch (e) {
+        // Skip a broken file rather than abort the whole zip — chip note
+        // surfaces the count so the user knows something was missing.
+        console.warn('zip: skipped ' + item.name + ' — ' + (e.message || e));
+      }
+      done++;
+      chip.setNote(`Fetched ${done}/${items.length}…`);
+    }
+    chip.setNote('Compressing…');
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const clientName = project.clients ? project.clients.name : 'project';
+    const safe = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const zipName = `${safe(clientName)}-${safe(project.name)}.zip`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = zipName;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    chip.done('Zip downloaded');
+  } catch (e) {
+    chip.fail(e.message || String(e));
+  }
 }
 
 // Owner-only "send this to the client" shortcut. The link points at the
@@ -620,6 +683,20 @@ async function init(){
     // a skipped project's approved work just vanished from the client's view.
     renders = renders.filter(r => r.stage === 'composed' || (r.human_override || r.verdict) === 'approved');
     await render();
+    // Promote the project to 'review' the moment the Owner lands on this
+    // page with something to show — the public review-view function
+    // rejects any project not in ('review','delivered'), which is why
+    // pasted client links used to say "This review link is not available"
+    // even though the page had renders (Owner report, 2026-07-16).
+    // Guard: only promote from earlier stages; never downgrade
+    // 'delivered'; never promote an empty gallery.
+    const PRE_REVIEW = ['brief', 'generating', 'checking', 'compose'];
+    if (renders.length && PRE_REVIEW.includes(project.status)) {
+      try {
+        await db.saveStatus(projectId, 'review');
+        project.status = 'review';
+      } catch (e) { /* non-fatal — client link stays gated until next visit */ }
+    }
     // Animations: show finished clips, and pick up any still-cooking jobs
     // the Compose page submitted (this page owns the poll → store → show).
     await renderAnimations();

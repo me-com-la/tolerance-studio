@@ -157,7 +157,8 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
    the "for best results" card pushed to the right. */
 /* Pre-photo state: the Add photo button is the only action, so center it as
    a prominent CTA in the middle of the section. */
-.add-photo-cta{display:block;margin:2.5rem auto;padding:.9rem 2rem;font-size:1rem}
+.add-photo-cta{display:block;margin:2.5rem auto .5rem;padding:.9rem 2rem;font-size:1rem}
+.add-photo-note{text-align:center;color:var(--muted);font-size:.78rem;margin:0 auto 2.5rem}
 .photo-row{display:flex;gap:1.2rem;align-items:flex-start;margin-top:1rem;flex-wrap:wrap}
 .photo-left{flex:0 0 auto}
 .photo-left .brief-photos{margin-top:0}
@@ -235,6 +236,9 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
       <!-- Add photo lives under the header; once a photo exists it's replaced
            by the Additional Information + Replace photo text links below. -->
       <button class="btn btn-primary add-photo-cta" id="add-photo-btn" onclick="document.getElementById('add-photo-input').click()">Add photo</button>
+      <!-- Hidden once a photo exists, same as the button — the ID hook is
+           on the button; renderPageMeta() also flips this row's display. -->
+      <div class="add-photo-note" id="add-photo-note">JPG, PNG, or WebP</div>
       <div class="photo-row">
         <div class="photo-left">
           <div class="brief-photos" id="brief-photos"></div>
@@ -502,6 +506,9 @@ async function renderBrief(){
     // Pre-photo: only the Add photo button. Post-photo: hide it and surface
     // the Additional Information + Replace photo links instead.
     addBtn.style.display = files.length ? 'none' : '';
+    // Format-hint note follows the button: hidden once a photo exists.
+    const addNote = document.getElementById('add-photo-note');
+    if (addNote) addNote.style.display = files.length ? 'none' : '';
     links.style.display = files.length ? '' : 'none';
     if (!files.length){
       // No photo yet: nothing to show, and the AI-read section + save bar stay
@@ -619,7 +626,10 @@ async function addReferencePhoto(file){
   if (!file) { replaceMode = false; return; }
   const status = document.getElementById('photo-action-status');
   status.textContent = 'preparing…'; status.classList.remove('err'); status.classList.add('busy');
-  showBusyOverlay('Adding your photo…', 'Preparing the image…');
+  // Chip instead of overlay so the rest of the page (brief, tags) stays
+  // usable during upload. guardLeave: true — an upload that's mid-flight
+  // shouldn't be lost to a stray refresh.
+  const chip = showTaskChip('Adding your photo…', 'Preparing the image…', true);
   try {
     const slug = project.clients && project.clients.slug;
     // Replace: drop any existing photo(s) first so the new one is the only one.
@@ -634,7 +644,7 @@ async function addReferencePhoto(file){
     const check = await assessPhotoForExact(file); // assess ORIGINAL (true resolution) before downscale
     file = await downscaleImageFile(file);
     status.textContent = 'uploading…';
-    setBusyNote('Uploading…');
+    chip.setNote('Uploading…');
     const path = db.storagePath(slug, projectId, 'assets', file.name);
     await db.uploadFile(path, file);
     if (!project.reference_image) {
@@ -654,10 +664,10 @@ async function addReferencePhoto(file){
     // New photo in place — let the AI read it and populate the tags (first
     // photo only; won't clobber tags you've already got).
     await maybeAutoDraftFromPhoto();
+    chip.done('Photo added');
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
-  } finally {
-    hideBusyOverlay();
+    chip.fail(e.message || String(e));
   }
 }
 async function removeReferencePhoto(filename){
@@ -691,18 +701,22 @@ async function aiDraftTags(){
   const status = document.getElementById('photo-action-status');
   status.textContent = 'reading your photo…'; status.classList.remove('err'); status.classList.add('busy');
   draftingTags = true; renderTags(); // show "generating tags…" in the empty columns
-  showBusyOverlay('Reading your photo…', 'Generating tags from your product…');
+  // Chip instead of overlay. maybeAutoDraftFromPhoto() guards on
+  // pre-existing tags, so this only writes into an empty panel — no risk
+  // of clobbering edits the user may be typing on the same surface.
+  const chip = showTaskChip('Reading your photo…', 'Generating tags from your product…');
   try {
     const result = await callFunction('ai-draft', { projectId, kind: 'tags' });
     tags = result.tags && (result.tags.product || result.tags.creative) ? result.tags : tags;
     status.textContent = ''; status.classList.remove('busy');
     // Tags stay tucked behind the Additional Information link even once they're
     // drafted (2026-07-14) — the Owner opens it when they want to review them.
+    chip.done('Tags ready');
   } catch (e) {
     status.textContent = e.message || String(e); status.classList.remove('busy'); status.classList.add('err');
+    chip.fail(e.message || String(e));
   } finally {
     draftingTags = false; renderTags();
-    hideBusyOverlay();
   }
 }
 async function init(){
@@ -710,6 +724,9 @@ async function init(){
   if (!session) { location.href = '1-login.html'; return; }
   if (!projectId) { document.getElementById('page-sub').textContent = 'No project specified'; return; }
   project = await db.getProject(projectId);
+  // Unlock forward rail steps the user has already been past — fire and
+  // forget so it doesn't delay first paint. See lib/functions.js.
+  applyRailUnlocks(projectId).catch(() => {});
   renderPageMeta();
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   tags = project.tags && (project.tags.product || project.tags.creative) ? project.tags : { product: [], creative: [] };
