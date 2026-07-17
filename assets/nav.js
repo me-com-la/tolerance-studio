@@ -37,11 +37,15 @@
     '.nav-dd-btn.active{color:var(--accent-ink)}' +
     '.nav-dd-btn .caret{font-size:.6rem;transition:transform .2s}' +
     '.nav-dd.open .nav-dd-btn .caret{transform:rotate(180deg)}' +
-    '.nav-dd-panel{position:absolute;top:calc(100% + .7rem);right:0;min-width:212px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(17,16,20,.14);padding:.45rem;display:none;flex-direction:column;gap:.08rem;z-index:60}' +
+    '.nav-dd-panel{position:absolute;top:calc(100% + .7rem);right:0;min-width:212px;background:#1a1820;border:1px solid rgba(255,255,255,.1);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.4);padding:.45rem;display:none;flex-direction:column;gap:.08rem;z-index:60}' +
     '.nav-dd.open .nav-dd-panel{display:flex}' +
-    '.nav-dd-panel a{padding:.5rem .7rem;border-radius:8px;font-size:.86rem;text-decoration:none;color:var(--muted);white-space:nowrap}' +
-    '.nav-dd-panel a:hover{background:var(--chip);color:var(--ink)}' +
-    '.nav-dd-panel a.active{background:var(--accent-wash);color:var(--accent-ink)}' +
+    // Specificity note: .nav-links a in styles.css sets color:var(--ink)
+    // (near-black); a bare .nav-dd-panel a ties on specificity and loses to
+    // the later rule. .nav-dd .nav-dd-panel a wins (and the hover/active
+    // variants below must match), so text stays readable on the dark panel.
+    '.nav-dd .nav-dd-panel a{padding:.5rem .7rem;border-radius:8px;font-size:.86rem;text-decoration:none;color:rgba(232,230,225,.78);white-space:nowrap}' +
+    '.nav-dd .nav-dd-panel a:hover{background:rgba(255,255,255,.08);color:#fff}' +
+    '.nav-dd .nav-dd-panel a.active{background:rgba(157,122,255,.18);color:#c4b0ff}' +
     '.nav-dd-label{display:none}' +
     '@media(max-width:900px){' +
       '.nav-dd{display:block;width:100%}' +

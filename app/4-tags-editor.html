@@ -41,6 +41,11 @@ a{color:inherit;text-decoration:none}
 .rail-step.done .n{background:#2e7d32;color:#fff}
 .rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
 .rail-step.active .n{background:var(--accent);color:#fff}
+/* Locked = future step, not yet unlocked. First-time-flow gate: users must
+   complete each step in order. `.done` steps stay clickable (revisit) and
+   the current `.active` step stays visible; only unreached ones dim. */
+.rail-step.locked{pointer-events:none;opacity:.4;cursor:default}
+.rail-step.locked .n{background:var(--chip);color:var(--muted)}
 
 .wrap{max-width:88rem;margin:0 auto;padding:2.6rem 1.6rem 4rem}
 h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
@@ -180,10 +185,10 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 
 <div class="rail-wrap"><div class="rail">
   <div class="rail-step active"><span class="n">1</span>Brief &amp; Specs</div>
-  <div class="rail-step" onclick="location.href='5-scenes-editor.html?project='+encodeURIComponent(projectId)"><span class="n">2</span>Scenes</div>
-  <div class="rail-step" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">3</span>Check</div>
-  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Size and Text</div>
-  <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
+  <div class="rail-step locked"><span class="n">2</span>Scenes</div>
+  <div class="rail-step locked"><span class="n">3</span>Check</div>
+  <div class="rail-step locked"><span class="n">4</span>Size and Text</div>
+  <div class="rail-step locked"><span class="n">5</span>Review</div>
 </div></div>
 
 <div class="wrap">
@@ -721,9 +726,14 @@ async function init(){
   // If a photo is already here but tags were never written, read it now so the
   // section lands pre-populated (the "first time it's shown" case).
   await maybeAutoDraftFromPhoto();
-  // Project brief is reference info (set at creation) — start it collapsed. The
-  // photo section stays open so an already-uploaded photo remains visible.
-  document.getElementById('brief-box').classList.add('collapsed');
+  // Brief starts OPEN for a brand-new project (no description written yet) so
+  // the first-time user sees the form they need to fill in, and COLLAPSED once
+  // there's a saved description — from then on it's reference info the user
+  // opens on demand. Photo section stays open so an already-uploaded photo
+  // remains visible.
+  if (project.description && project.description.trim()) {
+    document.getElementById('brief-box').classList.add('collapsed');
+  }
 }
 init();
 </script>

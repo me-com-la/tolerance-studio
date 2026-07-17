@@ -47,6 +47,9 @@ a{color:inherit;text-decoration:none}
 .rail-step.done .n{background:#2e7d32;color:#fff}
 .rail-step.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
 .rail-step.active .n{background:var(--accent);color:#fff}
+/* Locked = future step, not yet unlocked. See 4-tags-editor.html for full note. */
+.rail-step.locked{pointer-events:none;opacity:.4;cursor:default}
+.rail-step.locked .n{background:var(--chip);color:var(--muted)}
 
 .wrap{max-width:88rem;margin:0 auto;padding:2.6rem 1.6rem 4rem}
 h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
@@ -161,9 +164,9 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 <div class="rail-wrap"><div class="rail">
   <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief &amp; Specs</div>
   <div class="rail-step active"><span class="n">2</span>Scenes</div>
-  <div class="rail-step" onclick="location.href='6-checker-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">3</span>Check</div>
-  <div class="rail-step" onclick="location.href='8-compose.html?project='+encodeURIComponent(projectId)"><span class="n">4</span>Size and Text</div>
-  <div class="rail-step" onclick="location.href='7-review-gallery.html?project='+encodeURIComponent(projectId)"><span class="n">5</span>Review</div>
+  <div class="rail-step locked"><span class="n">3</span>Check</div>
+  <div class="rail-step locked"><span class="n">4</span>Size and Text</div>
+  <div class="rail-step locked"><span class="n">5</span>Review</div>
 </div></div>
 
 <div class="wrap">
@@ -661,14 +664,18 @@ async function aiDraftScenes(targetCount){
 }
 // "+" row — appends exactly one new AI-drafted scene without touching the
 // existing rows (unlike Redraft, which replaces all the AI-authored ones).
+// Ships the current scene phrases as `avoid` so the model picks a genuinely
+// different setting rather than a reworded twin of what's already on screen
+// (see ai-draft/index.ts scenes branch for the prompt-side of this).
 async function addSceneViaAI(){
   if (scenes.length >= MAX_SCENE_COUNT) return;
   const btn = document.getElementById('add-scene-btn');
   const status = document.getElementById('ai-status');
+  const avoid = scenes.map(s => (s.t || '').trim()).filter(Boolean);
   try {
     const result = await withBusyOverlay('Drafting a scene…', 'Writing one more scene idea…', () =>
       withBusy(btn, status, 'drafting…', () =>
-        callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: 1 })));
+        callFunction('ai-draft', { projectId, kind: 'scenes', batchSize: 1, avoid })));
     const drafted = (result.text || '').split('\n')
       .map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean)
       .slice(0, 1)

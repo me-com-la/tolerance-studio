@@ -105,7 +105,7 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 <div class="wrap">
   <div class="page-head">
     <div>
-      <h1>Projects</h1>
+      <h1 id="greeting">Welcome back</h1>
       <p class="page-sub" id="page-sub">Loading…</p>
     </div>
     <button class="btn btn-primary" onclick="openNewProject()">＋ New Project</button>
@@ -128,12 +128,12 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
     </div>
     <div class="field" id="np-new-client-field" style="display:none">
       <label for="np-new-client-name">New client name</label>
-      <input type="text" id="np-new-client-name" placeholder="e.g. Wingstudio">
+      <input type="text" id="np-new-client-name" placeholder="Client">
     </div>
 
     <div class="field">
       <label for="np-name">Product</label>
-      <input type="text" id="np-name" placeholder="e.g. PAWD Crate">
+      <input type="text" id="np-name" placeholder="Product">
     </div>
 
     <div class="modal-actions">
@@ -361,6 +361,13 @@ async function submitNewProject(){
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { location.href = '1-login.html'; return; }
+  // Greeting: prefer the user-set username from account page (stored in
+  // user_metadata by design — no separate profiles table), fall back to
+  // the email prefix so brand-new users still see a personalized line.
+  const u = session.user || {};
+  const name = (u.user_metadata && u.user_metadata.username) ||
+               (u.email ? u.email.split('@')[0] : '');
+  if (name) document.getElementById('greeting').textContent = `Welcome back, ${name}`;
   try {
     allProjects = await db.listProjects();
   } catch (e) {

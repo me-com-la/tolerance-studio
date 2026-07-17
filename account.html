@@ -82,7 +82,18 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
     <div class="acct-card">
       <h3>Account info</h3>
       <p>Signed in as <span class="acct-email" id="info-email">…</span></p>
+      <p>Username: <span class="acct-email" id="info-username">—</span></p>
       <p>Member since <span id="info-since">…</span></p>
+    </div>
+    <div class="acct-card">
+      <h3>Username</h3>
+      <p>How you appear in Tolerance Studio. Doesn't change your sign-in email.</p>
+      <form onsubmit="doSaveUsername(); return false" style="display:flex;flex-direction:column;gap:.7rem">
+        <div class="field"><label for="username">Username</label>
+          <input id="username" type="text" placeholder="Pick a username" maxlength="40" autocomplete="username"></div>
+        <button class="btn btn-primary" id="uname-btn" type="submit">Save username</button>
+        <p class="auth-status" id="uname-status" role="status"></p>
+      </form>
     </div>
     <div class="acct-card">
       <h3>Change password</h3>
@@ -103,7 +114,24 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
   var user = s.data.session.user;
   document.getElementById('info-email').textContent = user.email;
   document.getElementById('info-since').textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  // Username lives in Supabase auth user_metadata — no separate table, so
+  // no schema/RLS to keep in sync. `data:` in updateUser() writes there.
+  var uname = (user.user_metadata && user.user_metadata.username) || '';
+  document.getElementById('info-username').textContent = uname || '—';
+  document.getElementById('username').value = uname;
 })();
+async function doSaveUsername(){
+  var st = document.getElementById('uname-status');
+  var btn = document.getElementById('uname-btn');
+  var val = document.getElementById('username').value.trim();
+  if (val.length > 40){ st.textContent = 'Username must be 40 characters or fewer.'; return; }
+  btn.disabled = true; st.textContent = 'saving…';
+  var r = await sb.auth.updateUser({ data: { username: val || null } });
+  btn.disabled = false;
+  if (r.error){ st.textContent = r.error.message; return; }
+  st.textContent = val ? 'Username saved.' : 'Username cleared.';
+  document.getElementById('info-username').textContent = val || '—';
+}
 async function doChangePw(){
   var st = document.getElementById('pw-status');
   var btn = document.getElementById('pw-btn');
