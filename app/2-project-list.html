@@ -93,7 +93,9 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 .modal-status{font-size:.8rem;color:var(--muted)}
 .modal-status.busy{font-style:italic}
 .modal-status.err{color:#ef5350;font-style:normal}
-.proj-mode-chip{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.16rem .5rem;border-radius:100px;white-space:nowrap;color:#7ee2c0;background:rgba(46,180,130,.16)}
+/* .proj-mode-chip removed 2026-07-17: an "Exact" badge on the card was
+   misleading — a real project usually mixes Exact and Scene renders
+   (Owner report). Pipeline still lives on the project for routing. */
 </style>
 </head>
 <body>
@@ -263,7 +265,6 @@ function render(){
         <div class="proj-body">
           <div class="proj-name">${esc(p.name)}</div>
           <div class="proj-meta">
-            ${p.pipeline === 'pro' ? '<span class="proj-mode-chip">Exact</span>' : ''}
             <span class="proj-counts"><span>${(counts[p.id]||{}).total||0} image${((counts[p.id]||{}).total||0)===1?'':'s'}</span><span>${(counts[p.id]||{}).favorites||0} ♥</span></span>
             <span class="proj-date">started ${esc(p.started_on)}</span>
           </div>

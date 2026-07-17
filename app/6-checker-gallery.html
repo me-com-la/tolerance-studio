@@ -141,9 +141,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 #lightbox .lb-open-orig:hover{background:rgba(255,255,255,.24)}
 #lightbox .lb-hint{position:absolute;bottom:1rem;right:1rem;color:#999;font-size:.68rem}
 .imgwrap img.lb-thumb{cursor:pointer}
-.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
-.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
-.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
+/* .mode-chip removed 2026-07-17 — see 2-project-list.html for note. */
 /* Exact-mode edit guard (Owner call, 2026-07-10): editing redraws the
    product, which breaks the pixel-lock promise — warn at the edit box and
    badge any AI-edited render so it can't pass as pixel-exact. */
@@ -154,7 +152,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 <body>
 <div class="topbar"><div class="topbar-in">
   <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Check</span><span class="mode-chip" id="mode-chip"></span></div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Check</span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
@@ -575,12 +573,6 @@ async function init(){
   document.getElementById('crumb-proj').textContent = project.name;
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
   document.title = `Checker — ${project.name} | Tolerance Studio`;
-  // Mode chip (one app, two render modes — 2026-07-10 merge). The checker
-  // itself is mode-blind: it scores Scene renders and Exact composites the
-  // same way (Owner call, 2026-07-10: scoring runs on BOTH modes).
-  const chip = document.getElementById('mode-chip');
-  if (project.pipeline === 'pro') { chip.textContent = 'Exact render'; chip.classList.add('exact'); }
-  else { chip.textContent = 'Scene render'; chip.classList.add('scene'); }
   renders = await loadRenders();
   if (await enforceExclusiveApproval()) renders = await loadRenders();
   await render();

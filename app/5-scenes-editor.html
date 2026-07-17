@@ -31,9 +31,7 @@ a{color:inherit;text-decoration:none}
 .crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
 .crumbs a:hover{color:var(--ink)}
 .crumbs .cur{color:var(--ink);font-weight:600}
-.mode-chip{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.2rem .55rem;border-radius:100px;margin-left:.35rem;white-space:nowrap}
-.mode-chip.scene{color:var(--accent-ink);background:var(--accent-wash)}
-.mode-chip.exact{color:#7ee2c0;background:rgba(46,180,130,.16)}
+/* .mode-chip removed 2026-07-17 — see 2-project-list.html for note. */
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
 .avatar{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
 .overview-bar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:16}
@@ -157,7 +155,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 <body>
 <div class="topbar"><div class="topbar-in">
   <a class="brand" href="2-project-list.html" style="text-decoration:none" title="All projects"><img src="../images/ts-logo.png" alt="" style="height:17px;width:auto;display:block;">Studio</a>
-  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Scenes</span><span class="mode-chip" id="mode-chip"></span></div>
+  <div class="crumbs"><a href="2-project-list.html">Projects</a><span>/</span><a href="#" id="crumb-proj">…</a><span>/</span><span class="cur">Scenes</span></div>
   <div class="who"><span>Owner</span><div class="avatar">O</div></div>
 </div></div>
 
@@ -404,9 +402,6 @@ async function pickMode(mode){
   const stdCard = document.getElementById('mode-card-standard');
   if (stdCard) stdCard.classList.toggle('selected', pipeline === 'standard');
   document.getElementById('mode-card-pro').classList.toggle('selected', pipeline === 'pro');
-  const chip = document.getElementById('mode-chip');
-  chip.className = 'mode-chip ' + (pipeline === 'pro' ? 'exact' : 'scene');
-  chip.textContent = pipeline === 'pro' ? 'Exact render' : 'Scene render';
   if (project && project.pipeline !== pipeline) {
     project.pipeline = pipeline;
     try { await db.savePipeline(projectId, pipeline); } catch (e) { /* generate reads project.pipeline; non-fatal */ }

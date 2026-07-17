@@ -14,9 +14,9 @@
     {
       label: "Case Study",
       items: [
-        { href: "client-toyota.html", label: "Engineering to Image - Toyota" },
-        { href: "client-wingstudio.html", label: "Low Resolution to 4K - Wings Studio" },
-        { href: "client-kindtail.html", label: "CAD to Image - Kindtail" }
+        { href: "client-toyota.html", label: "Engineering to Image" },
+        { href: "client-wingstudio.html", label: "Low Resolution to 4K" },
+        { href: "client-kindtail.html", label: "Product to Lifestyle" }
       ]
     }
   ];
