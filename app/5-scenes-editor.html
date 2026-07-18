@@ -130,6 +130,11 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .more-link{font-size:.82rem;color:var(--accent-ink);cursor:pointer;text-decoration:underline}
 .scene-detail-hint{font-size:.78rem;color:var(--muted);margin:.7rem 0 .5rem;line-height:1.5}
 #placement-scale{width:10rem;padding:.5rem .6rem;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--paper);color:var(--ink)}
+/* Exact-mode edge slider (2026-07-17): crisp ↔ feathered paste-back edge */
+.edge-ctl{margin-top:.8rem;padding:.6rem .7rem;border:1px solid var(--line-2);border-radius:9px;background:var(--paper)}
+.edge-ctl label{display:block;font-size:.78rem;color:var(--ink);margin-bottom:.3rem}
+.edge-ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.edge-ctl .edge-hint{display:block;font-size:.7rem;color:var(--muted);margin-top:.25rem;line-height:1.4}
 table.shots{width:100%;border-collapse:collapse;font-size:.82rem}
 table.shots th{text-align:left;color:var(--muted);font-weight:500;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
 table.shots td{padding:.5rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
@@ -253,6 +258,11 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
       </div>
       <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
         <p>If your product is noticeably inaccurate, you can try our Exact Render, which will use your exact image with no angle change.</p>
+        <div class="edge-ctl" onclick="event.stopPropagation()">
+          <label for="edge-slider">Edge: <b id="edge-label">Standard</b></label>
+          <input type="range" id="edge-slider" min="1" max="5" step="1" value="2" oninput="setEdgeLevel(this.value)">
+          <span class="edge-hint">Crisp ↔ Feathered — how the product's cutout edge blends into the scene</span>
+        </div>
         <button class="btn btn-next btn-sm" style="margin-top:.8rem" onclick="event.stopPropagation();useExact()">Use Exact Render</button>
       </div>
     </div>
@@ -407,6 +417,34 @@ async function pickMode(mode){
     try { await db.savePipeline(projectId, pipeline); } catch (e) { /* generate reads project.pipeline; non-fatal */ }
   }
 }
+// Exact-mode edge control (2026-07-17, Owner ask: adjustable feather).
+// Level 1-5 stored in projects.settings.edge_level; mapped to the Cloud Run
+// compositor's paste_back knobs. Level 2 = the 2026-07-16 hard-edge default;
+// level 5 = the old soft-feather look.
+const EDGE_LEVELS = {
+  1: { label: 'Crispest',  erode_px: 2, blur_px: 0.3 },
+  2: { label: 'Standard',  erode_px: 1, blur_px: 0.5 },
+  3: { label: 'Softened',  erode_px: 1, blur_px: 1.2 },
+  4: { label: 'Soft',      erode_px: 0, blur_px: 1.8 },
+  5: { label: 'Feathered', erode_px: 0, blur_px: 2.5 },
+};
+function edgeLevel(){ return (project && project.settings && project.settings.edge_level) || 2; }
+function edgeParams(){ const l = EDGE_LEVELS[edgeLevel()] || EDGE_LEVELS[2]; return { erode_px: l.erode_px, blur_px: l.blur_px }; }
+async function setEdgeLevel(v){
+  const lvl = Math.max(1, Math.min(5, parseInt(v, 10) || 2));
+  document.getElementById('edge-label').textContent = EDGE_LEVELS[lvl].label;
+  const settings = Object.assign({}, project.settings || {}, { edge_level: lvl });
+  project.settings = settings;
+  try { await db.saveSettings(projectId, settings); } catch (e) { /* non-fatal; generate re-reads */ }
+}
+function initEdgeSlider(){
+  const s = document.getElementById('edge-slider');
+  if (!s) return;
+  const lvl = edgeLevel();
+  s.value = lvl;
+  document.getElementById('edge-label').textContent = (EDGE_LEVELS[lvl] || EDGE_LEVELS[2]).label;
+}
+
 // Per-project render model, stored in projects.settings.image_model — the
 // generate function maps 'seedream' to fal's Seedream 5 Lite endpoint and
 // uses the standard Nano Banana 2 (Gemini) model otherwise. Next to batch size:
@@ -555,7 +593,7 @@ function pixelLockPrompt(project, shots, item){
 // from the tags page (tags.placement.scale, 0-1 fraction). Forwarded as-is
 // to the Cloud Run compositor's /composite endpoint.
 async function compositeOneShot(cutoutB64, prompt, placement){
-  return callLocalService('composite', { cutout_b64: cutoutB64, prompt, placement });
+  return callLocalService('composite', { cutout_b64: cutoutB64, prompt, placement, edge: edgeParams() });
 }
 
 // Exact mode's generation loop — real product cutout composited into an
@@ -722,6 +760,7 @@ async function init(){
 
   const settings = project.settings || {};
   markSceneModel(['seedream','gpt'].includes(settings.image_model) ? settings.image_model : 'default');
+  initEdgeSlider();
   scenes = parseScenesText(project.scenes);
   renderScenes();
   fillSizeInFrame();
