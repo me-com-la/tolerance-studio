@@ -54,6 +54,16 @@ Deno.serve(async (req) => {
       const { data } = await bucket.createSignedUrl(path, SIGNED_URL_TTL);
       return data?.signedUrl || '';
     };
+    // Egress guard (2026-07-17): grid display gets a server-side resized webp
+    // (~90% smaller than the 2K PNG). Full-res `url` stays for downloads and
+    // the lightbox. Falls back to the plain signed URL if transforms fail.
+    const signPreview = async (path: string | null | undefined): Promise<string> => {
+      if (!path) return '';
+      const { data } = await bucket.createSignedUrl(path, SIGNED_URL_TTL, {
+        transform: { width: 1600, quality: 78, resize: 'contain' },
+      });
+      return data?.signedUrl || '';
+    };
 
     // Same client-facing filter as 7-review-gallery.html init(): composed
     // images, plus anything approved at Check that skipped Compose.
@@ -68,7 +78,12 @@ Deno.serve(async (req) => {
     // A 4K delivery is its own render (filename ends -4k), so it comes through
     // here as a normal card; the viewer badges it off the filename.
     const renders = await Promise.all(
-      shown.map(async (r) => ({ id: r.id, filename: r.filename, url: await sign(r.storage_path) })),
+      shown.map(async (r) => ({
+        id: r.id,
+        filename: r.filename,
+        url: await sign(r.storage_path),
+        preview_url: (await signPreview(r.storage_path)) || (await sign(r.storage_path)),
+      })),
     );
 
     // Finished animation clips only (status 'done'). Carry the pad/crop math

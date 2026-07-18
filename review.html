@@ -143,7 +143,9 @@ document.addEventListener('keydown', (e)=>{
 });
 
 function renderImages(renders){
-  images = renders.map(r => ({ url: r.url, filename: r.filename }));
+  // preview_url = server-side compressed webp (egress guard, 2026-07-17);
+  // full `url` stays for the lightbox + downloads.
+  images = renders.map(r => ({ url: r.url, preview: r.preview_url || r.url, filename: r.filename }));
   const grid = document.getElementById('grid');
   if(!renders.length){ grid.innerHTML = '<p style="color:var(--muted)">No images ready for review yet.</p>'; return; }
   document.getElementById('img-h').style.display = '';
@@ -153,7 +155,7 @@ function renderImages(renders){
     const hi = /-4k\.[a-z0-9]+$/i.test(r.filename);
     const badge = hi ? ' <span style="color:var(--accent);font-weight:700;font-size:.7rem">4K</span>' : '';
     return `<div class="card">
-      <div class="imgwrap"><img src="${esc(r.url)}" alt="${esc(r.filename)}" onclick="openLightbox(${i})"></div>
+      <div class="imgwrap"><img src="${esc(r.preview_url || r.url)}" alt="${esc(r.filename)}" onerror="this.onerror=null;this.src='${esc(r.url)}'" onclick="openLightbox(${i})"></div>
       <div class="body">
         <span class="fname" title="${esc(r.filename)}">${esc(r.filename)}${badge}</span>
         <button class="dl" onclick="downloadImage('${esc(r.url)}','${esc(r.filename)}')">⬇${hi?' 4K':''}</button>

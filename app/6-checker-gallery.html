@@ -243,13 +243,23 @@ async function toBase64Image(url){
 // every image needs a short-lived signed URL fetched via the authenticated
 // client. Cached per storage_path so re-renders (e.g. after a verdict click)
 // don't re-request a signed URL for images that already have one.
-const signedUrlCache = {};
+const signedUrlCache = {};   // full-res: checker input, compose source, downloads
+const previewUrlCache = {};  // egress guard (2026-07-17): compressed webp for grid display only
 async function resolveSignedUrls(rs){
   await Promise.all(rs.map(async r => {
-    if (!r.storage_path || signedUrlCache[r.storage_path]) return;
-    try { signedUrlCache[r.storage_path] = await db.getSignedUrl(r.storage_path); }
-    catch (e) { signedUrlCache[r.storage_path] = ''; }
+    if (!r.storage_path || previewUrlCache[r.storage_path]) return;
+    try { previewUrlCache[r.storage_path] = await db.getPreviewUrl(r.storage_path); }
+    catch (e) {
+      // transform unavailable → fall back to full-res so nothing breaks
+      try { previewUrlCache[r.storage_path] = await db.getSignedUrl(r.storage_path); }
+      catch (e2) { previewUrlCache[r.storage_path] = ''; }
+    }
   }));
+}
+// If a preview URL 400s at fetch time (plan/transform hiccup), swap in full-res once.
+async function previewFallback(imgEl, path){
+  imgEl.onerror = null;
+  try { imgEl.src = signedUrlCache[path] || (signedUrlCache[path] = await db.getSignedUrl(path)); } catch(e){}
 }
 
 // Effective verdict: human_override wins, else the checker's own verdict —
@@ -336,7 +346,7 @@ function togglePointDetail(event, renderId, key){
 
 
 function cardHtml(r){
-  const url = signedUrlCache[r.storage_path] || '';
+  const url = previewUrlCache[r.storage_path] || '';
   const verdict = effectiveVerdict(r);
   const hasInspection = !!(r.checker && Array.isArray(r.checker.points));
 
@@ -370,7 +380,7 @@ function cardHtml(r){
 
   return `<div class="card">
     <div class="imgwrap">
-      <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)">
+      <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)" onerror="previewFallback(this,'${esc(r.storage_path)}')">
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       ${lockBreakChip}

@@ -405,6 +405,20 @@
     return data.signedUrl;
   }
 
+  // Egress guard (2026-07-17, after the free-tier exceed_egress_quota shutdown):
+  // signed URL with a server-side transform — Supabase resizes + re-encodes
+  // (webp) before it leaves the building, cutting a 3–8MB 2K PNG to a few
+  // hundred KB. Use for GRID/THUMB DISPLAY ONLY. Downloads, the checker, and
+  // compose must keep using getSignedUrl — full-res, untouched pixels.
+  // Transforms are a Pro-plan feature; if one ever fails, the <img> onerror
+  // fallback in the gallery pages swaps in the full-res URL.
+  async function getPreviewUrl(path, expiresIn = 3600, width = 1600, quality = 78) {
+    const { data, error } = await client().storage.from('projects')
+      .createSignedUrl(path, expiresIn, { transform: { width, quality, resize: 'contain' } });
+    if (error) throw error;
+    return data.signedUrl;
+  }
+
   // Lists files under a bucket prefix (e.g. `${slug}/${projectId}/assets`).
   // Returns [{name, ...}] — folder placeholders have no id, callers can
   // filter on `f.id` to keep only real files.
@@ -448,6 +462,7 @@
     storagePath,
     uploadFile,
     getSignedUrl,
+    getPreviewUrl,
     listFiles,
     removeFiles,
   };

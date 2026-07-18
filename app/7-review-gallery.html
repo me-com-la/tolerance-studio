@@ -173,13 +173,21 @@ const projectId = qs('project');
 
 // Bucket is private, so getPublicUrl() 403s — every image needs a signed URL
 // from the authenticated client. Cached per path across re-renders.
-const signedUrlCache = {};
+const signedUrlCache = {};   // full-res: zip/downloads, animations
+const previewUrlCache = {};  // egress guard (2026-07-17): compressed webp for grid display only
 async function resolveSignedUrls(rs){
   await Promise.all(rs.map(async r => {
-    if (!r.storage_path || signedUrlCache[r.storage_path]) return;
-    try { signedUrlCache[r.storage_path] = await db.getSignedUrl(r.storage_path); }
-    catch (e) { signedUrlCache[r.storage_path] = ''; }
+    if (!r.storage_path || previewUrlCache[r.storage_path]) return;
+    try { previewUrlCache[r.storage_path] = await db.getPreviewUrl(r.storage_path); }
+    catch (e) {
+      try { previewUrlCache[r.storage_path] = await db.getSignedUrl(r.storage_path); }
+      catch (e2) { previewUrlCache[r.storage_path] = ''; }
+    }
   }));
+}
+async function previewFallback(imgEl, path){
+  imgEl.onerror = null;
+  try { imgEl.src = signedUrlCache[path] || (signedUrlCache[path] = await db.getSignedUrl(path)); } catch(e){}
 }
 
 // Image size label — pixel dimensions come free from the <img> itself once
@@ -538,10 +546,10 @@ async function render(){
   await resolveSignedUrls(renders);
   document.getElementById('img-count').textContent = `${renders.length} image${renders.length===1?'':'s'}`;
   document.getElementById('grid').innerHTML = renders.map(r => {
-    const url = signedUrlCache[r.storage_path] || '';
+    const url = previewUrlCache[r.storage_path] || '';
     return `<div class="card">
       <div class="imgwrap">
-        <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)" onload="reportImageDims(this,'${r.id}')">
+        <img class="lb-thumb" src="${esc(url)}" onclick="openLightbox(this)" onload="reportImageDims(this,'${r.id}')" onerror="previewFallback(this,'${esc(r.storage_path)}')">
         <button class="fav-btn ${r.is_favorite?'on':''}" onclick="toggleFav('${r.id}')">${r.is_favorite?'♥':'♡'}</button>
         <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       </div>
