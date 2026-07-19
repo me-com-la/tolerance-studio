@@ -145,10 +145,179 @@ async function falQueueRun(falKey, model, body) {
 // arbitrary fal endpoint.
 const MODEL_CHOICES = {
   seedream: 'fal-ai/bytedance/seedream/v5/lite/edit',
-  gpt: 'fal-ai/gpt-image-1.5/edit'
+  gpt: 'fal-ai/gpt-image-1.5/edit',
+  bria: 'fal-ai/bria/product-shot'
 };
 function modelForProject(project) {
   return MODEL_CHOICES[project.settings && project.settings.image_model] || IMAGE_MODEL;
+}
+// ---------- Bria product-shot (2026-07-18) ----------
+// Unlike the three redraw models above, Bria COMPOSITES the real product
+// photo into a generated background — the product pixels are placed, not
+// redrawn. Options live in projects.settings.bria (set on the Scenes page):
+//   { cutout, bg: 'describe'|'reference', ref_image, placement, position,
+//     padding: [l,r,t,b], shot_w, shot_h, original_quality, fast, optimize,
+//     num_results }
+const BRIA_CUTOUT_MODEL = 'fal-ai/bria/background/remove';
+// Bria's background/remove keeps the ORIGINAL canvas — the product floats
+// inside a transparent frame. product-shot measures placement and scale on
+// the full canvas, so that frame reads as product and renders sat far from
+// the product's real edge (Owner, 2026-07-18). Trim to the alpha bounding
+// box (+2px) before compositing; this is also what makes manual_padding
+// mean "pixels from the product's edge" like Bria's docs intend.
+async function trimTransparent(bytes) {
+  const img = await Image.decode(bytes);
+  const { width, height } = img;
+  const data = img.bitmap;
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  for(let y = 0; y < height; y++){
+    for(let x = 0; x < width; x++){
+      if (data[(y * width + x) * 4 + 3] > 8) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  // Nothing opaque (broken cutout) or nothing to trim — return as-is.
+  if (maxX < 0 || minX === 0 && minY === 0 && maxX === width - 1 && maxY === height - 1) return bytes;
+  const pad = 2;
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(width - 1, maxX + pad);
+  maxY = Math.min(height - 1, maxY + pad);
+  img.crop(minX, minY, maxX - minX + 1, maxY - minY + 1);
+  return await img.encode();
+}
+// Bria wants ~1,000,000 total pixels in the final shot. Per-aspect sizes
+// that land on that budget (same aspect keys as the redraw models).
+const BRIA_SIZES = {
+  '1:1':  [1000, 1000],
+  '16:9': [1332, 750],
+  '9:16': [750, 1332],
+  '4:3':  [1152, 864],
+  '3:4':  [864, 1152],
+  '3:2':  [1224, 816],
+  '2:3':  [816, 1224]
+};
+// Bria's scene_description is a background brief, not an art-direction
+// prompt — the product is never redrawn, so product_lock (which describes
+// the product for redraw models) is dead weight. Style lock + the scene
+// line is the whole brief. Bria wants English with no special characters;
+// strip non-ASCII rather than reject.
+function briaScenePrompt(shots, item) {
+  return [shots.style_lock, item.prompt]
+    .map((s)=>(s || '').trim()).filter(Boolean).join('\n\n')
+    .replace(/[^\x20-\x7E\n]/g, ' ').trim();
+}
+// Text-only fal call (same openrouter route as the checker, no images).
+async function callFalText(falKey, instructions) {
+  const res = await fetchWithRetry429('https://fal.run/openrouter/router/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Key ${falKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: CHECKER_MODEL,
+      max_tokens: 400,
+      messages: [
+        {
+          role: 'user',
+          content: instructions
+        }
+      ]
+    })
+  });
+  const resp = await res.json();
+  if (resp.error) throw new Error(resp.error.message || 'fal.ai API error');
+  const text = (resp.choices || []).map((c)=>c.message && c.message.content || '').join('').trim();
+  if (!text) throw new Error(`fal returned no text: ${JSON.stringify(resp).slice(0, 300)}`);
+  return text;
+}
+// The expanded shot prompts describe the product IN the scene — written for
+// the redraw models. Feeding that to Bria makes it paint the product into
+// the background too, and then composite the real one on top (the Owner's
+// "chairs on chairs", 2026-07-18). Rewrite each brief to background-only:
+// keep setting/light/mood, ban the product and its whole category, leave an
+// empty spot. On any failure fall back to the raw brief — a product-y
+// background beats a failed shot.
+async function briaBackgroundBrief(falKey, productName, shotPrompt) {
+  try {
+    const out = await callFalText(falKey, `A real photo of this product will be composited into an AI-generated background afterwards: "${productName}".
+Below is a full image-generation brief that describes the product inside a scene. Rewrite it as a description of the EMPTY BACKGROUND SCENE ONLY, ready for the product to be placed into it:
+- Never mention the product or any object of the same category — the background must not contain another one.
+- Drop any size or height comparisons ("about the height of a table", "waist-height on an adult") — never name furniture, props, or people as size references.
+- Keep the setting, surfaces, lighting, mood, and camera feel from the brief.
+- Describe a natural clear spot where the product will sit.
+- Plain English, no special characters, under 100 words.
+Respond with ONLY the rewritten scene description.
+
+Brief:
+${shotPrompt}`);
+    return out.replace(/[^\x20-\x7E\n]/g, ' ').trim() || shotPrompt;
+  } catch (_e) {
+    return shotPrompt;
+  }
+}
+// Placement is no longer user-facing (Owner call, 2026-07-18 — manual
+// positions were hanging products in mid-air with a painted glow under
+// them). Always automatic, EXCEPT when the size-in-frame mapping below
+// upgrades the run to manual_padding internally. Old placement keys still
+// saved in settings.bria are ignored.
+function briaInputFor(bria, prompt, productUri, refBgUri, aspectRatio) {
+  const placement = bria.placement === 'manual_padding' ? 'manual_padding' : 'automatic';
+  const input = {
+    image_url: productUri,
+    placement_type: placement,
+    fast: bria.fast !== false,
+    optimize_description: bria.optimize !== false,
+    num_results: Math.max(1, Math.min(4, parseInt(bria.num_results, 10) || 1))
+  };
+  // Background source: a reference image OR a text description — the API
+  // takes exactly one, never both.
+  if (refBgUri) input.ref_image_url = refBgUri;
+  else input.scene_description = prompt;
+  if (placement === 'automatic') {
+    const w = parseInt(bria.shot_w, 10), h = parseInt(bria.shot_h, 10);
+    input.shot_size = w > 0 && h > 0 ? [w, h] : BRIA_SIZES[aspectRatio] || BRIA_SIZES['1:1'];
+  } else {
+    // [left, right, top, bottom] px around the cutout; final canvas =
+    // cutout + padding, so the ~1M-pixel budget includes the product.
+    input.padding_values = bria.padding;
+  }
+  return input;
+}
+// One shot through Bria product-shot. Returns an ARRAY (num_results can be
+// 1-4). Same retry-once envelope as generateShotImage.
+async function generateBriaShot(falKey, { prompt, aspectRatio, productUri, refBgUri, bria }) {
+  async function attempt() {
+    const result = await falQueueRun(falKey, MODEL_CHOICES.bria, briaInputFor(bria, prompt, productUri, refBgUri, aspectRatio));
+    // Bria can return MORE images than num_results — automatic placement
+    // hands back one image per placement it recommends (Owner hit this with
+    // num_results=1, 2026-07-18). The user's setting is the contract: keep
+    // exactly that many, drop the rest before downloading.
+    const want = Math.max(1, Math.min(4, parseInt(bria.num_results, 10) || 1));
+    const imgs = (result.images || []).filter((im)=>im && im.url).slice(0, want);
+    if (!imgs.length) throw new Error(`bria returned no image: ${JSON.stringify(result).slice(0, 300)}`);
+    const out = [];
+    for (const im of imgs){
+      const r = await fetch(im.url);
+      if (!r.ok) throw new Error(`failed to download bria image: HTTP ${r.status}`);
+      out.push({
+        bytes: new Uint8Array(await r.arrayBuffer()),
+        mimeType: im.content_type || 'image/png'
+      });
+    }
+    return out;
+  }
+  try {
+    return await attempt();
+  } catch (err) {
+    await sleep(3000 + Math.floor(Math.random() * 1000));
+    return await attempt();
+  }
 }
 // Seedream's edit endpoint has a different input schema than the Gemini
 // one: image_size ({width,height}, 1024-4096 per side) instead of
@@ -539,73 +708,161 @@ Deno.serve(async (req)=>{
       });
     }
     const model = modelForProject(project);
-    const outcomes = await mapWithConcurrency(shots.items, CONCURRENCY, async (item)=>{
-      const prompt = fullPrompt(shots, item);
-      const { bytes, mimeType } = await generateShotImage(falKey, {
-        prompt,
-        aspectRatio,
-        referenceImages,
-        model
-      });
-      // Unique per run (same timestamp convention as Compose's output
-      // filenames) 
-      //item.file alone is product+motif+index, so re-running
-      // a similar scene used to produce the SAME filename and the upsert
-      // silently REPLACED the earlier render (real data loss the Owner hit
-      // on the Bowls project, 2026-07-08). Every generation now keeps its
-      // own row/file; the beta cap counts them all, which is the point.
-      const base = item.file.replace(/\.[a-z0-9]+$/i, '');
-      const filename = `${base}-${Date.now().toString(36)}.png`;
-      const path = `${clientSlug}/${project.id}/renders/${filename}`;
-      const { error: uploadErr } = await supabase.storage.from('projects').upload(path, bytes, {
-        upsert: true,
-        contentType: mimeType
-      });
-      if (uploadErr) throw uploadErr;
-      const renderFields = {
-        project_id: project.id,
-        filename,
-        storage_path: path,
-        stage: 'render'
-      };
-      let checkNote = `not checked (${checkerRefDiagnostic || 'unknown reason'})`;
-      if (checkerReferenceImage) {
+    // ---------- Bria one-time prep (per run, not per shot) ----------
+    const isBria = model === MODEL_CHOICES.bria;
+    const briaOpts = isBria && project.settings && project.settings.bria || {};
+    let briaProductUri = null;
+    let briaRefBgUri = null;
+    if (isBria) {
+      if (!referenceImages.length) throw new Error('Bria needs a product photo — upload one on the Brief page first');
+      briaProductUri = `data:${referenceImages[0].mimeType};base64,${referenceImages[0].base64}`;
+      // User-facing placement was removed 2026-07-18 (Owner call) — whatever
+      // an older project saved, the run is automatic unless the size-in-frame
+      // mapping below switches it to manual_padding.
+      briaOpts.placement = 'automatic';
+      // Bria's own recommended flow: cutout first, then place. No longer
+      // optional — the size-in-frame mapping needs the trimmed product
+      // dimensions. Runs ONCE; every shot in the batch reuses the result.
+      // A cutout failure falls back to the raw photo — product-shot does
+      // its own segmentation anyway.
+      let briaCutoutBytes = null;
+      {
         try {
-          // Downscale the render before base64-ing it for the checker. The
-          // checker only judges product fidelity, so 1024px is plenty — and
-          // base64-ing a full 2K Gemini output (its native size; Seedream/GPT
-          // return smaller) across 2 concurrent lanes is what tripped the
-          // 512MB/CPU worker limit (HTTP 546), which is why it only showed up
-          // on Gemini. The stored render (uploaded above) stays full-res.
-          const { bytes: checkBytes, mimeType: checkMime } = await downscaleForModel(bytes, mimeType, 1024);
-          const candidateImage = {
-            mediaType: checkMime,
-            base64: bytesToBase64(checkBytes)
-          };
-          const { checker, verdict } = await runCheckerInline(falKey, spec, checkerReferenceImage, candidateImage);
-          renderFields.checker = checker;
-          renderFields.verdict = verdict;
-          checkNote = `checked: ${checker.stage2_verdict}`;
-        } catch (checkErr) {
-          checkNote = `check failed: ${checkErr.message || String(checkErr)}`;
-        }
+          const cut = await falQueueRun(falKey, BRIA_CUTOUT_MODEL, { image_url: briaProductUri });
+          if (cut.image && cut.image.url) {
+            const r = await fetch(cut.image.url);
+            if (r.ok) {
+              briaCutoutBytes = await trimTransparent(new Uint8Array(await r.arrayBuffer()));
+              briaProductUri = `data:image/png;base64,${bytesToBase64(briaCutoutBytes)}`;
+            } else {
+              briaProductUri = cut.image.url;
+            }
+          }
+        } catch (_e) {}
       }
-      const { data: render, error: renderErr } = await supabase.from('renders').upsert(renderFields, {
-        onConflict: 'project_id,filename'
-      }).select().single();
-      if (renderErr) throw renderErr;
-      return {
-        file: filename,
-        path,
-        render,
-        checkNote
-      };
+      // Size in frame → Bria (2026-07-18). Bria has no "product is X% of the
+      // image height" knob — the padding around the cutout IS its size
+      // control. When Size in frame is set on the Scenes page and placement
+      // was left on Automatic, translate it: canvas height = cutout height /
+      // fraction, product sits low (12% of the empty vertical space below
+      // it), everything scaled to Bria's ~1MP sweet spot. Explicit manual
+      // choices (padding / position / original) are respected untouched.
+      try {
+        const frac = project.tags && project.tags.placement && project.tags.placement.scale;
+        if (briaCutoutBytes && frac >= 0.1 && frac <= 1 && (briaOpts.placement || 'automatic') === 'automatic') {
+          const img = await Image.decode(briaCutoutBytes);
+          const AR = { '1:1': 1, '16:9': 16 / 9, '9:16': 9 / 16, '4:3': 4 / 3, '3:4': 3 / 4, '3:2': 3 / 2, '2:3': 2 / 3 }[aspectRatio] || 1;
+          const totalH = img.height / frac;
+          const totalW = Math.max(totalH * AR, img.width + 16);
+          const s = Math.min(1, Math.sqrt(1000000 / (totalW * totalH)));
+          if (s < 1) img.resize(Math.max(1, Math.round(img.width * s)), Image.RESIZE_AUTO);
+          const padV = Math.max(0, Math.round(totalH * s) - img.height);
+          const padH = Math.max(0, Math.round(totalW * s) - img.width);
+          const padT = Math.round(padV * 0.88);
+          const padL = Math.floor(padH / 2);
+          briaOpts.placement = 'manual_padding';
+          briaOpts.padding = [padL, padH - padL, padT, padV - padT];
+          if (s < 1) briaProductUri = `data:image/png;base64,${bytesToBase64(await img.encode())}`;
+        }
+      } catch (_e) {}
+      // Reference background image (settings.bria.ref_image = storage path):
+      // Bria generates a background MATCHING this image instead of a text brief.
+      if (briaOpts.bg === 'reference' && briaOpts.ref_image) {
+        const { data: bgBlob, error: bgErr } = await supabase.storage.from('projects').download(briaOpts.ref_image);
+        if (bgErr || !bgBlob) throw new Error(`Bria reference background could not be loaded: ${bgErr && bgErr.message || 'no blob'}`);
+        const rawBg = new Uint8Array(await bgBlob.arrayBuffer());
+        const { bytes: bgBytes, mimeType: bgMime } = await downscaleForModel(rawBg, bgBlob.type || 'image/jpeg');
+        briaRefBgUri = `data:${bgMime};base64,${bytesToBase64(bgBytes)}`;
+      }
+      // The beta cap counts saved renders; num_results multiplies output per
+      // shot, so clamp it to fit what's left of the quota.
+      const requested = Math.max(1, Math.min(4, parseInt(briaOpts.num_results, 10) || 1));
+      briaOpts.num_results = Math.min(requested, Math.max(1, Math.floor(remainingQuota / shots.items.length)));
+    }
+    const outcomes = await mapWithConcurrency(shots.items, CONCURRENCY, async (item)=>{
+      // Bria composites (returns 1-4 images per shot); the redraw models
+      // return exactly one — normalized to an array so the save/check loop
+      // below is shared.
+      // With a reference background image the scene text is unused (the API
+      // takes one or the other), so skip the background-only rewrite call.
+      const images = isBria
+        ? await generateBriaShot(falKey, {
+            prompt: briaRefBgUri ? '' : await briaBackgroundBrief(falKey, project.product || project.name || 'the product', briaScenePrompt(shots, item)),
+            aspectRatio,
+            productUri: briaProductUri,
+            refBgUri: briaRefBgUri,
+            bria: briaOpts
+          })
+        : [await generateShotImage(falKey, {
+            prompt: fullPrompt(shots, item),
+            aspectRatio,
+            referenceImages,
+            model
+          })];
+      const saved = [];
+      for (let v = 0; v < images.length; v++){
+        const { bytes, mimeType } = images[v];
+        // Unique per run (same timestamp convention as Compose's output
+        // filenames)
+        //item.file alone is product+motif+index, so re-running
+        // a similar scene used to produce the SAME filename and the upsert
+        // silently REPLACED the earlier render (real data loss the Owner hit
+        // on the Bowls project, 2026-07-08). Every generation now keeps its
+        // own row/file; the beta cap counts them all, which is the point.
+        const base = item.file.replace(/\.[a-z0-9]+$/i, '');
+        const filename = `${base}-${Date.now().toString(36)}${v > 0 ? `-v${v + 1}` : ''}.png`;
+        const path = `${clientSlug}/${project.id}/renders/${filename}`;
+        const { error: uploadErr } = await supabase.storage.from('projects').upload(path, bytes, {
+          upsert: true,
+          contentType: mimeType
+        });
+        if (uploadErr) throw uploadErr;
+        const renderFields = {
+          project_id: project.id,
+          filename,
+          storage_path: path,
+          stage: 'render'
+        };
+        let checkNote = `not checked (${checkerRefDiagnostic || 'unknown reason'})`;
+        if (checkerReferenceImage) {
+          try {
+            // Downscale the render before base64-ing it for the checker. The
+            // checker only judges product fidelity, so 1024px is plenty — and
+            // base64-ing a full 2K Gemini output (its native size; Seedream/GPT
+            // return smaller) across 2 concurrent lanes is what tripped the
+            // 512MB/CPU worker limit (HTTP 546), which is why it only showed up
+            // on Gemini. The stored render (uploaded above) stays full-res.
+            const { bytes: checkBytes, mimeType: checkMime } = await downscaleForModel(bytes, mimeType, 1024);
+            const candidateImage = {
+              mediaType: checkMime,
+              base64: bytesToBase64(checkBytes)
+            };
+            const { checker, verdict } = await runCheckerInline(falKey, spec, checkerReferenceImage, candidateImage);
+            renderFields.checker = checker;
+            renderFields.verdict = verdict;
+            checkNote = `checked: ${checker.stage2_verdict}`;
+          } catch (checkErr) {
+            checkNote = `check failed: ${checkErr.message || String(checkErr)}`;
+          }
+        }
+        const { data: render, error: renderErr } = await supabase.from('renders').upsert(renderFields, {
+          onConflict: 'project_id,filename'
+        }).select().single();
+        if (renderErr) throw renderErr;
+        saved.push({
+          file: filename,
+          path,
+          render,
+          checkNote
+        });
+      }
+      return saved;
     });
     const succeeded = [];
     const failed = [];
     outcomes.forEach((outcome, i)=>{
       const item = shots.items[i];
-      if (outcome.ok) succeeded.push(outcome.value);
+      if (outcome.ok) succeeded.push(...outcome.value);
       else failed.push({
         file: item.file,
         motif: item.motif,
@@ -616,7 +873,9 @@ Deno.serve(async (req)=>{
       status: 'checking'
     }).eq('id', project.id);
     const checkedCount = succeeded.filter((s)=>s.checkNote.startsWith('checked')).length;
-    const summary = `${succeeded.length}/${shots.items.length} shots generated via fal ` + `(${model}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` + (failed.length ? ` Failed: ${failed.map((f)=>`${f.file} (${f.error})`).join('; ')}` : '') + capNote;
+    const summary = isBria
+      ? `${succeeded.length} image${succeeded.length === 1 ? '' : 's'} from ${shots.items.length} shot${shots.items.length === 1 ? '' : 's'} via fal (${model}, composite, ${briaOpts.placement}, bg ${briaRefBgUri ? 'reference image' : 'described'}), ${checkedCount} auto-checked.` + (failed.length ? ` Failed: ${failed.map((f)=>`${f.file} (${f.error})`).join('; ')}` : '') + capNote
+      : `${succeeded.length}/${shots.items.length} shots generated via fal ` + `(${model}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` + (failed.length ? ` Failed: ${failed.map((f)=>`${f.file} (${f.error})`).join('; ')}` : '') + capNote;
     await supabase.from('run_log').insert({
       project_id: project.id,
       step: 'generate',

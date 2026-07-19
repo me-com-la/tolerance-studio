@@ -110,6 +110,17 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .model-card-lg .mm-desc{font-size:1rem;font-weight:700;color:var(--ink);line-height:1.4;flex:1;margin-bottom:.6rem}
 .model-card-lg .btn{width:100%;justify-content:center}
 @media(max-width:640px){.model-row{flex-direction:column}.model-row .mode-or{align-self:flex-start;padding:.2rem 0}}
+/* Bria product-shot options (2026-07-18) — composite model, its own knobs */
+.bria-opts{border:1.5px solid var(--line-2);border-radius:12px;padding:1.1rem 1.2rem;margin-bottom:.8rem}
+.bria-opts h4{font-family:var(--font-display);text-transform:uppercase;font-size:1rem;letter-spacing:.03em;margin-bottom:.7rem}
+.bria-row{display:flex;flex-wrap:wrap;gap:1rem 1.4rem;align-items:center;margin-bottom:.8rem}
+.bria-row label{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem;cursor:pointer}
+.bria-opts select,.bria-opts input[type=number]{padding:.45rem .6rem;border:1px solid var(--line-2);border-radius:8px;background:var(--card);color:var(--ink);font-family:var(--font-mono);font-size:.85rem}
+.bria-opts input[type=number]{width:5.4rem}
+.bria-pad input[type=number]{width:4.4rem}
+.bria-opts input[type=checkbox],.bria-opts input[type=radio]{accent-color:var(--accent)}
+.bria-ref-thumb{height:44px;border-radius:6px;display:none}
+.bria-hint{font-size:.75rem;color:var(--muted);flex-basis:100%;margin-top:-.5rem}
 .mode-pick{display:flex;align-items:center;gap:.7rem;margin-bottom:1.1rem}
 .mode-pick .mode-card{flex:1;min-width:0}
 .mode-or{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:.95rem;color:var(--muted);letter-spacing:.06em}
@@ -191,7 +202,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
           <button class="btn btn-primary" id="scenes-next-btn" onclick="showModeStep()" style="margin-left:auto">Looks good →</button>
         </div>
         <div id="scene-detail-body" style="display:none">
-          <div class="scene-detail-hint">Size in frame — how tall the product renders as a % of the image height (used for Exact render). Leave blank to vary per image.</div>
+          <div class="scene-detail-hint">Size in frame — how tall the product renders as a % of the image height (used by Exact render, and by Bria when placement is Automatic). Leave blank to vary per image.</div>
           <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)" onchange="saveSizeInFrame()">
         </div>
       </div>
@@ -255,6 +266,58 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
           <button class="btn btn-next" onclick="useModel('gpt')">Use GPT Image</button>
         </div>
 
+        <div class="mode-or">OR</div>
+
+        <div class="model-card-lg" data-model="bria">
+          <div class="logo-box">
+            <svg width="150" height="36" viewBox="0 0 150 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#ECE7DF"/>
+              <text x="8" y="27" font-family="'Arial Black','Helvetica Neue',sans-serif" font-weight="900" font-size="22" fill="#16130E">B</text>
+              <text x="44" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="18" fill="white">Bria</text>
+            </svg>
+          </div>
+          <div class="mm-desc">Your real photo composited, never redrawn.</div>
+          <button class="btn btn-next" onclick="useBria()">Use Bria</button>
+        </div>
+
+      </div>
+
+      <!-- Bria options — every product-shot API knob, shown when Bria is picked -->
+      <div class="bria-opts" id="bria-opts" style="display:none">
+        <h4>Bria settings</h4>
+
+        <div class="bria-row">
+          <span style="font-size:.85rem;font-weight:600">Background</span>
+          <label><input type="radio" name="bria-bg" value="describe" checked onchange="briaBgControls()"> From your scene text</label>
+          <label><input type="radio" name="bria-bg" value="reference" onchange="briaBgControls()"> Match a reference image</label>
+          <span id="bria-ref-wrap" style="display:none;align-items:center;gap:.6rem">
+            <input type="file" id="bria-ref-file" accept="image/*" style="display:none" onchange="briaRefUpload(this)">
+            <button class="btn btn-sm" type="button" onclick="document.getElementById('bria-ref-file').click()">Choose image…</button>
+            <img class="bria-ref-thumb" id="bria-ref-thumb" alt="Reference background">
+            <span id="bria-ref-status" style="font-size:.78rem;color:var(--muted)"></span>
+          </span>
+          <span class="bria-hint" id="bria-ref-hint" style="display:none">Use an empty room or surface — furniture and products in the reference tend to get recreated in the background, next to yours.</span>
+        </div>
+
+        <div class="bria-row" id="bria-size-wrap">
+          <span style="font-size:.85rem;font-weight:600">Shot size</span>
+          <input type="number" id="bria-w" min="200" placeholder="Auto W">
+          <span style="color:var(--muted)">×</span>
+          <input type="number" id="bria-h" min="200" placeholder="Auto H">
+          <span class="bria-hint" style="margin-top:0;flex-basis:auto">Blank = sized from your aspect ratio at Bria's ~1MP sweet spot.</span>
+        </div>
+
+        <div class="bria-row">
+          <label><input type="checkbox" id="bria-fast" checked> Fast mode</label>
+          <label><input type="checkbox" id="bria-optimize" checked> AI-optimize scene description</label>
+          <label>Images per scene
+            <select id="bria-num">
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+            </select>
+          </label>
+        </div>
+
+        <button class="btn btn-next" onclick="generateWithBria()">Generate with Bria →</button>
       </div>
       <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
         <p>If your product is noticeably inaccurate, you can try our Exact Render, which will use your exact image with no angle change.</p>
@@ -451,15 +514,17 @@ function initEdgeSlider(){
 // both decide what the Generate run produces.
 async function saveSceneModel(v){
   const settings = Object.assign({}, project.settings || {});
-  if (v === 'seedream' || v === 'gpt') settings.image_model = v;
+  if (v === 'seedream' || v === 'gpt' || v === 'bria') settings.image_model = v;
   else delete settings.image_model;
   await db.saveSettings(projectId, settings);
   project.settings = settings;
 }
 // Reflect the chosen model card's selected state.
 function markSceneModel(v){
-  document.querySelectorAll('#scene-model-wrap .model-mini').forEach(c =>
+  document.querySelectorAll('#scene-model-wrap .model-mini, #scene-model-wrap .model-card-lg').forEach(c =>
     c.classList.toggle('selected', c.dataset.model === v));
+  const bp = document.getElementById('bria-opts');
+  if (bp && v !== 'bria') bp.style.display = 'none';
 }
 // Clicking a model card picks it (and implies AI Render mode).
 function pickSceneModel(e, v){
@@ -476,7 +541,113 @@ async function useModel(model){
   generateAndCheck();
 }
 async function useExact(){
+  // Clear any model-card selection (and hide the Bria panel) so the UI
+  // matches the pipeline that's about to run.
+  markSceneModel('exact');
   await pickMode('pro');
+  generateAndCheck();
+}
+
+// ---------- Bria product-shot options (2026-07-18) ----------
+// Bria composites the real product photo into a generated background — the
+// product is never redrawn — so it carries its own knobs. All of them persist
+// in projects.settings.bria; the generate function reads them per run.
+function briaSettings(){ return (project && project.settings && project.settings.bria) || {}; }
+function briaEl(id){ return document.getElementById(id); }
+// Picking the Bria card reveals the options instead of generating right away —
+// unlike the redraw models, background source and placement change the result
+// enough that a look first is worth the extra click.
+async function useBria(){
+  markSceneModel('bria');
+  await saveSceneModel('bria');
+  await pickMode('standard');
+  await restoreBria();
+  briaEl('bria-opts').style.display = '';
+  briaEl('bria-opts').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function briaBgControls(){
+  const ref = document.querySelector('input[name=bria-bg]:checked').value === 'reference';
+  briaEl('bria-ref-wrap').style.display = ref ? 'inline-flex' : 'none';
+  briaEl('bria-ref-hint').style.display = ref ? '' : 'none';
+}
+// Reference background upload — stored under <slug>/<project>/bria-ref/ and
+// referenced by storage path (the generate function downloads + data-URIs it).
+async function briaRefUpload(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const status = briaEl('bria-ref-status');
+  status.textContent = 'Uploading…';
+  try {
+    const ext = (file.name.match(/\.[a-z0-9]+$/i) || ['.jpg'])[0];
+    const path = db.storagePath(project.clients.slug, projectId, 'bria-ref', 'bg-' + Date.now() + ext);
+    await db.uploadFile(path, file);
+    const s = collectBria();
+    s.ref_image = path;
+    await saveBria(s);
+    const thumb = briaEl('bria-ref-thumb');
+    thumb.src = URL.createObjectURL(file);
+    thumb.style.display = 'block';
+    status.textContent = 'Saved ✓';
+  } catch (e) {
+    status.textContent = 'Upload failed: ' + (e.message || e);
+  }
+}
+// Cutout and placement are no longer options (Owner call, 2026-07-18):
+// cutout always runs — the size-in-frame mapping needs the trimmed product
+// dimensions — and placement is always Automatic (manual positions were
+// hanging products in mid-air). The generate function enforces both; old
+// saved placement keys in settings.bria are simply ignored.
+function collectBria(){
+  const prev = briaSettings();
+  return {
+    bg: document.querySelector('input[name=bria-bg]:checked').value,
+    ref_image: prev.ref_image || null,
+    shot_w: parseInt(briaEl('bria-w').value, 10) || null,
+    shot_h: parseInt(briaEl('bria-h').value, 10) || null,
+    fast: briaEl('bria-fast').checked,
+    optimize: briaEl('bria-optimize').checked,
+    num_results: parseInt(briaEl('bria-num').value, 10) || 1
+  };
+}
+async function saveBria(s){
+  const settings = Object.assign({}, project.settings || {}, { bria: s });
+  await db.saveSettings(projectId, settings);
+  project.settings = settings;
+}
+async function restoreBria(){
+  const s = briaSettings();
+  const bg = s.bg === 'reference' ? 'reference' : 'describe';
+  document.querySelector('input[name=bria-bg][value=' + bg + ']').checked = true;
+  briaEl('bria-w').value = s.shot_w || '';
+  briaEl('bria-h').value = s.shot_h || '';
+  briaEl('bria-fast').checked = s.fast !== false;
+  briaEl('bria-optimize').checked = s.optimize !== false;
+  briaEl('bria-num').value = s.num_results || 1;
+  briaBgControls();
+  if (s.ref_image) {
+    try {
+      const url = await db.getSignedUrl(s.ref_image);
+      const thumb = briaEl('bria-ref-thumb');
+      thumb.src = url;
+      thumb.style.display = 'block';
+    } catch (e) { /* thumb only — generate re-reads the path itself */ }
+  }
+}
+async function generateWithBria(){
+  const s = collectBria();
+  if (s.bg === 'reference' && !s.ref_image) {
+    briaEl('bria-ref-status').textContent = 'Pick a reference image first (or switch to scene text).';
+    briaBgControls();
+    return;
+  }
+  await saveBria(s);
+  // Re-assert model AND pipeline every time. Running Exact render flips
+  // projects.pipeline to 'pro', and this button used to leave it there —
+  // so "Generate with Bria" kept running the pixel-lock pipeline (with its
+  // white-bottom cutout) until the page was reloaded (Owner, 2026-07-18).
+  markSceneModel('bria');
+  await saveSceneModel('bria');
+  await pickMode('standard');
   generateAndCheck();
 }
 
@@ -532,6 +703,24 @@ function base64ToBlob(b64, mime){
 // project's reference photo (projects.reference_image, uploaded at project
 // creation) via the pixel-lock service's rembg-backed /remove-background
 // endpoint — same Cloud Run service the compositing step already depends on.
+// True when the image already has real transparency (any pixel below ~98%
+// alpha, sampled at 256px). Such a file IS a cutout — running rembg on it
+// flattens the transparency onto white first, which is what produced the
+// white slab under the product on Exact renders (Owner, 2026-07-18).
+async function blobHasAlpha(blob){
+  try {
+    const bmp = await createImageBitmap(blob);
+    const s = Math.min(1, 256 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(bmp.width * s));
+    c.height = Math.max(1, Math.round(bmp.height * s));
+    const ctx = c.getContext('2d');
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 250) return true;
+    return false;
+  } catch (e) { return false; }
+}
 async function findCutoutBase64(clientSlug, note){
   const files = await db.listFiles(`${clientSlug}/${projectId}/assets`);
   const cutoutFile = (files || []).find(f => f.id && /cutout/i.test(f.name));
@@ -544,9 +733,13 @@ async function findCutoutBase64(clientSlug, note){
   if (!project.reference_image) {
     throw new Error('no product cutout found in this project\'s assets/ folder (need a filename containing "cutout"), and no reference photo to auto-cut from either. Upload one of the two first.');
   }
-  if (note) note.textContent = 'No cutout uploaded — removing the background from the reference photo automatically…';
   const refUrl = await db.getSignedUrl(project.reference_image);
   const refBlob = await (await fetch(refUrl)).blob();
+  // An uploaded transparent PNG is already the cutout — use it as-is.
+  if ((refBlob.type || '').includes('png') && await blobHasAlpha(refBlob)) {
+    return blobToBase64(refBlob);
+  }
+  if (note) note.textContent = 'No cutout uploaded — removing the background from the reference photo automatically…';
   const refB64 = await blobToBase64(refBlob);
   const { cutout_b64 } = await callLocalService('remove-background', { image_b64: refB64 });
   return cutout_b64;
@@ -580,8 +773,11 @@ function sizeComparisonPhrase(heightIn){
 function pixelLockPrompt(project, shots, item){
   const sceneDesc = [shots.style_lock, item.prompt].map(s => (s || '').trim()).filter(Boolean).join(' ');
   const sizePhrase = sizeComparisonPhrase(project.tags?.placement?.realHeightIn);
+  // The comparison is a SCALE cue only — models were taking "like a dining
+  // table / wardrobe" literally and adding that furniture to the scene
+  // (Owner, 2026-07-18), so the ban rides in the same sentence.
   const sizeLine = sizePhrase
-    ? ` The product about to be placed into this scene is ${sizePhrase} in real life — scale the room, furniture, and any other objects in the background consistently with an object of that real-world size.`
+    ? ` The product about to be placed into this scene is ${sizePhrase} in real life — scale the room and its existing elements consistently with that real-world size, but do NOT add the compared object or any extra furniture, props, or people as size references.`
     : '';
   return (
     `No added text, labels, logos, brand names, or watermarks anywhere in the image. ` +
@@ -759,7 +955,12 @@ async function init(){
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
 
   const settings = project.settings || {};
-  markSceneModel(['seedream','gpt'].includes(settings.image_model) ? settings.image_model : 'default');
+  markSceneModel(['seedream','gpt','bria'].includes(settings.image_model) ? settings.image_model : 'default');
+  // A returning Bria project reopens with its options visible and filled.
+  if (settings.image_model === 'bria') {
+    restoreBria().catch(() => {});
+    document.getElementById('bria-opts').style.display = '';
+  }
   initEdgeSlider();
   scenes = parseScenesText(project.scenes);
   renderScenes();
