@@ -227,7 +227,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
        (Exact-mode scaling) is tucked behind an "add more details" link. -->
   <div class="photo-capture collapsible" id="photo-box">
     <div class="photo-capture-head col-head" onclick="toggleBox('photo-box')">
-      <h3>One photo is all we need, add it here</h3>
+      <h3>One photo is all we need — up to 3 angles helps</h3>
       <span class="ai-status" id="photo-action-status"></span>
     </div>
     <div class="col-body">
@@ -244,6 +244,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
           <div class="more-details" id="photo-links" style="display:none">
             <span class="more-link" id="more-details-link" onclick="toggleMoreDetails()">Additional Information</span>
             <span class="more-link" id="replace-photo-link" onclick="replacePhoto()" style="margin-left:1.1rem">Replace photo</span>
+            <span class="more-link" id="add-angle-link" onclick="document.getElementById('add-photo-input').click()" style="margin-left:1.1rem">Add another angle</span>
           </div>
         </div>
         <div class="photo-warn" id="photo-warn" style="display:none"></div>
@@ -503,12 +504,17 @@ async function renderBrief(){
     const files = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
     const links = document.getElementById('photo-links');
     // Pre-photo: only the Add photo button. Post-photo: hide it and surface
-    // the Additional Information + Replace photo links instead.
+    // the Additional Information + Replace photo links instead. Up to 3
+    // photos (2026-07-19, Owner ask) — generate sends all of them to the
+    // redraw models as extra angles; the FIRST stays the reference photo
+    // that Exact, Bria, and the checker use.
     addBtn.style.display = files.length ? 'none' : '';
     // Format-hint note follows the button: hidden once a photo exists.
     const addNote = document.getElementById('add-photo-note');
     if (addNote) addNote.style.display = files.length ? 'none' : '';
     links.style.display = files.length ? '' : 'none';
+    const addAngle = document.getElementById('add-angle-link');
+    if (addAngle) addAngle.style.display = files.length && files.length < 3 ? '' : 'none';
     if (!files.length){
       // No photo yet: nothing to show, and the AI-read section + save bar stay
       // hidden until one exists (the tags/save only make sense with a photo).
@@ -639,6 +645,11 @@ async function addReferencePhoto(file){
       } catch (e) { /* non-fatal — new upload still lands */ }
       project.reference_image = null; // let the new upload become the reference
       replaceMode = false;
+    } else {
+      // 3 photos max — generate only sends the first 3 to the models, so a
+      // 4th would silently do nothing.
+      const existing = (await db.listFiles(`${slug}/${projectId}/assets`)).filter(f => f.id);
+      if (existing.length >= 3) throw new Error('3 photos max — remove one first.');
     }
     const check = await assessPhotoForExact(file); // assess ORIGINAL (true resolution) before downscale
     file = await downscaleImageFile(file);
@@ -646,15 +657,19 @@ async function addReferencePhoto(file){
     chip.setNote('Uploading…');
     const path = db.storagePath(slug, projectId, 'assets', file.name);
     await db.uploadFile(path, file);
-    if (!project.reference_image) {
+    const becomesReference = !project.reference_image;
+    if (becomesReference) {
       await db.saveReferenceImage(projectId, path);
       project.reference_image = path;
     }
     // Persist the check so the Scenes step can flag the Exact card. Reference
-    // photo (first one) is what Exact composites, so it drives the verdict.
-    project.settings = Object.assign({}, project.settings || {}, { photo_check: check });
-    try { await db.saveSettings(projectId, project.settings); } catch (e) { /* non-fatal */ }
-    renderPhotoWarn(check);
+    // photo (first one) is what Exact composites, so ONLY it drives the
+    // verdict — an added angle must not overwrite the reference's judgement.
+    if (becomesReference) {
+      project.settings = Object.assign({}, project.settings || {}, { photo_check: check });
+      try { await db.saveSettings(projectId, project.settings); } catch (e) { /* non-fatal */ }
+      renderPhotoWarn(check);
+    }
     document.getElementById('add-photo-input').value = '';
     status.textContent = ''; status.classList.remove('busy');
     document.getElementById('photo-box').classList.remove('collapsed'); // stay open after add

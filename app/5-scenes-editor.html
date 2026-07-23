@@ -110,6 +110,21 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .model-card-lg .mm-desc{font-size:1rem;font-weight:700;color:var(--ink);line-height:1.4;flex:1;margin-bottom:.6rem}
 .model-card-lg .btn{width:100%;justify-content:center}
 @media(max-width:640px){.model-row{flex-direction:column}.model-row .mode-or{align-self:flex-start;padding:.2rem 0}}
+/* One hero model per section + smaller secondary options (2026-07-20). The
+   hero is a full model-card-lg (capped width); the alternatives are compact
+   pill buttons that pick that model. */
+.pick-hero .model-card-lg{max-width:24rem;margin-bottom:.9rem}
+.alt-models{display:flex;align-items:center;gap:.5rem .7rem;flex-wrap:wrap;margin-bottom:.2rem}
+.alt-models .alt-label{font-size:.82rem;color:var(--muted)}
+.alt-btn{border:1.5px solid var(--line-2);background:transparent;color:var(--ink);font-family:inherit;font-size:.82rem;font-weight:600;padding:.42rem .85rem;border-radius:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.alt-btn:hover{border-color:var(--accent)}
+.alt-btn.selected{border-color:var(--accent);background:var(--accent-wash)}
+/* Multi-model run row (2026-07-19 lead-variety lever, rebuilt 2026-07-20
+   from the vault's Lead Variety Runs spec after the Auto-mode revert). */
+.multi-row{border:1.5px dashed var(--line-2);border-radius:12px;padding:.8rem 1.1rem;display:flex;align-items:center;gap:.9rem 1.1rem;flex-wrap:wrap;margin-bottom:.8rem}
+.multi-row .multi-label{font-family:var(--font-display);font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.multi-row label{font-size:.85rem;display:flex;align-items:center;gap:.4rem;cursor:pointer}
+.multi-row input[type=checkbox]{accent-color:var(--accent)}
 /* Bria product-shot options (2026-07-18) — composite model, its own knobs */
 .bria-opts{border:1.5px solid var(--line-2);border-radius:12px;padding:1.1rem 1.2rem;margin-bottom:.8rem}
 .bria-opts h4{font-family:var(--font-display);text-transform:uppercase;font-size:1rem;letter-spacing:.03em;margin-bottom:.7rem}
@@ -204,6 +219,19 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
         <div id="scene-detail-body" style="display:none">
           <div class="scene-detail-hint">Size in frame — how tall the product renders as a % of the image height (used by Exact render, and by Bria when placement is Automatic). Leave blank to vary per image.</div>
           <input id="placement-scale" type="number" min="10" max="100" step="1" placeholder="Size in frame (%)" onchange="saveSizeInFrame()">
+          <!-- Scene reference image (2026-07-20, Owner ask) — optional photo of
+               the kind of setting/mood wanted. Saved to settings.scene_ref
+               (storage path); the generate function feeds it to the AI Gen
+               models as an extra reference marked "scene only, not product".
+               Bria has its own reference option; Exact Render doesn't use it. -->
+          <div class="scene-detail-hint" style="margin-top:1.1rem">Reference image — optional. A photo of the kind of scene you want (a room, a surface, a mood). It guides the setting and lighting; your product still comes from your product photos. Used by the AI Gen models — Bria has its own reference option under its settings.</div>
+          <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
+            <input type="file" id="scene-ref-file" accept="image/*" style="display:none" onchange="sceneRefUpload(this)">
+            <button class="btn btn-ghost" type="button" onclick="document.getElementById('scene-ref-file').click()">Choose image…</button>
+            <img id="scene-ref-thumb" alt="Scene reference" style="height:56px;border-radius:8px;display:none">
+            <span class="more-link" id="scene-ref-remove" style="display:none" onclick="removeSceneRef()">Remove</span>
+            <span id="scene-ref-status" style="font-size:.78rem;color:var(--muted)"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -214,7 +242,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
     <div class="step-box" id="step3-box">
       <div class="section-h step-head" onclick="toggleStep('step3-box')" style="margin-bottom:.25rem">Choose your AI Gen Model</div>
       <p class="sub" style="margin-bottom:1.2rem">Each has it's own unique look. Since your image is redrawn in AI, there may be accuracy risks.</p>
-      <div class="model-row" id="scene-model-wrap">
+      <div class="pick-hero" id="scene-model-wrap">
 
         <div class="model-card-lg" data-model="default">
           <div class="logo-box">
@@ -235,51 +263,88 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
           <button class="btn btn-next" onclick="useModel('default')">Use Nano Banana 2</button>
         </div>
 
-        <div class="mode-or">OR</div>
-
-        <div class="model-card-lg" data-model="seedream">
-          <div class="logo-box">
-            <svg width="140" height="36" viewBox="0 0 140 36" fill="none">
-              <text x="0" y="27" font-family="'Arial Black','Helvetica Neue',sans-serif" font-weight="900" font-size="24" fill="white">Seedream</text>
-              <text x="1" y="36" font-family="'IBM Plex Sans',sans-serif" font-weight="400" font-size="11" fill="rgba(255,255,255,.55)">5.0 Lite</text>
-            </svg>
-          </div>
-          <div class="mm-desc">Hyper-real, glossier finish.</div>
-          <button class="btn btn-next" onclick="useModel('seedream')">Use Seedream</button>
+        <div class="alt-models">
+          <span class="alt-label">Or try another look:</span>
+          <button class="alt-btn" data-model="seedream" onclick="useModel('seedream')" title="Hyper-real, glossier finish">Seedream</button>
+          <button class="alt-btn" data-model="gpt" onclick="useModel('gpt')" title="Strictest product match, softer scenes">GPT Image</button>
         </div>
 
-        <div class="mode-or">OR</div>
+      </div>
 
-        <div class="model-card-lg" data-model="gpt">
-          <div class="logo-box">
-            <svg width="140" height="36" viewBox="0 0 140 36" fill="none">
-              <rect width="36" height="36" rx="8" fill="#10A37F"/>
-              <g transform="translate(18,18)">
-                <ellipse rx="6.5" ry="11" fill="none" stroke="white" stroke-width="1.8" transform="rotate(0)"/>
-                <ellipse rx="6.5" ry="11" fill="none" stroke="white" stroke-width="1.8" transform="rotate(60)"/>
-                <ellipse rx="6.5" ry="11" fill="none" stroke="white" stroke-width="1.8" transform="rotate(120)"/>
-              </g>
-              <text x="44" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="18" fill="white">ChatGPT</text>
-            </svg>
-          </div>
-          <div class="mm-desc">Strictest product match, softer scenes.</div>
-          <button class="btn btn-next" onclick="useModel('gpt')">Use GPT Image</button>
-        </div>
+      <!-- Multi-model run (rebuilt 2026-07-20 from the vault's Lead Variety
+           Runs spec) — one look per checked model, run SEQUENTIALLY: the fal
+           key allows 2 concurrent lanes, parallel batches contend and 429.
+           Redraw models only (2026-07-20): the real-product models each have
+           their own options flow, so they're not part of the quick multi-run. -->
+      <div class="multi-row">
+        <span class="multi-label">Or run several looks at once</span>
+        <label><input type="checkbox" id="multi-default"> Nano Banana 2</label>
+        <label><input type="checkbox" id="multi-seedream"> Seedream</label>
+        <label><input type="checkbox" id="multi-gpt"> GPT Image</label>
+        <button class="btn btn-primary" onclick="generateMulti()">Generate on selected →</button>
+        <span id="multi-status" style="font-size:.78rem;color:var(--muted)"></span>
+      </div>
 
-        <div class="mode-or">OR</div>
+      <!-- Real-product models (2026-07-20 restructure, Owner call): IC-Light,
+           Bria, Exact Render — all keep your actual product instead of
+           redrawing it. Clicking "Open X" reveals that model's own options
+           panel below; the panel's own button then runs the generation. -->
+      <div class="section-h" style="margin:1.9rem 0 .25rem">Or use your real product — no redraw</div>
+      <p class="sub" style="margin-bottom:1.2rem">These place your real product photo into the scene instead of redrawing it. Pick one to see its settings.</p>
+      <div class="pick-hero" id="real-model-wrap">
 
-        <div class="model-card-lg" data-model="bria">
+        <div class="model-card-lg" data-model="iclight">
           <div class="logo-box">
             <svg width="150" height="36" viewBox="0 0 150 36" fill="none">
-              <rect width="36" height="36" rx="8" fill="#ECE7DF"/>
-              <text x="8" y="27" font-family="'Arial Black','Helvetica Neue',sans-serif" font-weight="900" font-size="22" fill="#16130E">B</text>
-              <text x="44" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="18" fill="white">Bria</text>
+              <circle cx="18" cy="18" r="15" fill="none" stroke="#ffd166" stroke-width="2.5"/>
+              <circle cx="18" cy="18" r="7" fill="#ffd166"/>
+              <text x="42" y="24" font-family="'IBM Plex Sans',sans-serif" font-weight="600" font-size="17" fill="white">IC-Light</text>
             </svg>
           </div>
-          <div class="mm-desc">Your real photo composited, never redrawn.</div>
-          <button class="btn btn-next" onclick="useBria()">Use Bria</button>
+          <div class="mm-desc">Your photo relit into the scene — best light blending.</div>
+          <button class="btn btn-next" onclick="useIcLight()">Open IC-Light</button>
         </div>
 
+        <div class="alt-models">
+          <span class="alt-label">Or another way to keep your real product:</span>
+          <button class="alt-btn" data-model="bria" onclick="useBria()" title="Your real photo composited, never redrawn">Bria</button>
+          <button class="alt-btn" data-model="exact" onclick="useExactPanel()" title="Your exact pixels, verified — no redraw at all">Exact Render</button>
+        </div>
+
+      </div>
+
+      <!-- IC-Light options (2026-07-20) — light direction is its signature
+           control (initial_latent); images-per-scene mirrors Bria. -->
+      <div class="bria-opts" id="iclight-opts" style="display:none">
+        <h4>IC-Light settings</h4>
+        <div class="bria-row">
+          <span style="font-size:.85rem;font-weight:600">Light direction</span>
+          <label><input type="radio" name="ic-light" value="None" checked> Auto</label>
+          <label><input type="radio" name="ic-light" value="Left"> Left</label>
+          <label><input type="radio" name="ic-light" value="Right"> Right</label>
+          <label><input type="radio" name="ic-light" value="Top"> Top</label>
+          <label><input type="radio" name="ic-light" value="Bottom"> Bottom</label>
+          <span class="bria-hint" style="flex-basis:100%;margin-top:0">Where the key light hits your product from. Auto lets IC-Light read it from your scene text.</span>
+        </div>
+        <div class="bria-row">
+          <label>Images per scene
+            <select id="ic-num"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </label>
+        </div>
+        <button class="btn btn-next" onclick="generateWithIcLight()">Use IC-Light →</button>
+      </div>
+
+      <!-- Exact Render options (2026-07-20) — the paste-back edge feather that
+           used to live on the old full-width Exact card. -->
+      <div class="bria-opts" id="exact-opts" style="display:none">
+        <h4>Exact Render settings</h4>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem;line-height:1.5">Your exact product cutout is composited into an AI scene, then verified pixel-for-pixel — no angle change, no redraw.</p>
+        <div class="edge-ctl" style="border:none;padding:0;background:none">
+          <label for="edge-slider">Edge: <b id="edge-label">Standard</b></label>
+          <input type="range" id="edge-slider" min="1" max="5" step="1" value="2" oninput="setEdgeLevel(this.value)">
+          <span class="edge-hint">Crisp ↔ Feathered — how the product's cutout edge blends into the scene</span>
+        </div>
+        <button class="btn btn-next" style="margin-top:.9rem" onclick="useExact()">Use Exact Render →</button>
       </div>
 
       <!-- Bria options — every product-shot API knob, shown when Bria is picked -->
@@ -317,16 +382,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
           </label>
         </div>
 
-        <button class="btn btn-next" onclick="generateWithBria()">Generate with Bria →</button>
-      </div>
-      <div class="mode-card" id="mode-card-pro" onclick="pickMode('pro')">
-        <p>If your product is noticeably inaccurate, you can try our Exact Render, which will use your exact image with no angle change.</p>
-        <div class="edge-ctl" onclick="event.stopPropagation()">
-          <label for="edge-slider">Edge: <b id="edge-label">Standard</b></label>
-          <input type="range" id="edge-slider" min="1" max="5" step="1" value="2" oninput="setEdgeLevel(this.value)">
-          <span class="edge-hint">Crisp ↔ Feathered — how the product's cutout edge blends into the scene</span>
-        </div>
-        <button class="btn btn-next btn-sm" style="margin-top:.8rem" onclick="event.stopPropagation();useExact()">Use Exact Render</button>
+        <button class="btn btn-next" onclick="generateWithBria()">Use Bria →</button>
       </div>
     </div>
   </div>
@@ -441,6 +497,55 @@ function fillSizeInFrame(){
   if (scale) document.getElementById('scene-detail-body').style.display = '';
 }
 
+// ---------- scene reference image (2026-07-20) ----------
+// Optional setting/mood photo, stored under <slug>/<project>/scene-ref/ and
+// referenced by storage path in projects.settings.scene_ref — same pattern
+// as Bria's ref_image. The generate function downloads it per run, so
+// swapping or removing it here takes effect on the next generation.
+async function sceneRefUpload(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const status = document.getElementById('scene-ref-status');
+  status.textContent = 'Uploading…';
+  try {
+    const ext = (file.name.match(/\.[a-z0-9]+$/i) || ['.jpg'])[0];
+    const path = db.storagePath(project.clients.slug, projectId, 'scene-ref', 'ref-' + Date.now() + ext);
+    await db.uploadFile(path, file);
+    const settings = Object.assign({}, project.settings || {}, { scene_ref: path });
+    await db.saveSettings(projectId, settings);
+    project.settings = settings;
+    const thumb = document.getElementById('scene-ref-thumb');
+    thumb.src = URL.createObjectURL(file);
+    thumb.style.display = 'block';
+    document.getElementById('scene-ref-remove').style.display = '';
+    status.textContent = 'Saved ✓';
+  } catch (e) {
+    status.textContent = 'Upload failed: ' + (e.message || e);
+  }
+}
+async function removeSceneRef(){
+  const settings = Object.assign({}, project.settings || {});
+  delete settings.scene_ref;
+  try { await db.saveSettings(projectId, settings); } catch (e) { return; }
+  project.settings = settings;
+  document.getElementById('scene-ref-thumb').style.display = 'none';
+  document.getElementById('scene-ref-remove').style.display = 'none';
+  document.getElementById('scene-ref-status').textContent = '';
+  document.getElementById('scene-ref-file').value = '';
+}
+async function restoreSceneRef(){
+  const path = project.settings?.scene_ref;
+  if (!path) return;
+  document.getElementById('scene-detail-body').style.display = '';
+  document.getElementById('scene-ref-remove').style.display = '';
+  try {
+    const url = await db.getSignedUrl(path);
+    const thumb = document.getElementById('scene-ref-thumb');
+    thumb.src = url;
+    thumb.style.display = 'block';
+  } catch (e) { /* thumb only — generate re-reads the path itself */ }
+}
+
 // Pure reveal (no persistence) — used both by the "These look good" button
 // and by init() when restoring where the user left off. Scenes stays open —
 // it's no longer auto-collapsed when the mode step appears (Owner call,
@@ -470,11 +575,11 @@ async function showModeStep(){
 // Surface the input-quality verdict (written on the Brief page's photo upload)
 // on the Exact card: a "Not recommended" chip + the reasons. Advisory only —
 // pickMode still fires on click, so the user keeps the choice.
+// Persists the pipeline (standard = Scene/relight/composite models; pro =
+// Exact pixel-lock). Card selection is markSceneModel's job now — this only
+// writes projects.pipeline so generate forks correctly.
 async function pickMode(mode){
   const pipeline = mode === 'pro' ? 'pro' : 'standard';
-  const stdCard = document.getElementById('mode-card-standard');
-  if (stdCard) stdCard.classList.toggle('selected', pipeline === 'standard');
-  document.getElementById('mode-card-pro').classList.toggle('selected', pipeline === 'pro');
   if (project && project.pipeline !== pipeline) {
     project.pipeline = pipeline;
     try { await db.savePipeline(projectId, pipeline); } catch (e) { /* generate reads project.pipeline; non-fatal */ }
@@ -514,17 +619,32 @@ function initEdgeSlider(){
 // both decide what the Generate run produces.
 async function saveSceneModel(v){
   const settings = Object.assign({}, project.settings || {});
-  if (v === 'seedream' || v === 'gpt' || v === 'bria') settings.image_model = v;
+  if (v === 'seedream' || v === 'gpt' || v === 'bria' || v === 'iclight') settings.image_model = v;
   else delete settings.image_model;
   await db.saveSettings(projectId, settings);
   project.settings = settings;
 }
-// Reflect the chosen model card's selected state.
+// The three real-product models each have an options panel that appears when
+// their "Use" button is clicked. Only one shows at a time.
+const REAL_PANELS = { iclight: 'iclight-opts', bria: 'bria-opts', exact: 'exact-opts' };
+function showRealPanel(which, scroll = true){
+  Object.entries(REAL_PANELS).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = k === which ? '' : 'none';
+  });
+  const el = document.getElementById(REAL_PANELS[which]);
+  if (el && scroll) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// Reflect the chosen model card's selected state across BOTH rows (the redraw
+// models and the real-product models), and hide any option panel that isn't
+// the one just picked.
 function markSceneModel(v){
-  document.querySelectorAll('#scene-model-wrap .model-mini, #scene-model-wrap .model-card-lg').forEach(c =>
+  document.querySelectorAll('.model-card-lg, .alt-btn').forEach(c =>
     c.classList.toggle('selected', c.dataset.model === v));
-  const bp = document.getElementById('bria-opts');
-  if (bp && v !== 'bria') bp.style.display = 'none';
+  Object.entries(REAL_PANELS).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el && v !== k) el.style.display = 'none';
+  });
 }
 // Clicking a model card picks it (and implies AI Render mode).
 function pickSceneModel(e, v){
@@ -540,11 +660,59 @@ async function useModel(model){
   await pickMode('standard');
   generateAndCheck();
 }
+// The redraw models (default/seedream/gpt) generate on click; the three
+// real-product models reveal their options panel first, then generate from
+// the panel's own button.
+async function useIcLight(){
+  markSceneModel('iclight');
+  await saveSceneModel('iclight');
+  await pickMode('standard');
+  restoreIcLight();
+  showRealPanel('iclight');
+}
+async function useExactPanel(){
+  markSceneModel('exact');
+  await saveSceneModel('exact');   // clears image_model; Exact runs off pipeline='pro'
+  await pickMode('pro');
+  initEdgeSlider();
+  showRealPanel('exact');
+}
 async function useExact(){
-  // Clear any model-card selection (and hide the Bria panel) so the UI
-  // matches the pipeline that's about to run.
+  // Called by the Exact panel's Generate button. Re-assert the pipeline in
+  // case a redraw model was picked in between.
   markSceneModel('exact');
   await pickMode('pro');
+  generateAndCheck();
+}
+
+// ---------- IC-Light options (2026-07-20) ----------
+// IC-Light relights the real product photo into the scene. Its knobs persist
+// in projects.settings.iclight; the generate function reads them per run.
+//   { light: 'None'|'Left'|'Right'|'Top'|'Bottom', num_images: 1-4 }
+function iclightSettings(){ return (project && project.settings && project.settings.iclight) || {}; }
+function collectIcLight(){
+  const light = (document.querySelector('input[name=ic-light]:checked') || {}).value || 'None';
+  return { light, num_images: parseInt(document.getElementById('ic-num').value, 10) || 1 };
+}
+async function saveIcLight(s){
+  const settings = Object.assign({}, project.settings || {}, { iclight: s });
+  await db.saveSettings(projectId, settings);
+  project.settings = settings;
+}
+function restoreIcLight(){
+  const s = iclightSettings();
+  const light = ['None','Left','Right','Top','Bottom'].includes(s.light) ? s.light : 'None';
+  const radio = document.querySelector(`input[name=ic-light][value=${light}]`);
+  if (radio) radio.checked = true;
+  document.getElementById('ic-num').value = s.num_images || 1;
+}
+async function generateWithIcLight(){
+  await saveIcLight(collectIcLight());
+  // Re-assert model AND pipeline every time — a prior Exact run leaves
+  // pipeline='pro', which would silently route this to pixel-lock instead.
+  markSceneModel('iclight');
+  await saveSceneModel('iclight');
+  await pickMode('standard');
   generateAndCheck();
 }
 
@@ -562,8 +730,7 @@ async function useBria(){
   await saveSceneModel('bria');
   await pickMode('standard');
   await restoreBria();
-  briaEl('bria-opts').style.display = '';
-  briaEl('bria-opts').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showRealPanel('bria');
 }
 function briaBgControls(){
   const ref = document.querySelector('input[name=bria-bg]:checked').value === 'reference';
@@ -649,6 +816,80 @@ async function generateWithBria(){
   await saveSceneModel('bria');
   await pickMode('standard');
   generateAndCheck();
+}
+
+// ---------- multi-model run (rebuilt 2026-07-20, vault: Lead Variety Runs) ----------
+// One click, one look per checked model. Zero backend changes: the generate
+// function reads projects.settings.image_model at call time, so "run N
+// models" is save model A → generate → save model B → generate → …
+// expand-shots runs ONCE up front (its output is model-agnostic; Bria
+// rewrites its own briefs server-side). Looks run SEQUENTIALLY — the fal key
+// allows 2 concurrent lanes; parallel batches contend and 429.
+const MODEL_LABELS = { default: 'Nano Banana 2', seedream: 'Seedream', gpt: 'GPT Image', bria: 'Bria', iclight: 'IC-Light' };
+async function generateMulti(){
+  const status = document.getElementById('multi-status');
+  status.textContent = '';
+  // Only the redraw models have multi-run checkboxes now — guard the ones
+  // that were removed (bria/iclight) so a missing element can't throw.
+  const picked = Object.keys(MODEL_LABELS).filter(m => {
+    const el = document.getElementById('multi-' + m);
+    return el && el.checked;
+  });
+  if (!picked.length){ status.textContent = 'Check at least one model first.'; return; }
+  if (!scenes.length){ alert('add at least one scene first'); return; }
+  const overlay = document.getElementById('gen-overlay');
+  const note = document.getElementById('gen-note');
+  const errEl = document.getElementById('gen-err');
+  errEl.textContent = '';
+  generating = true;
+  overlay.classList.add('open');
+  try {
+    await db.saveScenes(projectId, scenesText());
+    note.textContent = 'Expanding your scenes into full prompts…';
+    await pickMode('standard');
+    await callFunction('expand-shots', { projectId });
+
+    const failures = [];
+    let attempted = 0;
+    for (let i = 0; i < picked.length; i++){
+      const m = picked[i];
+      const label = MODEL_LABELS[m];
+      attempted++;
+      // Re-assert BOTH model and pipeline before every generate call — a
+      // prior Exact run leaves pipeline='pro' and the generate fork silently
+      // runs pixel-lock instead (the 2026-07-18 mode-sticking bug).
+      markSceneModel(m);
+      await saveSceneModel(m);
+      await pickMode('standard');
+      const total = scenes.length;
+      let baseCount = 0;
+      try { baseCount = (await db.listRenders(projectId)).length; } catch (e) { /* progress just starts from 0 */ }
+      note.textContent = `Look ${i + 1} of ${picked.length} — ${label}: 0/${total} ready…`;
+      const timer = setInterval(async () => {
+        try {
+          const now = (await db.listRenders(projectId)).length;
+          const done = Math.max(0, Math.min(total, now - baseCount));
+          note.textContent = `Look ${i + 1} of ${picked.length} — ${label}: ${done}/${total} ready…`;
+        } catch (e) { /* poll failure is non-fatal */ }
+      }, 3000);
+      try {
+        await callFunction('generate', { projectId });
+      } catch (e) {
+        failures.push(`${label}: ${e.message || String(e)}`);
+        // Project image cap reached — every later model fails identically.
+        if (/beta limit/i.test(e.message || '')) break;
+      } finally {
+        clearInterval(timer);
+      }
+    }
+    if (failures.length === attempted) throw new Error(`All looks failed:\n${failures.join('\n')}`);
+    // Partial failures surface via the run log on the Check page.
+    generating = false;
+    location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
+  } catch (e) {
+    generating = false;
+    errEl.innerHTML = `${esc(e.message || String(e))}<br><br><button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="document.getElementById('gen-overlay').classList.remove('open')">Close</button>`;
+  }
 }
 
 // The one CTA runs the whole invisible middle of the pipeline (Owner call,
@@ -741,7 +982,10 @@ async function findCutoutBase64(clientSlug, note){
   }
   if (note) note.textContent = 'No cutout uploaded — removing the background from the reference photo automatically…';
   const refB64 = await blobToBase64(refBlob);
-  const { cutout_b64 } = await callLocalService('remove-background', { image_b64: refB64 });
+  // BiRefNet via the remove-background Edge Function (2026-07-20) — replaced
+  // the Cloud Run rembg endpoint, which kept picking the wrong subject (the
+  // dog instead of the crate) and OOM'd on big photos.
+  const { cutout_b64 } = await callFunction('remove-background', { image_b64: refB64, mime_type: refBlob.type || 'image/jpeg' });
   return cutout_b64;
 }
 
@@ -820,7 +1064,7 @@ async function generateExact(note){
       const filename = `${item.file.replace(/\.[a-z0-9]+$/i, '')}-${Date.now().toString(36)}.png`;
       const path = db.storagePath(clientSlug, projectId, 'renders', filename);
       await db.uploadFile(path, base64ToBlob(result.composite_b64, 'image/png'));
-      await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render' });
+      await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render', model: 'exact' });
     } catch (e) {
       // e.match (set in callLocalService, lib/functions.js) is the LAST
       // attempt's score/drift/scale from the drift guard — shown so a
@@ -840,6 +1084,42 @@ async function generateExact(note){
   if (failed.length) throw new Error(`${failed.length} shot(s) failed:\n${failed.join('\n')}`);
 }
 
+// IC-Light relight loop (2026-07-20). IC-Light cold-boots on fal for ~2 min,
+// which 504'd the single-call `generate` path. Instead: submit every shot via
+// fal-iclight 'start' (fast), then poll 'collect' every 3s — each call returns
+// in seconds, so the cold boot happens in fal's queue, never inside one held-
+// open request. Saved renders are scored on the Check page (autocheck).
+async function generateIcLight(note){
+  note.textContent = 'Expanding your scenes into full prompts…';
+  await callFunction('expand-shots', { projectId });
+  note.textContent = 'Starting the relight…';
+  const { jobs } = await callFunction('fal-iclight', { action: 'start', projectId });
+  if (!jobs || !jobs.length) throw new Error('no shots to generate');
+  const total = jobs.length;
+  let pending = jobs.slice();
+  let done = 0;
+  const failed = [];
+  note.textContent = `Relighting ${total} image${total===1?'':'s'} — 0/${total} ready… (the first run warms the model, up to ~2 min)`;
+  const deadline = Date.now() + 5 * 60 * 1000;
+  while (pending.length && Date.now() < deadline){
+    await new Promise(r => setTimeout(r, 3000));
+    let res;
+    try { res = await callFunction('fal-iclight', { action: 'collect', projectId, jobs: pending }); }
+    catch (e) { continue; /* transient collect error — keep polling */ }
+    const still = [];
+    for (const j of pending){
+      const r = (res.results || []).find(x => x.id === j.id);
+      if (!r){ still.push(j); continue; }
+      if (r.done){ done++; if (r.error) failed.push(`shot ${j.id}: ${r.error}`); }
+      else still.push(j);
+    }
+    pending = still;
+    note.textContent = `Relighting ${total} image${total===1?'':'s'} — ${done}/${total} ready…`;
+  }
+  if (pending.length) throw new Error(`Timed out waiting for ${pending.length} image(s). fal may be slow right now — try again in a minute.`);
+  if (failed.length === total) throw new Error(`All shots failed:\n${failed.join('\n')}`);
+}
+
 async function generateAndCheck(){
   if (!scenes.length){ alert('add at least one scene first'); return; }
   const overlay = document.getElementById('gen-overlay');
@@ -853,6 +1133,15 @@ async function generateAndCheck(){
 
     if (isExactMode()) {
       await generateExact(note);
+      generating = false;
+      location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}&autocheck=1`;
+      return;
+    }
+
+    // IC-Light runs through its own submit/poll loop (cold-boot safe), not the
+    // single-call generate path. Renders are scored on the Check page.
+    if ((project.settings && project.settings.image_model) === 'iclight') {
+      await generateIcLight(note);
       generating = false;
       location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}&autocheck=1`;
       return;
@@ -884,7 +1173,12 @@ async function generateAndCheck(){
     }
 
     generating = false;
-    location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}`;
+    // IC-Light's fidelity check is deferred by the generate function (its
+    // cold-boot path is too slow to also run the checker inline), so land on
+    // the Check page with autocheck=1 to score those renders there — same as
+    // Exact. Other models are already scored inline, so no autocheck needed.
+    const deferCheck = (project.settings && project.settings.image_model) === 'iclight';
+    location.href = `6-checker-gallery.html?project=${encodeURIComponent(projectId)}${deferCheck ? '&autocheck=1' : ''}`;
   } catch (e) {
     generating = false;
     errEl.innerHTML = `${esc(e.message || String(e))}<br><br><button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="document.getElementById('gen-overlay').classList.remove('open')">Close</button>`;
@@ -955,20 +1249,25 @@ async function init(){
   document.getElementById('crumb-proj').href = `3-project-view.html?project=${encodeURIComponent(projectId)}`;
 
   const settings = project.settings || {};
-  markSceneModel(['seedream','gpt','bria'].includes(settings.image_model) ? settings.image_model : 'default');
-  // A returning Bria project reopens with its options visible and filled.
-  if (settings.image_model === 'bria') {
-    restoreBria().catch(() => {});
-    document.getElementById('bria-opts').style.display = '';
+  // Reopen on the saved model with its options panel visible + filled. Exact
+  // is decided by pipeline='pro' (not image_model); the three redraw models
+  // and IC-Light/Bria come from settings.image_model.
+  // Highlight the last-picked card and prefill its options, but leave every
+  // options panel CLOSED on load (Owner call, 2026-07-20) — the user opens
+  // one with its "Open …" button.
+  if (isExactMode()) {
+    markSceneModel('exact');
+  } else {
+    const m = ['seedream','gpt','bria','iclight'].includes(settings.image_model) ? settings.image_model : 'default';
+    markSceneModel(m);
+    if (m === 'bria') restoreBria().catch(() => {});
+    if (m === 'iclight') restoreIcLight();
   }
   initEdgeSlider();
   scenes = parseScenesText(project.scenes);
   renderScenes();
   fillSizeInFrame();
-
-  // Reflect the saved render mode in the cards + chip + model-picker
-  // visibility (no re-save, since the value is unchanged).
-  pickMode(isExactMode() ? 'pro' : 'standard');
+  restoreSceneRef().catch(() => {});
 
   // Scenes is the entry point now — always open. First time through (nothing
   // saved yet), auto-draft a starting batch from the brief so it lands

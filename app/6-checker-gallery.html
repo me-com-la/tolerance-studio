@@ -147,6 +147,10 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
    badge any AI-edited render so it can't pass as pixel-exact. */
 .edit-warn{font-size:.68rem;line-height:1.45;color:var(--warn);background:var(--warn-wash);border-radius:8px;padding:.4rem .55rem;margin-top:.3rem}
 .lockbreak-chip{position:absolute;bottom:.4rem;left:.4rem;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.22rem .5rem;border-radius:8px;background:rgba(180,83,9,.92);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+/* Which model made this image (renders.model, 008 migration) — provenance
+   metadata, so it's set in mono and stays quiet next to the score pills.
+   Old rows have no model recorded; they simply show no chip. */
+.model-chip{position:absolute;bottom:.4rem;right:.4rem;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.02em;padding:.22rem .5rem;border-radius:8px;background:rgba(12,11,16,.78);color:rgba(232,230,225,.85);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
@@ -345,6 +349,23 @@ function togglePointDetail(event, renderId, key){
 }
 
 
+// renders.model keys → display names. 'default' = Nano Banana 2 (the key is
+// absent from settings when it's the standard model); 'exact' and 'edit' are
+// written client-side by the Exact pipeline and the Fix-now flow.
+const RENDER_MODEL_NAMES = {
+  default: 'Nano Banana 2',
+  seedream: 'Seedream',
+  gpt: 'GPT Image',
+  bria: 'Bria',
+  iclight: 'IC-Light',
+  exact: 'Exact Render',
+  edit: 'AI Edit'
+};
+function modelChip(r){
+  const name = RENDER_MODEL_NAMES[r.model];
+  return name ? `<span class="model-chip" title="Made with ${esc(name)}">${esc(name)}</span>` : '';
+}
+
 function cardHtml(r){
   const url = previewUrlCache[r.storage_path] || '';
   const verdict = effectiveVerdict(r);
@@ -384,6 +405,7 @@ function cardHtml(r){
       <button class="fav-btn${r.is_favorite ? ' active' : ''}" title="Favorite" onclick="toggleFavorite(event,'${r.id}')">${r.is_favorite ? '♥' : '♡'}</button>
       <button class="del-btn" title="Delete" onclick="deleteRenderInline(event,'${r.id}','${esc(r.storage_path)}')">🗑</button>
       ${lockBreakChip}
+      ${modelChip(r)}
     </div>
     <div class="body">
       ${checkBlock}
@@ -520,7 +542,7 @@ async function editRender(renderId){
     const path = db.storagePath(project.clients.slug, projectId, 'renders', filename);
     const bytes = Uint8Array.from(atob(json.image_b64), c => c.charCodeAt(0));
     await db.uploadFile(path, new Blob([bytes], { type: json.mime_type }));
-    await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render' });
+    await db.upsertRender(projectId, filename, { storage_path: path, stage: 'render', model: 'edit' });
     await db.createRunLogEntry(projectId, 'generate', `edited "${r.filename}" -> "${filename}": ${instruction}`);
 
     input.value = '';

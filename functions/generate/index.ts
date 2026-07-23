@@ -146,7 +146,8 @@ async function falQueueRun(falKey, model, body) {
 const MODEL_CHOICES = {
   seedream: 'fal-ai/bytedance/seedream/v5/lite/edit',
   gpt: 'fal-ai/gpt-image-1.5/edit',
-  bria: 'fal-ai/bria/product-shot'
+  bria: 'fal-ai/bria/product-shot',
+  iclight: 'fal-ai/iclight-v2'
 };
 function modelForProject(project) {
   return MODEL_CHOICES[project.settings && project.settings.image_model] || IMAGE_MODEL;
@@ -158,7 +159,11 @@ function modelForProject(project) {
 //   { cutout, bg: 'describe'|'reference', ref_image, placement, position,
 //     padding: [l,r,t,b], shot_w, shot_h, original_quality, fast, optimize,
 //     num_results }
-const BRIA_CUTOUT_MODEL = 'fal-ai/bria/background/remove';
+// Cutout model swapped Bria RMBG -> BiRefNet v2 (2026-07-20, Owner call):
+// same {image_url} in / {image:{url}} out contract, but BiRefNet's Heavy
+// model at 2048px holds fine detail (mesh, fur, thin legs) far better.
+const CUTOUT_MODEL = 'fal-ai/birefnet/v2';
+const CUTOUT_INPUT = { model: 'General Use (Heavy)', operating_resolution: '2048x2048', refine_foreground: true, output_format: 'png' };
 // Bria's background/remove keeps the ORIGINAL canvas — the product floats
 // inside a transparent frame. product-shot measures placement and scale on
 // the full canvas, so that frame reads as product and renders sat far from
@@ -330,7 +335,7 @@ async function generateBriaShot(falKey, { prompt, aspectRatio, productUri, refBg
 const ANCHOR = 'The reference image(s) show the exact product. Reproduce THIS exact product — ' +
   'same shape, colors, materials, hardware, and markings, unchanged — placed into the scene ' +
   'described below. Never invent a different or similar product.\n\n';
-function falInputFor(model, prompt, image_urls, aspectRatio) {
+function falInputFor(model, prompt, image_urls, aspectRatio, opts = {}) {
   if (model.includes('gpt-image')) {
     // Only three fixed sizes; quality 'medium' = $0.034-0.051/image
     // (high would be $0.13-0.20 — not worth 4x for batch scenes).
@@ -345,6 +350,38 @@ function falInputFor(model, prompt, image_urls, aspectRatio) {
       input_fidelity: 'high',
       output_format: 'png'
     };
+  }
+  if (model.includes('iclight')) {
+    // IC-Light v2 relights the product photo INTO the scene — takes ONE
+    // image (the product shot), not a reference list. Subject preservation
+    // is structural (it relights rather than redraws), so no ANCHOR preamble.
+    const SIZES = {
+      '1:1':  { width: 1024, height: 1024 },
+      '16:9': { width: 1280, height: 720 },
+      '9:16': { width: 720, height: 1280 },
+      '4:3':  { width: 1152, height: 864 },
+      '3:4':  { width: 864, height: 1152 },
+      '3:2':  { width: 1216, height: 810 },
+      '2:3':  { width: 810, height: 1216 }
+    };
+    const input = {
+      prompt,
+      image_url: image_urls[0],
+      image_size: SIZES[aspectRatio] || SIZES['1:1'],
+      num_images: Math.max(1, Math.min(4, parseInt(opts.num_images, 10) || 1)),
+      // 12 steps, not the default 28 (2026-07-20): IC-Light on fal cold-boots
+      // for ~2 min after idle, and 28 steps on top of that blew past the
+      // edge-function gateway limit (the "HTTP 504" the Owner hit). Relight
+      // quality is indistinguishable at 12; warm calls drop to ~8s, and the
+      // compute stacked on a cold boot shrinks enough to fit the timeout.
+      num_inference_steps: 12,
+      output_format: 'png'
+    };
+    // Light direction — IC-Light's initial_latent knob (Owner ask,
+    // 2026-07-20). 'None' (or anything unset) = auto: the model picks the
+    // light from the scene text. Left/Right/Top/Bottom force the key light.
+    if (['Left', 'Right', 'Top', 'Bottom'].includes(opts.light)) input.initial_latent = opts.light;
+    return input;
   }
   if (model.includes('seedream')) {
     // Seedream 5 Lite requires 3.7–9.43 MP output; 16:9/9:16 bumped up from
@@ -368,7 +405,11 @@ function falInputFor(model, prompt, image_urls, aspectRatio) {
     output_format: 'png'
   };
 }
-async function generateShotImage(falKey, { prompt, aspectRatio, referenceImages, model }) {
+// Returns an ARRAY of images. Redraw models hand back exactly one; IC-Light
+// can return several (num_images), so the save/check loop in the worker
+// treats every non-Bria model the same way it treats Bria (Owner ask,
+// 2026-07-20: IC-Light images-per-scene).
+async function generateShotImage(falKey, { prompt, aspectRatio, referenceImages, model, opts }) {
   // referenceImages already carry base64 (not raw bytes, see bytesToBase64
   // above), so image_urls is a plain data-URI template
   //same trick already
@@ -381,13 +422,16 @@ async function generateShotImage(falKey, { prompt, aspectRatio, referenceImages,
   // short pause recovers the transient cases; a truly broken shot still
   // fails cleanly (mapWithConcurrency records it as ok:false and moves on).
   async function attempt() {
-    const result = await falQueueRun(falKey, model || IMAGE_MODEL, falInputFor(model || IMAGE_MODEL, prompt, image_urls, aspectRatio));
-    const img = (result.images || [])[0];
-    if (!img || !img.url) throw new Error(`fal returned no image: ${JSON.stringify(result).slice(0, 300)}`);
-    const imgRes = await fetch(img.url);
-    if (!imgRes.ok) throw new Error(`failed to download generated image: HTTP ${imgRes.status}`);
-    const bytes = new Uint8Array(await imgRes.arrayBuffer());
-    return { bytes, mimeType: img.content_type || 'image/png' };
+    const result = await falQueueRun(falKey, model || IMAGE_MODEL, falInputFor(model || IMAGE_MODEL, prompt, image_urls, aspectRatio, opts || {}));
+    const imgs = (result.images || []).filter((im)=>im && im.url);
+    if (!imgs.length) throw new Error(`fal returned no image: ${JSON.stringify(result).slice(0, 300)}`);
+    const out = [];
+    for (const img of imgs){
+      const imgRes = await fetch(img.url);
+      if (!imgRes.ok) throw new Error(`failed to download generated image: HTTP ${imgRes.status}`);
+      out.push({ bytes: new Uint8Array(await imgRes.arrayBuffer()), mimeType: img.content_type || 'image/png' });
+    }
+    return out;
   }
   try {
     return await attempt();
@@ -707,7 +751,33 @@ Deno.serve(async (req)=>{
         base64: checkerReferenceImage.base64
       });
     }
+    // Scene reference image (2026-07-20, Owner ask) — optional setting/mood
+    // photo from the Scenes page's "Add more detail" (settings.scene_ref,
+    // storage path). Appended LAST to the redraw models' reference list with
+    // a prompt line marking it as scene-only, so the product still comes from
+    // the product photos above. Bria has its own ref_image; Exact mode never
+    // reaches this function. Best-effort: a missing/broken file skips the
+    // reference rather than failing the run.
+    let sceneRefImage = null;
+    if (project.settings && project.settings.scene_ref) {
+      try {
+        const { data: srBlob } = await supabase.storage.from('projects').download(project.settings.scene_ref);
+        if (srBlob) {
+          const rawSr = new Uint8Array(await srBlob.arrayBuffer());
+          const { bytes: srBytes, mimeType: srMime } = await downscaleForModel(rawSr, srBlob.type || 'image/jpeg');
+          sceneRefImage = {
+            mimeType: srMime,
+            base64: bytesToBase64(srBytes)
+          };
+        }
+      } catch (_e) {}
+    }
+    const SCENE_REF_NOTE = '\n\nThe LAST reference image shows the desired scene — match its setting, surfaces, mood, and lighting. It is a scene reference ONLY: never copy the product itself from it; the exact product comes from the earlier reference image(s).';
     const model = modelForProject(project);
+    // Recorded on every render row (008 migration) so the gallery can say
+    // which model produced each image. Friendly key, not the fal slug —
+    // 'default' = Nano Banana 2 (settings.image_model absent/unknown).
+    const modelKey = ['seedream', 'gpt', 'bria', 'iclight'].includes(project.settings && project.settings.image_model) ? project.settings.image_model : 'default';
     // ---------- Bria one-time prep (per run, not per shot) ----------
     const isBria = model === MODEL_CHOICES.bria;
     const briaOpts = isBria && project.settings && project.settings.bria || {};
@@ -728,7 +798,7 @@ Deno.serve(async (req)=>{
       let briaCutoutBytes = null;
       {
         try {
-          const cut = await falQueueRun(falKey, BRIA_CUTOUT_MODEL, { image_url: briaProductUri });
+          const cut = await falQueueRun(falKey, CUTOUT_MODEL, { image_url: briaProductUri, ...CUTOUT_INPUT });
           if (cut.image && cut.image.url) {
             const r = await fetch(cut.image.url);
             if (r.ok) {
@@ -779,6 +849,15 @@ Deno.serve(async (req)=>{
       const requested = Math.max(1, Math.min(4, parseInt(briaOpts.num_results, 10) || 1));
       briaOpts.num_results = Math.min(requested, Math.max(1, Math.floor(remainingQuota / shots.items.length)));
     }
+    // IC-Light options (2026-07-20): light direction + images-per-scene, set
+    // on the Scenes page. num_images multiplies output per shot, so clamp it
+    // to the remaining beta quota the same way Bria's num_results is clamped.
+    const isIcLight = model === MODEL_CHOICES.iclight;
+    const iclightOpts = (isIcLight && project.settings && project.settings.iclight) || {};
+    if (isIcLight) {
+      const requested = Math.max(1, Math.min(4, parseInt(iclightOpts.num_images, 10) || 1));
+      iclightOpts.num_images = Math.min(requested, Math.max(1, Math.floor(remainingQuota / shots.items.length)));
+    }
     const outcomes = await mapWithConcurrency(shots.items, CONCURRENCY, async (item)=>{
       // Bria composites (returns 1-4 images per shot); the redraw models
       // return exactly one — normalized to an array so the save/check loop
@@ -793,12 +872,16 @@ Deno.serve(async (req)=>{
             refBgUri: briaRefBgUri,
             bria: briaOpts
           })
-        : [await generateShotImage(falKey, {
-            prompt: fullPrompt(shots, item),
+        // IC-Light relights the product photo itself (image_urls[0]) — a
+        // scene-reference image would just be an unused second input, and its
+        // "scene only" note would muddy the relight prompt, so skip it there.
+        : await generateShotImage(falKey, {
+            prompt: fullPrompt(shots, item) + (sceneRefImage && !isIcLight ? SCENE_REF_NOTE : ''),
             aspectRatio,
-            referenceImages,
-            model
-          })];
+            referenceImages: sceneRefImage && !isIcLight ? [...referenceImages, sceneRefImage] : referenceImages,
+            model,
+            opts: iclightOpts
+          });
       const saved = [];
       for (let v = 0; v < images.length; v++){
         const { bytes, mimeType } = images[v];
@@ -821,10 +904,18 @@ Deno.serve(async (req)=>{
           project_id: project.id,
           filename,
           storage_path: path,
-          stage: 'render'
+          stage: 'render',
+          model: modelKey
         };
         let checkNote = `not checked (${checkerRefDiagnostic || 'unknown reason'})`;
-        if (checkerReferenceImage) {
+        // IC-Light relights the real product photo (never redraws it), so the
+        // inline fidelity checker is both near-certain to pass and pure cost
+        // on an already-slow cold-boot path (2026-07-20). Defer it to the
+        // Check page's autocheck instead — keeps the generate call short
+        // enough to clear the gateway timeout.
+        if (isIcLight) {
+          checkNote = 'deferred to Check page (IC-Light)';
+        } else if (checkerReferenceImage) {
           try {
             // Downscale the render before base64-ing it for the checker. The
             // checker only judges product fidelity, so 1024px is plenty — and
@@ -875,7 +966,7 @@ Deno.serve(async (req)=>{
     const checkedCount = succeeded.filter((s)=>s.checkNote.startsWith('checked')).length;
     const summary = isBria
       ? `${succeeded.length} image${succeeded.length === 1 ? '' : 's'} from ${shots.items.length} shot${shots.items.length === 1 ? '' : 's'} via fal (${model}, composite, ${briaOpts.placement}, bg ${briaRefBgUri ? 'reference image' : 'described'}), ${checkedCount} auto-checked.` + (failed.length ? ` Failed: ${failed.map((f)=>`${f.file} (${f.error})`).join('; ')}` : '') + capNote
-      : `${succeeded.length}/${shots.items.length} shots generated via fal ` + `(${model}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}), ${checkedCount} auto-checked.` + (failed.length ? ` Failed: ${failed.map((f)=>`${f.file} (${f.error})`).join('; ')}` : '') + capNote;
+      : `${succeeded.length}/${shots.items.length} shots generated via fal ` + `(${model}, ${aspectRatio}, 2K cap, ${referenceImages.length} reference photo${referenceImages.length === 1 ? '' : 's'}${sceneRefImage ? ' + scene reference' : ''}), ${checkedCount} auto-checked.` + (failed.length ? ` Failed: ${failed.map((f)=>`${f.file} (${f.error})`).join('; ')}` : '') + capNote;
     await supabase.from('run_log').insert({
       project_id: project.id,
       step: 'generate',

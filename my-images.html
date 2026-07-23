@@ -47,6 +47,14 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
 .tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:.5rem}
+/* Tabs group by client (Owner ask, 2026-07-20) — same section header look as
+   the projects page. Each tab pane holds one .client-group per client, each
+   with its own .grid of cards inside. */
+.tab-pane[hidden]{display:none}
+.client-group{margin-bottom:2.4rem}
+.client-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.client-name{font-family:var(--font-display);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.client-count{font-size:.78rem;color:var(--muted);background:var(--chip);padding:.15rem .55rem;border-radius:100px}
 .size-toggle{display:inline-flex;gap:.3rem;margin-left:auto}
 .size-toggle button{font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:.35rem .65rem;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--muted);cursor:pointer}
 .size-toggle button.active{color:#fff;background:var(--accent);border-color:var(--accent)}
@@ -120,8 +128,7 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
   </div>
 
   <div class="tabs">
-    <button class="tab active" id="tab-saves" onclick="switchTab('saves')">Saves<span id="count-saves"></span></button>
-    <button class="tab" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
+    <button class="tab active" id="tab-favorites" onclick="switchTab('favorites')">Favorites<span id="count-favorites"></span></button>
     <button class="tab" id="tab-animations" onclick="switchTab('animations')">Animations<span id="count-animations"></span></button>
     <button class="tab" id="tab-all" onclick="switchTab('all')">All<span id="count-all"></span></button>
     <span class="size-toggle" id="size-toggle">
@@ -131,10 +138,9 @@ h1{font-family:var(--font-display);font-size:clamp(2.2rem,4.5vw,3rem);font-weigh
     </span>
   </div>
 
-  <div class="grid" id="grid-saves"></div>
-  <div class="grid" id="grid-favorites" hidden></div>
-  <div class="grid" id="grid-animations" hidden></div>
-  <div class="grid" id="grid-all" hidden></div>
+  <div class="tab-pane" id="grid-favorites"></div>
+  <div class="tab-pane" id="grid-animations" hidden></div>
+  <div class="tab-pane" id="grid-all" hidden></div>
 </div>
 
 <div id="lightbox" onclick="if(event.target===this)closeLightbox()">
@@ -169,7 +175,7 @@ let signedUrls = {};
 // the same way the render tabs mix every project's images.
 async function loadAnimations(){
   const { data, error } = await sb.from('projects')
-    .select('id, name, pipeline, settings')
+    .select('id, name, pipeline, settings, clients(name)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   const out = [];
@@ -182,7 +188,8 @@ async function loadAnimations(){
       const videoPath = j.final_path || j.storage_path;
       if (j.status !== 'done' || !videoPath) continue;
       out.push({
-        id: j.id, projectId: p.id, projectName: p.name || 'Open project',
+        id: j.id, projectId: p.id, clientName: p.clients?.name || '',
+        projectName: (p.clients?.name ? p.clients.name + ' · ' : '') + (p.name || 'Open project'),
         pipeline: p.pipeline, videoPath, gifPath: j.gif_path || null,
         baseName: j.baseName || 'clip',
       });
@@ -199,7 +206,7 @@ async function loadAllRenders(){
   // (see app/migrations/003_project_pipeline.sql) — lets each card show which
   // app actually generated it, since this page mixes Standard and Pro renders.
   const { data, error } = await sb.from('renders')
-    .select('id, storage_path, filename, stage, is_favorite, project_id, projects(pipeline, name)')
+    .select('id, storage_path, filename, stage, is_favorite, project_id, projects(pipeline, name, clients(name))')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -255,7 +262,10 @@ function cardHtml(r){
   // One app since the 2026-07-10 merge — every project opens under app/;
   // pipeline only decides the badge (Exact = the old Pro pixel-lock mode).
   const projHref = r.project_id ? `app/3-project-view.html?project=${esc(r.project_id)}` : '';
-  const projName = r.projects?.name || 'Open project';
+  // "Client · Project" on the chip (Owner ask, 2026-07-20) — the client name
+  // rides along via the projects→clients embed in loadRenders' select.
+  const clientName = r.projects?.clients?.name || '';
+  const projName = (clientName ? clientName + ' · ' : '') + (r.projects?.name || 'Open project');
   return `<div class="card">
     <div class="imgwrap">
       <img class="lb-thumb" data-full="${esc(url)}" loading="lazy" alt="" onclick="openLightbox(this)">
@@ -286,21 +296,37 @@ function animCardHtml(a){
   </div>`;
 }
 
+// One section per client, same header style as the projects page. Cards keep
+// their original order (newest first) inside each section; clients A→Z.
+function clientSections(items, keyFn, cardFn, noun, emptyMsg){
+  if (!items.length) return `<p class="empty">${emptyMsg}</p>`;
+  const byClient = {};
+  for (const it of items){
+    const k = keyFn(it) || '(unknown client)';
+    (byClient[k] = byClient[k] || []).push(it);
+  }
+  return Object.keys(byClient).sort().map(cname => {
+    const group = byClient[cname];
+    return `<div class="client-group">
+      <div class="client-head"><span class="client-name">${esc(cname)}</span><span class="client-count">${group.length} ${noun}${group.length===1?'':'s'}</span></div>
+      <div class="grid">${group.map(cardFn).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderGrids(){
-  // Saves = images saved from the Size and Text step (8-compose sets
-  // stage:'composed'); Favorites = hearted; Animations = finished video jobs;
-  // All = every render this user owns.
-  const saves = allRenders.filter(r => r.stage === 'composed');
+  // Favorites = hearted; Animations = finished video jobs; All = every render
+  // this user owns (Size-and-Text saves included — the Saves tab was retired
+  // 2026-07-20, Owner call: the heart is the surfacing tool now).
   const favorites = allRenders.filter(r => r.is_favorite);
-  document.getElementById('grid-saves').innerHTML = saves.map(cardHtml).join('') || '<p class="empty">No saved images yet — save some from the Size and Text step.</p>';
-  document.getElementById('grid-favorites').innerHTML = favorites.map(cardHtml).join('') || '<p class="empty">No favorites yet.</p>';
-  document.getElementById('grid-animations').innerHTML = allAnimations.map(animCardHtml).join('') || '<p class="empty">No animations yet — make one from the Size and Text step.</p>';
-  document.getElementById('grid-all').innerHTML = allRenders.map(cardHtml).join('') || '<p class="empty">No images yet.</p>';
-  document.getElementById('count-saves').textContent = ` (${saves.length})`;
+  const renderClient = r => r.projects?.clients?.name;
+  document.getElementById('grid-favorites').innerHTML = clientSections(favorites, renderClient, cardHtml, 'image', 'No favorites yet — tap the ♥ on any image.');
+  document.getElementById('grid-animations').innerHTML = clientSections(allAnimations, a => a.clientName, animCardHtml, 'animation', 'No animations yet — make one from the Size and Text step.');
+  document.getElementById('grid-all').innerHTML = clientSections(allRenders, renderClient, cardHtml, 'image', 'No images yet.');
   document.getElementById('count-favorites').textContent = ` (${favorites.length})`;
   document.getElementById('count-animations').textContent = ` (${allAnimations.length})`;
   document.getElementById('count-all').textContent = ` (${allRenders.length})`;
-  document.getElementById('page-sub').textContent = `${saves.length} save${saves.length===1?'':'s'} · ${favorites.length} favorite${favorites.length===1?'':'s'} · ${allAnimations.length} animation${allAnimations.length===1?'':'s'} · ${allRenders.length} total`;
+  document.getElementById('page-sub').textContent = `${favorites.length} favorite${favorites.length===1?'':'s'} · ${allAnimations.length} animation${allAnimations.length===1?'':'s'} · ${allRenders.length} total`;
 
   // innerHTML above just replaced every <img>, so the observer needs fresh
   // targets — old (now-detached) elements just stop being watched, harmless.
@@ -378,7 +404,7 @@ async function animDownload(event, path, ext, baseName){
 }
 
 function switchTab(name){
-  ['saves','favorites','animations','all'].forEach(n => {
+  ['favorites','animations','all'].forEach(n => {
     document.getElementById('tab-' + n).classList.toggle('active', n === name);
     document.getElementById('grid-' + n).hidden = n !== name;
   });
