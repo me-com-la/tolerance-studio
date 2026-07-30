@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tolerance Studio — product imagery built around your brand</title>
-<meta name="description" content="One studio app, two render modes, plus a full-service tier: Scene render draws your product into any scene (Standard, free for 2 projects, $10/mo unlimited); Exact render locks your product's real pixels into the scene (Pro, $20/mo); and a Creative Director tier for brands who want it fully handled. Every image scored on a 7-point accuracy inspection.">
+<meta name="description" content="Campaign imagery built from the product photos you already have. A creative director art-directs the scenes, keeps your product's real pixels, and scores every image against the real thing on a 7-point inspection. Two free sample images for new brands.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -22,6 +22,7 @@ try {
 // only — keeps casual visitors out, not a security boundary (the apps are
 // protected by real auth regardless). Keyword lasts for the browser session.
 (function(){
+  return; // Beta gate disabled for outreach launch 2026-07-24. Delete this line to restore the keyword wall.
   var KEY = 'tolerance2026';
   try { if (sessionStorage.getItem('ts-gate') === 'open') return; } catch(e){ return; }
   document.documentElement.style.visibility = 'hidden';
@@ -262,10 +263,11 @@ footer a:hover{color:var(--ink)}
 <!-- ── HERO ──────────────────────────────────────── -->
 <header class="hero">
   <div class="wrap">
-    <h1>Build a campaign from a single photo</h1>
+    <h1>Campaign imagery from the photos you already have</h1>
+    <p>Send the listing shots you shoot anyway. A creative director builds real scenes around them, keeps every pixel of your product true, and checks each image against the real thing before you see it.</p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="signup.html">Sign up free &rarr;</a>
-      <a class="btn btn-ghost" href="contact.html">Talk to a creative director</a>
+      <a class="btn btn-primary" href="contact.html">Get 2 free sample images &rarr;</a>
+      <a class="btn btn-ghost" href="signup.html">Try the studio app</a>
     </div>
   </div>
   <!-- Every image below was made in the system. Add more: drop numbered
@@ -274,97 +276,6 @@ footer a:hover{color:var(--ink)}
     <div class="ticker-track" id="ticker-track"></div>
   </div>
 </header>
-
-<!-- ── THREE PRODUCTS ────────────────────────────── -->
-<section class="sec" id="products" style="padding-top:1.5rem">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2 class="sec-h">Do it yourself or have a creative director send you product images.</h2>
-      <p class="sec-lead">You choose.</p>
-    </div>
-    <div class="compare-scroll">
-      <table class="compare">
-        <thead>
-          <tr>
-            <th class="feat" scope="col"></th>
-            <th scope="col">
-              <span class="plan-badge">Self-serve</span>
-              <span class="plan-name">Standard</span>
-              <span class="plan-price">Free during beta <s class="was-price"></span>
-            </th>
-            <th scope="col" class="hl">
-              <span class="plan-badge">Creative Director</span>
-              <span class="plan-name">Service</span>
-              <span class="plan-price">Let's talk<br></span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th class="feat" scope="row">Products</th>
-            <td class="val">Any</td>
-            <td class="val hl">Run for you</td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">AI Vision</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">AI Scene Creator</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Exact render - Product Correct</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Any Angles</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val txt hl">Any — directed by your creative director</td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">People &amp; pets</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val txt hl">Directed to fit the campaign</td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Size and framing controls</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Human review on every image before it ships</th>
-            <td class="val"><span class="no">&mdash;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Upres to 4K</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Animate (beta)</th>
-             <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">External review page</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val hl"><span class="check">&#10003;</span></td>
-          </tr>
-          <tr>
-            <th class="feat" scope="row">Best for</th>
-            <td class="val"><span class="check">&#10003;</span></td>
-            <td class="val txt hl">Full campaigns, brand launches, high-stakes releases</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
 
 <!-- ── VERIFIED ACCURACY: 7-POINT BRAND INSPECTION ── -->
 <section class="sec" id="inspection">
@@ -479,17 +390,17 @@ footer a:hover{color:var(--ink)}
       </figure>
       <div class="featcol">
         <figure class="featcard">
-          <div class="featcard-img"><img src="images/features/brand-kit.jpg" alt="The Tags bar with an Apply brand kit button beside Ask AI to draft tags, above weighted product-spec and creative-constant tags" loading="lazy"></div>
+          <div class="featcard-img"><img src="images/features/scenes-models.jpg" alt="The batch settings strip with a model picker offering Gemini, Seedream, and GPT Image" loading="lazy"></div>
           <figcaption>
-            <h4>Your brand kit rides along</h4>
-            <p>Brand rules, font, and colors saved once per client. Every new project starts on-brand, and AI drafts copy and tags from them — one click to apply, one click to save.</p>
+            <h4>Pick your model</h4>
+            <p>Three image models, and you choose per batch: Gemini for photoreal scenes, Seedream when you want it hyper real, GPT Image when the product match has to be strict. The picker sits right next to the batch size.</p>
           </figcaption>
         </figure>
         <figure class="featcard">
-          <div class="featcard-img"><img src="images/features/scenes-models.jpg" alt="The batch settings strip with a model picker offering Gemini, Seedream, and GPT Image" loading="lazy"></div>
+          <div class="featcard-img"><img src="images/features/gallery.jpg" alt="The image gallery: a grid of finished renders, each with its 7-point inspection score" loading="lazy"></div>
           <figcaption>
-            <h4>Pick the look per batch</h4>
-            <p>Gemini for photoreal, Seedream for hyper-real, GPT Image for the strictest product match. Switched per campaign, right where you set the batch size.</p>
+            <h4>One gallery for every render</h4>
+            <p>Each image lands here with its 7-point inspection score attached. Approve the good ones, rerun the misses, and send the keepers to a review page your client can open without an account.</p>
           </figcaption>
         </figure>
       </div>
@@ -497,14 +408,87 @@ footer a:hover{color:var(--ink)}
   </div>
 </section>
 
-<!-- ── CONTACT ───────────────────────────────────── -->
-<section class="sec" id="contact">
-  <div class="wrap" style="text-align:center">
-    <h2 class="sec-h">See it on your own products first.</h2>
-    <p class="sec-lead" style="margin:0 auto 1.6rem">Pick two of your products and tell us a little about your brand. A real creative director reviews what you send and renders them, no charge.</p>
-    <a class="btn btn-primary" href="contact.html">Contact us &rarr;</a>
+<!-- ── THREE PRODUCTS — moved here from the top of the page 2026-07-30, Owner call -->
+<section class="sec" id="products">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="sec-h">Have it done for you, or run the app yourself.</h2>
+      <p class="sec-lead">Most brands start with the service: a creative director runs the whole pipeline and you review finished images. The app is the same pipeline with your hands on the controls.</p>
+    </div>
+    <div class="compare-scroll">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th class="feat" scope="col"></th>
+            <th scope="col">
+              <span class="plan-badge">Self-serve</span>
+              <span class="plan-name">Standard</span>
+              <span class="plan-price">Free during beta <s class="was-price"></span>
+            </th>
+            <th scope="col" class="hl">
+              <span class="plan-badge">Creative Director</span>
+              <span class="plan-name">Service</span>
+              <span class="plan-price">Let's talk<br></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="feat" scope="row">Products</th>
+            <td class="val">Any</td>
+            <td class="val hl">Run for you</td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">AI Vision</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">AI Scene Creator</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Exact render - Product Correct</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Size and framing controls</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Human review on every image before it ships</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Upres to 4K</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Animate (beta)</th>
+             <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">External review page</th>
+            <td class="val"><span class="check">&#10003;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <th class="feat" scope="row">Creative Director</th>
+            <td class="val"><span class="no">&mdash;</span></td>
+            <td class="val hl"><span class="check">&#10003;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
+
 
 <footer>
   <div class="wrap">

@@ -19,3 +19,9 @@
 .acct-meta{max-width:44rem;margin:0 auto 1.2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
 .acct-email{font-family:'IBM Plex Mono',monospace;font-size:.82rem;color:#6b6966}
 @media(max-width:640px){.acct-grid{grid-template-columns:1fr}}
+/* Google sign-in (added 2026-07-30) */
+.btn-google{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;font-family:inherit;font-size:.88rem;font-weight:500;color:#111014;background:#fff;border:1px solid rgba(17,16,20,.22);border-radius:8px;padding:.65rem 1rem;cursor:pointer;transition:opacity .15s}
+.btn-google:hover{opacity:.8}
+.btn-google svg{width:18px;height:18px;flex:0 0 auto}
+.auth-div{display:flex;align-items:center;gap:.8rem;color:#6b6966;font-size:.78rem}
+.auth-div::before,.auth-div::after{content:"";flex:1;height:1px;background:rgba(17,16,20,.12)}
