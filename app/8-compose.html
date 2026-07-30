@@ -134,6 +134,18 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .color-grid input[type=color]::-webkit-color-swatch{border:none;border-radius:5px}
 .color-reset{font-size:.74rem;color:var(--muted);background:transparent;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0}
 .color-reset:hover{color:var(--ink)}
+/* Look filmstrip — brand color-grade presets, scanned as thumbnails cropped
+   from the actual selected render so what you pick is what you get, not a
+   generic swatch. Strength slider (below, reuses .field input[type=range])
+   blends the picked look from 0 (off) to its full strength. */
+.look-strip{display:flex;gap:.6rem;overflow-x:auto;padding-bottom:.3rem;margin:0 -.1rem}
+.look-card{flex:0 0 auto;width:64px;display:flex;flex-direction:column;gap:.35rem;background:none;border:none;font-family:inherit;padding:0;cursor:pointer;text-align:left}
+.look-thumb{width:64px;height:64px;border-radius:8px;overflow:hidden;border:1.5px solid var(--line-2);background:var(--chip);position:relative}
+.look-thumb canvas{width:100%;height:100%;display:block;object-fit:cover}
+.look-card.selected .look-thumb{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.look-name{font-size:.66rem;color:var(--muted);line-height:1.25}
+.look-card.selected .look-name{color:var(--ink);font-weight:600}
+.look-empty{color:var(--muted);font-size:.8rem;padding:.4rem 0}
 /* paint chip — floats over the preview when the photo drag opens a gap */
 .paint-chip{position:absolute;left:50%;bottom:.9rem;top:auto;transform:translateX(-50%);background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:600;font-size:.8rem;border-radius:100px;padding:.55rem 1.1rem;cursor:pointer;display:none;white-space:nowrap;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .paint-chip:hover{opacity:.92}
@@ -323,6 +335,20 @@ img.lb-thumb{cursor:pointer}
         </div>
       </div>
 
+      <div class="acc collapsed" id="acc-5">
+        <div class="acc-h" onclick="toggleAcc(5)"><span class="sn">4</span>Look<span class="chev">▾</span></div>
+        <div class="acc-b">
+          <div class="field">
+            <label>Color grade</label>
+            <div id="look-strip" class="look-strip"><p class="look-empty">Pick a render above to preview looks.</p></div>
+          </div>
+          <div class="field">
+            <label for="cmp-look-strength">Strength <span id="look-strength-val" style="font-weight:400;text-transform:none;color:var(--ink)">100%</span></label>
+            <input type="range" id="cmp-look-strength" min="0" max="100" step="5" value="100" oninput="setLookStrength(this.value)">
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="preview-wrap">
@@ -423,6 +449,80 @@ let textColorOverride = null;  // null = automatic (scrimColor()'s luminance
 let scrimColorOverride = null; // null = automatic (painted-panel color, else
                                 // the near-black default wash); a hex string
                                 // once the Owner chooses one explicitly
+// Look (color grade) — a taste setting like the colors above, so it also
+// deliberately survives resetLayout(). Applied as a canvas ctx.filter on the
+// PHOTO layer only (never the words/scrim/CTA), inside renderPreview() —
+// meaning the live preview and the saved PNG are pixel-identical, no
+// separate export pass needed. "none" = filter off, values are the target
+// at 100% strength; lookStrength lerps from identity (0%) to that target.
+const LOOKS = [
+  { id: 'none',    name: 'Original',     b: 1,    c: 1,    s: 1,    sepia: 0,    hue: 0,  gray: 0 },
+  { id: 'studio',  name: 'Studio Std.',  b: 1.02, c: 0.94, s: 0.78, sepia: 0.05, hue: 0,  gray: 0 },
+  { id: 'warm',    name: 'Warm Film',    b: 1.05, c: 0.97, s: 0.88, sepia: 0.18, hue: -4, gray: 0 },
+  { id: 'cool',    name: 'Cool Concrete',b: 1.0,  c: 1.05, s: 0.68, sepia: 0,    hue: 8,  gray: 0 },
+  { id: 'clay',    name: 'Clay',         b: 0.98, c: 0.95, s: 0.6,  sepia: 0.14, hue: -6, gray: 0 },
+  { id: 'archive', name: 'Faded Archive',b: 1.08, c: 0.82, s: 0.5,  sepia: 0.15, hue: 0,  gray: 0 },
+  { id: 'mono',    name: 'Editorial Mono',b:1.02, c: 1.15, s: 1,    sepia: 0,    hue: 0,  gray: 1 },
+];
+let lookId = 'none';
+let lookStrength = 100;
+function lookById(id){ return LOOKS.find(l => l.id === id) || LOOKS[0]; }
+function lerp(a, b, t){ return a + (b - a) * t; }
+function filterForLook(id, strengthPct){
+  const l = lookById(id);
+  const t = strengthPct / 100;
+  const b = lerp(1, l.b, t), c = lerp(1, l.c, t), s = lerp(1, l.s, t);
+  const sepia = lerp(0, l.sepia, t), hue = lerp(0, l.hue, t), gray = lerp(0, l.gray, t);
+  return `brightness(${b.toFixed(3)}) contrast(${c.toFixed(3)}) saturate(${s.toFixed(3)}) sepia(${sepia.toFixed(3)}) hue-rotate(${hue.toFixed(1)}deg) grayscale(${gray.toFixed(3)})`;
+}
+function currentPhotoFilter(){ return filterForLook(lookId, lookStrength); }
+// One small canvas per look, cropped/cover-fit from the actual selected
+// render — a swatch, not a generic gradient, so scanning looks tells you
+// something real about how THIS photo takes each grade.
+function renderLookStrip(){
+  const strip = document.getElementById('look-strip');
+  if (!strip) return;
+  if (!selectedImg || !selectedImg.complete || !selectedImg.naturalWidth){
+    strip.innerHTML = '<p class="look-empty">Pick a render above to preview looks.</p>';
+    return;
+  }
+  strip.innerHTML = '';
+  const THUMB = 64;
+  const cs = Math.max(THUMB / selectedImg.width, THUMB / selectedImg.height);
+  const dw = selectedImg.width * cs, dh = selectedImg.height * cs;
+  const dx = (THUMB - dw) / 2, dy = (THUMB - dh) / 2;
+  LOOKS.forEach((look) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'look-card' + (look.id === lookId ? ' selected' : '');
+    btn.onclick = () => pickLook(look.id);
+    const thumbWrap = document.createElement('span');
+    thumbWrap.className = 'look-thumb';
+    const c = document.createElement('canvas');
+    c.width = THUMB; c.height = THUMB;
+    const g = c.getContext('2d');
+    g.filter = filterForLook(look.id, 100);
+    g.drawImage(selectedImg, dx, dy, dw, dh);
+    thumbWrap.appendChild(c);
+    const name = document.createElement('span');
+    name.className = 'look-name';
+    name.textContent = look.name;
+    btn.appendChild(thumbWrap);
+    btn.appendChild(name);
+    strip.appendChild(btn);
+  });
+}
+function pickLook(id){
+  lookId = id;
+  renderLookStrip();
+  renderPreview();
+}
+function setLookStrength(v){
+  lookStrength = Number(v);
+  const lbl = document.getElementById('look-strength-val');
+  if (lbl) lbl.textContent = v + '%';
+  renderPreview();
+}
 let photoZoom = 1;             // pre-paint photo scale knob — zooming out before painting
                                 // opens more gap on every side at once, without a drag
 // Post-paint zoom (Owner call, 2026-07-10): the outpaint model doesn't
@@ -637,7 +737,7 @@ function kitStatus(msg, err){
 }
 function applyKitStyle(manual){
   const kit = project?.clients?.brand_kit;
-  if (!kit || (!kit.font && !kit.text_color && !kit.cta_color && !kit.scrim_color && !kit.text_size)){
+  if (!kit || (!kit.font && !kit.text_color && !kit.cta_color && !kit.scrim_color && !kit.text_size && !kit.look_id)){
     if (manual) kitStatus('no style in the brand kit yet — set it up, then Save style to kit', true);
     return;
   }
@@ -650,6 +750,13 @@ function applyKitStyle(manual){
     document.getElementById('cmp-tscale').value = Math.round(tScale * 100);
     document.getElementById('tscale-val').textContent = Math.round(tScale * 100) + '%';
   }
+  if (kit.look_id){
+    lookId = kit.look_id;
+    lookStrength = kit.look_strength ?? 100;
+    document.getElementById('cmp-look-strength').value = lookStrength;
+    document.getElementById('look-strength-val').textContent = lookStrength + '%';
+    renderLookStrip();
+  }
   renderPreview();
   if (manual) kitStatus('brand style applied');
 }
@@ -660,6 +767,8 @@ async function saveStyleToKit(){
   kit.cta_color = ctaColor;
   kit.scrim_color = scrimColorOverride; // null = auto — same rule as text_color
   kit.text_size = tScale;
+  kit.look_id = lookId;
+  kit.look_strength = lookStrength;
   try {
     await db.saveBrandKit(project.client_id, kit);
     if (project.clients) project.clients.brand_kit = kit;
@@ -836,6 +945,7 @@ function bakeExtension(){
   const spec = PLATFORMS[activePlatform];
   const sNow = displayScale(extendedImg, spec.w, spec.h); // current on-screen scale
   selectedImg = extendedImg;                              // composite is the new base
+  renderLookStrip();                                       // thumbnails now stale on the old base
   extendedImg = null;
   extDir = null;
   extendEdgeColor = null;
@@ -949,7 +1059,7 @@ async function renderSelectStrip(){
     resetLayout();
     selectedImg = new Image();
     selectedImg.crossOrigin = 'anonymous';
-    selectedImg.onload = () => { if (sizeChosen) autoLayoutForPlatform(); };
+    selectedImg.onload = () => { renderLookStrip(); if (sizeChosen) autoLayoutForPlatform(); };
     selectedImg.src = urls[0];
   }
 }
@@ -958,7 +1068,7 @@ function pickRender(renderId, url){
   resetLayout();  // an extension and any pan belong to a specific image — start fresh
   selectedImg = new Image();
   selectedImg.crossOrigin = 'anonymous';
-  selectedImg.onload = () => autoLayoutForPlatform();
+  selectedImg.onload = () => { renderLookStrip(); autoLayoutForPlatform(); };
   selectedImg.src = url;
   renderSelectStrip();
 }
@@ -1169,7 +1279,9 @@ function renderPreview(){
     clampOffsets(img, s, W, H);
     ctx.fillStyle = '#141118';
     ctx.fillRect(0, 0, W, H);
+    ctx.filter = currentPhotoFilter(); // look applies to the photo layer only
     ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
+    ctx.filter = 'none'; // never leak onto the sliver fill, scrim, or text below
 
     if (extDir && extendEdgeColor){
       // extendedFit only guarantees the perpendicular axis fills exactly —
@@ -1475,7 +1587,9 @@ function buildCleanFrameCanvas(){
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#141118';
   ctx.fillRect(0, 0, W, H);
+  ctx.filter = currentPhotoFilter();
   ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
+  ctx.filter = 'none';
   if (extDir && extendEdgeColor){
     const dw = img.width * s, dh = img.height * s;
     const short = (extDir === 'left' || extDir === 'right') ? Math.max(0, W - dw) : Math.max(0, H - dh);

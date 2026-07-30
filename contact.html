@@ -87,12 +87,13 @@ img{max-width:100%;display:block}
           </div>
         </div>
       </div>
-      <!-- Wired for Netlify Forms. To use Formspree: set action="https://formspree.io/f/XXXX",
-           remove data-netlify, the hidden form-name input, and the onsubmit handler. -->
-      <form class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field"
+      <!-- FormSubmit.co AJAX (works on GitHub Pages; Netlify Forms did not — site isn't on Netlify).
+           First real submission emails an activation link to the inbox below; click it once and the form is live. -->
+      <form class="contact-form" name="contact" method="POST" action="https://formsubmit.co/jason@tolerancestudio.com"
             onsubmit="return tsSubmit(this,'sent')">
-        <input type="hidden" name="form-name" value="contact">
-        <p hidden><label>Don't fill this out: <input name="bot-field"></label></p>
+        <input type="hidden" name="_subject" value="Site contact — tolerancestudio.com">
+        <input type="hidden" name="_captcha" value="false">
+        <p hidden><label>Don't fill this out: <input name="_honey"></label></p>
         <div class="form-row">
           <div class="field"><label>Name</label><input name="name" type="text" placeholder="Your name" required></div>
           <div class="field"><label>Brand / store</label><input name="brand" type="text" placeholder="yourstore.com" required></div>
@@ -103,6 +104,10 @@ img{max-width:100%;display:block}
       <div id="sent">
         <h3>Got it.</h3>
         <p class="muted">Thanks — we'll be in touch soon.</p>
+      </div>
+      <div id="fail" style="display:none;background:var(--surface);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow)">
+        <h3 style="font-family:var(--display);font-size:1.5rem;text-transform:uppercase;margin-bottom:.5rem">That didn't go through.</h3>
+        <p class="muted">Email us instead: <a href="mailto:hello@tolerancestudio.com" style="color:var(--accent)">hello@tolerancestudio.com</a></p>
       </div>
     </div>
   </div>
@@ -118,12 +123,19 @@ img{max-width:100%;display:block}
 </footer>
 
 <script>
-// Netlify Forms AJAX submit — keeps the inline "Got it" reveal.
+// FormSubmit AJAX — success shows "Got it", failure shows the email fallback
+// instead of pretending it worked (the old Netlify handler swallowed errors).
 function tsSubmit(form, sentId){
-  var data = new URLSearchParams(new FormData(form)).toString();
-  fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:data})
+  var payload = {};
+  new FormData(form).forEach(function(v,k){ payload[k]=v; });
+  fetch('https://formsubmit.co/ajax/jason@tolerancestudio.com', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify(payload)
+  })
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; })
-    .catch(function(){ form.style.display='none'; document.getElementById(sentId).style.display='block'; });
+    .catch(function(){ form.style.display='none'; document.getElementById('fail').style.display='block'; });
   return false;
 }
 </script>
