@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#e8e6e1; --paper:#0c0b10; --card:#1a1820;
+  --ink:#e8e6e1; --paper:#221f28; --card:#2c2833;
   --line:rgba(255,255,255,.1); --line-2:rgba(255,255,255,.18);
   --muted:#9a978f; --accent:#9d7aff; --accent-ink:#c4b0ff; --accent-wash:rgba(157,122,255,.15);
   --chip:#2a2735; --radius:14px;
@@ -24,9 +24,9 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--paper);color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.topbar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.topbar{background:rgba(34,31,40,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topbar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;justify-content:space-between;height:60px}
-.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase}
+.brand{display:flex;align-items:center;gap:.5rem;font-family:var(--font-display);font-weight:500;font-size:1.05rem;text-transform:uppercase}
 .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
 .crumbs{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem}
 .crumbs a:hover{color:var(--ink)}
@@ -34,11 +34,11 @@ a{color:inherit;text-decoration:none}
 /* .mode-chip removed 2026-07-17 — see 2-project-list.html for note. */
 .who{display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--muted)}
 .avatar{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:.8rem}
-.overview-bar{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:16}
+.overview-bar{background:rgba(34,31,40,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:16}
 .overview-bar-in{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;align-items:center;gap:1rem;height:44px}
 .overview-tab{font-family:var(--font-display);font-size:.92rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);border-bottom:3px solid transparent;padding:.55rem 0;cursor:pointer;text-decoration:none}
 .overview-tab:hover{color:var(--ink)}
-.rail-wrap{background:rgba(12,11,16,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
+.rail-wrap{background:rgba(34,31,40,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:15}
 .rail{max-width:88rem;margin:0 auto;padding:0 1.6rem;display:flex;overflow-x:auto}
 .rail-step{display:flex;align-items:center;justify-content:center;flex:1;gap:.6rem;padding:.9rem 1.1rem;white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;color:var(--muted);font-size:.88rem;font-weight:500}
 .rail-step .n{width:22px;height:22px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:600}
@@ -50,7 +50,7 @@ a{color:inherit;text-decoration:none}
 .rail-step.locked .n{background:var(--chip);color:var(--muted)}
 
 .wrap{max-width:88rem;margin:0 auto;padding:2.6rem 1.6rem 4rem}
-h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem}
+h1{font-family:var(--font-display);font-size:2.2rem;font-weight:500;text-transform:uppercase;margin-bottom:.3rem}
 .sub{color:var(--muted);font-size:.9rem;margin-bottom:1.6rem}
 
 .btn{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600;padding:.6rem 1.1rem;border-radius:10px;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;white-space:nowrap}
@@ -81,7 +81,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .add-scene-btn:disabled{cursor:default;opacity:.55}
 .add-scene-btn .num{font-family:var(--font-mono);font-weight:600;color:var(--accent);min-width:1.6rem}
 
-.section-h{font-family:var(--font-display);font-size:1.6rem;font-weight:700;margin:1.8rem 0 .5rem;line-height:1.3}
+.section-h{font-family:var(--font-display);font-size:1.6rem;font-weight:500;margin:1.8rem 0 .5rem;line-height:1.3}
 /* Each step wrapped in its own card, like the Brief page's sections. */
 .step-box{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:1.4rem}
 .step-box .section-h{margin:0 0 .9rem}
@@ -129,7 +129,7 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .pick-cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
 @media(max-width:860px){.pick-cols{grid-template-columns:1fr}}
 .pick-card{border:1.5px solid var(--line-2);border-radius:12px;padding:1.1rem 1.2rem}
-.pick-card .pick-title{font-family:var(--font-display);text-transform:uppercase;font-size:1.2rem;font-weight:700;letter-spacing:.02em;margin-bottom:.7rem}
+.pick-card .pick-title{font-family:var(--font-display);text-transform:none;font-size:1.08rem;font-weight:500;letter-spacing:0;line-height:1.3;margin-bottom:.7rem}
 .pick-card .model-cta{margin-bottom:0}
 /* Bria product-shot options (2026-07-18) — composite model, its own knobs */
 .bria-opts{border:1.5px solid var(--line-2);border-radius:12px;padding:1.1rem 1.2rem;margin-bottom:.8rem}
@@ -144,13 +144,13 @@ h1{font-family:var(--font-display);font-size:2.2rem;font-weight:700;text-transfo
 .bria-hint{font-size:.75rem;color:var(--muted);flex-basis:100%;margin-top:-.5rem}
 .mode-pick{display:flex;align-items:center;gap:.7rem;margin-bottom:1.1rem}
 .mode-pick .mode-card{flex:1;min-width:0}
-.mode-or{flex:0 0 auto;font-family:var(--font-display);font-weight:700;font-size:.95rem;color:var(--muted);letter-spacing:.06em}
+.mode-or{flex:0 0 auto;font-family:var(--font-display);font-weight:500;font-size:.95rem;color:var(--muted);letter-spacing:.06em}
 @media(max-width:640px){.mode-pick{flex-direction:column;align-items:stretch}}
 .mode-card{position:relative;border:1.5px solid var(--line-2);border-radius:12px;padding:.95rem 1.05rem;cursor:pointer;transition:border-color .15s,background .15s}
 .mode-card:hover{border-color:var(--accent)}
 #mode-card-pro:hover{border-color:var(--line-2);background:transparent;cursor:default}
 .mode-card.selected{border-color:var(--accent);background:var(--accent-wash)}
-.mode-card h4{font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:.35rem;display:flex;align-items:center;gap:.45rem}
+.mode-card h4{font-family:var(--font-display);font-size:1.3rem;font-weight:500;margin-bottom:.35rem;display:flex;align-items:center;gap:.45rem}
 .mode-card p{font-size:1rem;color:var(--ink);line-height:1.5}
 .mode-card .pro-pill{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.15rem .45rem;border-radius:100px;color:#7ee2c0;background:rgba(46,180,130,.16)}
 /* "Not recommended" flag on Exact when the source photo failed the input check
@@ -183,7 +183,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 .gen-box{text-align:center;color:#fff;max-width:26rem;padding:2rem}
 .gen-spinner{width:44px;height:44px;border:3px solid rgba(255,255,255,.25);border-top-color:var(--accent);border-radius:50%;margin:0 auto 1.4rem;animation:gen-spin 1s linear infinite}
 @keyframes gen-spin{to{transform:rotate(360deg)}}
-.gen-title{font-family:var(--font-display);font-size:1.4rem;font-weight:700;text-transform:uppercase;margin-bottom:.5rem}
+.gen-title{font-family:var(--font-display);font-size:1.4rem;font-weight:500;text-transform:uppercase;margin-bottom:.5rem}
 .gen-note{font-size:.9rem;color:rgba(255,255,255,.85);line-height:1.6}
 .gen-warn{display:inline-block;margin-top:1rem;font-size:.8rem;font-weight:600;background:rgba(216,80,45,.25);border:1px solid var(--accent);border-radius:8px;padding:.5rem .9rem}
 .gen-err{margin-top:1rem;font-size:.85rem;color:#ffb4a0}
@@ -199,7 +199,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
 <div class="rail-wrap"><div class="rail">
   <div class="rail-step done" onclick="location.href='4-tags-editor.html?project='+encodeURIComponent(projectId)"><span class="n">✓</span>Brief &amp; Specs</div>
   <div class="rail-step active"><span class="n">2</span>Scenes</div>
-  <div class="rail-step locked"><span class="n">3</span>Check</div>
+  <div class="rail-step locked"><span class="n">3</span>Image Check</div>
   <div class="rail-step locked"><span class="n">4</span>Size and Text</div>
   <div class="rail-step locked"><span class="n">5</span>Review</div>
 </div></div>
@@ -246,7 +246,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
   <!-- Step 3 — render mode (revealed once scenes are OK'd) -->
   <div id="mode-step" style="display:none">
     <div class="step-box" id="step3-box">
-      <div class="section-h step-head" onclick="toggleStep('step3-box')" style="margin-bottom:.9rem">Choose your model</div>
+      <div class="section-h step-head" onclick="toggleStep('step3-box')" style="margin-bottom:.9rem">Let's make the image</div>
 
       <!-- Two cards side by side (2026-07-23): redraw models left, real-
            product models right. ONE Generate CTA below both — it runs every
@@ -255,7 +255,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
       <div class="pick-cols">
 
       <div class="pick-card">
-      <h4 class="pick-title">AI Image Model — Redraw</h4>
+      <h4 class="pick-title">The image models below will redraw your product and sometimes don't get all the details correct, but they look great</h4>
       <div class="model-checks">
         <label class="model-check">
           <input type="checkbox" id="multi-default">
@@ -308,7 +308,7 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
            own pipeline sequentially (IC-Light = fal-iclight poll loop,
            Bria = standard generate, Exact = pixel-lock client loop). -->
       <div class="pick-card">
-      <h4 class="pick-title">Exact Render — No Redraw</h4>
+      <h4 class="pick-title">Choose one of these if you want to keep your product exactly like the original, no redraw, we only recreate the backgrounds and lighting</h4>
       <div class="model-checks">
         <label class="model-check">
           <input type="checkbox" id="check-iclight" onchange="toggleRealModel('iclight')">
@@ -332,7 +332,8 @@ table.shots td.file{font-family:var(--font-mono);font-size:.76rem;color:var(--mu
           </span>
           <span class="mc-desc">Your real photo composited, never redrawn.</span>
         </label>
-        <label class="model-check">
+        <!-- Exact Render option hidden 2026-07-31, Owner call — remove style="display:none" to restore -->
+        <label class="model-check" style="display:none">
           <input type="checkbox" id="check-exact" onchange="toggleRealModel('exact')">
           <span class="mc-logo">
             <svg width="132" height="28" viewBox="0 0 170 36" fill="none">
